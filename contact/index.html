@@ -32,10 +32,14 @@
           <dd>부산광역시 금정구 반송로 425<br>3층 311호 (금사동)</dd>
           <dt>영업시간</dt>
           <dd id="hours">매일 09:00 – 19:00</dd>
-          <dt>연락처</dt>
-          <dd id="tel">상담 문의는 엔카 매물 페이지의 연락처를 이용해 주세요</dd>
+          <dt>매장 전화</dt>
+          <dd id="tel">-</dd>
+          <dt>상담 휴대폰</dt>
+          <dd id="mobile">-</dd>
         </dl>
-        <a class="btn btn-dark btn-block" style="margin-top:20px"
+        <a class="btn btn-gold btn-block" style="margin-top:20px"
+           href="tel:0517117818">📞 매장으로 전화하기</a>
+        <a class="btn btn-dark btn-block" style="margin-top:9px"
            href="https://map.kakao.com/?q=부산광역시 금정구 반송로 425"
            target="_blank" rel="noopener">카카오맵으로 길찾기</a>
       </div>
@@ -51,10 +55,8 @@
 
 <script src="/assets/site.js"></script>
 <script>
-  if (매장.전화) {
-    document.getElementById("tel").innerHTML =
-      '<a href="tel:' + 매장.전화.replace(/[^0-9]/g,"") + '">' + 매장.전화 + '</a>';
-  }
+  document.getElementById("tel").innerHTML = 전화링크(매장.전화);
+  document.getElementById("mobile").innerHTML = 전화링크(매장.휴대폰);
   document.getElementById("hours").textContent = 매장.영업;
 </script>
 </body>
