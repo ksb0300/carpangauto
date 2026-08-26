@@ -32,7 +32,7 @@
 /* Apps Script 웹앱 주소.
    여기로 직접 들어가면 구글이 '악용사례 신고' 배너를 붙여 고객이 불안해한다.
    iframe 으로 감싸면 배너 없이 우리 도메인 안에서 열린다. */
-var 웹앱주소 = "";
+var 웹앱주소 = "https://script.google.com/macros/s/AKfycbyJWw4vetW67C9zqc57C4ktTwnMgTTflS4znWK9rtXOovrTXibS9-_ew3d11hkD755C/exec";
 
 document.getElementById("doc").innerHTML = 웹앱주소
   ? '<iframe src="' + 웹앱주소 + '" title="비사업용 사실확인서"></iframe>'
