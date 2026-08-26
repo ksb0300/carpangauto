@@ -33,14 +33,14 @@ function 전화링크(번호) {
 
   document.body.insertAdjacentHTML("afterbegin",
     '<header class="hd"><div class="hd-in">' +
-    '<a href="/" class="logo"><img src="/assets/logo.svg" alt="' + 매장.영문 + '"></a>' +
+    '<a href="/" class="logo"><img src="/assets/logo.svg?v=ac6e2cbc" alt="' + 매장.영문 + '"></a>' +
     '<a class="tel btn-tel" href="tel:' + 매장.전화.replace(/[^0-9]/g, "") + '">전화 문의</a>' +
     '<nav class="nav">' + nav + "</nav>" +
     "</div></header>");
 
   document.body.insertAdjacentHTML("beforeend",
     '<footer class="ft"><div class="wrap"><div class="ft-top">' +
-    '<div class="col"><img src="/assets/logo.svg" alt="' + 매장.영문 + '">' +
+    '<div class="col"><img src="/assets/logo.svg?v=ac6e2cbc" alt="' + 매장.영문 + '">' +
     "<p style='margin:0 0 4px'>" + 매장.주소 + "</p>" +
     "<p style='margin:0'>" + 매장.영업 + "</p></div>" +
     '<div class="col"><b>CONTACT</b>' +
