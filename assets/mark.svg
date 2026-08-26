@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 140" role="img" aria-label="CARPANG">
+  <g fill="#8B2FFF">
+    <rect x="10"  y="58" width="13" height="36" rx="6.5"/>
+    <rect x="31"  y="42" width="13" height="68" rx="6.5"/>
+    <rect x="52"  y="28" width="13" height="96" rx="6.5"/>
+    <rect x="73"  y="18" width="13" height="116" rx="6.5"/>
+    <rect x="94"  y="34" width="13" height="84" rx="6.5"/>
+    <rect x="115" y="50" width="13" height="52" rx="6.5"/>
+    <rect x="136" y="64" width="13" height="24" rx="6.5"/>
+  </g>
+</svg>

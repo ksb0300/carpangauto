@@ -3,51 +3,48 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>오시는 길 · 카팡모터스</title>
+<title>오시는 길 · CARPANG</title>
 <meta name="description" content="부산광역시 금정구 반송로 425, 3층 311호. 카팡모터스 오시는 길.">
+<meta name="theme-color" content="#0a0a0c">
+<link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="stylesheet" href="/assets/style.css">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📍</text></svg>">
 <style>
-  .info dt{color:var(--sub); font-size:13.5px; margin-top:16px}
+  .info dt{color:var(--tx3);font-size:12.5px;letter-spacing:1.5px;text-transform:uppercase;margin-top:20px}
   .info dt:first-child{margin-top:0}
-  .info dd{margin:3px 0 0; font-size:16px; font-weight:600}
-  .map{border-radius:14px; overflow:hidden; border:1px solid var(--line);
-    background:#eceef1; min-height:320px; display:flex; align-items:center;
-    justify-content:center; color:var(--sub); font-size:14.5px; text-align:center;
-    padding:20px}
+  .info dd{margin:5px 0 0;font-size:17px;font-weight:600;line-height:1.5}
+  .info dd a{color:#fff}
+  .map{border-radius:16px;overflow:hidden;border:1px solid var(--line);min-height:380px;
+    background:radial-gradient(circle at 50% 40%,rgba(139,47,255,.18),var(--bk2) 70%);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    color:var(--tx2);font-size:14.5px;text-align:center;padding:24px;gap:10px}
+  .map img{width:56px;opacity:.9}
 </style>
 </head>
 <body>
 
-<section class="sec" style="padding-top:34px">
+<section class="full">
   <div class="wrap">
-    <div class="gold-bar"></div>
-    <h1 class="sec-t">오시는 길</h1>
-    <p class="sec-s">방문 전 연락 주시면 차량을 미리 준비해 두겠습니다.</p>
+    <p class="eyebrow rv">Visit</p>
+    <h1 class="t rv d1">오시는 길</h1>
+    <p class="s rv d2">방문 전 연락 주시면 차량을 미리 준비해 두겠습니다.</p>
 
-    <div class="grid g2" style="align-items:start">
-      <div class="card">
+    <div class="grid g2" style="align-items:stretch">
+      <div class="card rv">
         <dl class="info" style="margin:0">
-          <dt>주소</dt>
-          <dd>부산광역시 금정구 반송로 425<br>3층 311호 (금사동)</dd>
-          <dt>영업시간</dt>
-          <dd id="hours">매일 09:00 – 19:00</dd>
-          <dt>매장 전화</dt>
-          <dd id="tel">-</dd>
-          <dt>상담 휴대폰</dt>
-          <dd id="mobile">-</dd>
+          <dt>Address</dt><dd>부산광역시 금정구 반송로 425<br>3층 311호 (금사동)</dd>
+          <dt>Hours</dt><dd id="hours">매일 09:00 – 19:00</dd>
+          <dt>Store</dt><dd id="tel">-</dd>
+          <dt>Mobile</dt><dd id="mobile">-</dd>
         </dl>
-        <a class="btn btn-gold btn-block" style="margin-top:20px"
-           href="tel:0517117818">📞 매장으로 전화하기</a>
-        <a class="btn btn-dark btn-block" style="margin-top:9px"
-           href="https://map.kakao.com/?q=부산광역시 금정구 반송로 425"
-           target="_blank" rel="noopener">카카오맵으로 길찾기</a>
+        <a class="btn btn-pp btn-block" style="margin-top:24px" href="tel:0517117818">매장으로 전화하기</a>
+        <a class="btn btn-ghost btn-block" style="margin-top:9px"
+           href="https://map.kakao.com/?q=부산광역시 금정구 반송로 425" target="_blank" rel="noopener">카카오맵으로 길찾기</a>
       </div>
-
-      <a class="map" href="https://map.kakao.com/?q=부산광역시 금정구 반송로 425"
-         target="_blank" rel="noopener">
+      <a class="map rv d1" href="https://map.kakao.com/?q=부산광역시 금정구 반송로 425" target="_blank" rel="noopener">
+        <img src="/assets/mark.svg" alt="">
         지도를 누르면 카카오맵으로 이동합니다<br>
-        <span style="font-size:13px">부산광역시 금정구 반송로 425</span>
+        <span style="font-size:13px;color:var(--tx3)">부산광역시 금정구 반송로 425</span>
       </a>
     </div>
   </div>

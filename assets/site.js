@@ -2,6 +2,7 @@
    (정적 사이트라 서버 템플릿이 없다.) */
 var 매장 = {
   이름: "카팡모터스",
+  영문: "CARPANG",
   주소: "부산광역시 금정구 반송로 425, 3층 311호",
   대표: "김상혁",
   전화: "051-711-7818",     // 매장 대표번호
@@ -10,11 +11,11 @@ var 매장 = {
 };
 
 var 메뉴 = [
-  ["/",         "홈"],
-  ["/cars/",    "판매 차량"],
-  ["/sell/",    "내 차 팔기"],
-  ["/sign/",    "서류 작성"],
-  ["/contact/", "오시는 길"]
+  ["/",         "홈",        ""],
+  ["/cars/",    "판매 차량", ""],
+  ["/sell/",    "내 차 팔기", ""],
+  ["/sign/",    "서류 작성", "hide-m"],
+  ["/contact/", "오시는 길", ""]
 ];
 
 function 전화링크(번호) {
@@ -26,30 +27,55 @@ function 전화링크(번호) {
   if (here.length > 1 && !here.endsWith("/")) here += "/";
 
   var nav = 메뉴.map(function (m) {
-    return '<a href="' + m[0] + '"' + (m[0] === here ? ' class="on"' : "") +
-           ">" + m[1] + "</a>";
+    var cls = [m[0] === here ? "on" : "", m[2]].filter(Boolean).join(" ");
+    return '<a href="' + m[0] + '"' + (cls ? ' class="' + cls + '"' : "") + ">" + m[1] + "</a>";
   }).join("");
 
   document.body.insertAdjacentHTML("afterbegin",
     '<header class="hd"><div class="hd-in">' +
-    '<a href="/" class="logo">카팡<em>모터스</em></a>' +
+    '<a href="/" class="logo"><img src="/assets/logo.svg" alt="' + 매장.영문 + '"></a>' +
+    '<a class="tel btn-tel" href="tel:' + 매장.전화.replace(/[^0-9]/g, "") + '">전화 문의</a>' +
     '<nav class="nav">' + nav + "</nav>" +
     "</div></header>");
 
-  var 연락 = [];
-  if (매장.전화)   연락.push(전화링크(매장.전화));
-  if (매장.휴대폰) 연락.push(전화링크(매장.휴대폰));
-  var 전화줄 = 연락.length
-    ? '<p style="margin:0 0 4px">' + 연락.join(" &nbsp;·&nbsp; ") + "</p>" : "";
-
   document.body.insertAdjacentHTML("beforeend",
-    '<footer class="ft"><div class="wrap">' +
-    '<p class="ft-t">' + 매장.이름 + "</p>" +
+    '<footer class="ft"><div class="wrap"><div class="ft-top">' +
+    '<div class="col"><img src="/assets/logo.svg" alt="' + 매장.영문 + '">' +
     "<p style='margin:0 0 4px'>" + 매장.주소 + "</p>" +
-    전화줄 +
-    "<p style='margin:0'>" + 매장.영업 + "</p>" +
-    '<div class="ft-r">대표 ' + 매장.대표 +
-    " · 본 사이트의 차량 정보는 엔카 등록 정보를 따릅니다." +
-    "<br>© " + new Date().getFullYear() + " " + 매장.이름 + "</div>" +
+    "<p style='margin:0'>" + 매장.영업 + "</p></div>" +
+    '<div class="col"><b>CONTACT</b>' +
+    "<p style='margin:0 0 4px'>매장 " + 전화링크(매장.전화) + "</p>" +
+    "<p style='margin:0'>상담 " + 전화링크(매장.휴대폰) + "</p></div>" +
+    '<div class="col"><b>MENU</b>' +
+    메뉴.map(function (m) { return "<p style='margin:0 0 4px'><a href='" + m[0] + "'>" + m[1] + "</a></p>"; }).join("") +
+    "</div></div>" +
+    '<div class="ft-r">' + 매장.이름 + " · 대표 " + 매장.대표 +
+    " · 차량 정보는 엔카 등록 정보를 따릅니다" +
+    "<br>© " + new Date().getFullYear() + " " + 매장.영문 + "</div>" +
     "</div></footer>");
+
+  /* 스크롤하며 나타나는 요소 */
+  if ("IntersectionObserver" in window) {
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } });
+    }, { threshold: 0.15 });
+    document.querySelectorAll(".rv").forEach(function (el) { io.observe(el); });
+  } else {
+    document.querySelectorAll(".rv").forEach(function (el) { el.classList.add("in"); });
+  }
 })();
+
+/* 매물 카드 — 홈과 판매차량 페이지가 같이 쓴다 */
+function 매물카드(c) {
+  return '<a class="car" href="' + c.link + '" target="_blank" rel="noopener">' +
+    '<div class="car-img">' +
+      (c.photos[0] ? '<img loading="lazy" src="' + c.photos[0] + '" alt="">' : "") +
+      (c.diagnosis ? '<span class="badge">엔카진단</span>' : "") +
+    '</div><div class="car-b">' +
+      '<p class="car-n">' + c.maker + " " + c.model + "</p>" +
+      '<p class="car-g">' + (c.grade || "&nbsp;") + "</p>" +
+      '<p class="car-m">' + c.year + " · " + c.mileage.toLocaleString() + "km · " +
+        c.fuel + (c.transmission ? " · " + c.transmission : "") + "</p>" +
+      '<p class="car-p">' + c.price.toLocaleString() + "<span>만원</span></p>" +
+    "</div></a>";
+}

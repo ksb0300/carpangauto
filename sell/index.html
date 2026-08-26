@@ -1,117 +1,91 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" class="snap">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>내 차 팔기 · 카팡모터스</title>
-<meta name="description" content="차량 매도 시 필요한 서류와 절차를 안내합니다. 개인·개인사업자·법인별 준비물이 다릅니다.">
+<title>내 차 팔기 · CARPANG</title>
+<meta name="description" content="차량 매도 절차와 명의별 준비 서류를 안내합니다.">
+<meta name="theme-color" content="#0a0a0c">
+<link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="stylesheet" href="/assets/style.css">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💰</text></svg>">
 <style>
-  .step{display:flex; gap:15px; align-items:flex-start; padding:18px 0;
-    border-bottom:1px dashed var(--line)}
+  .step{display:flex;gap:18px;align-items:flex-start;padding:22px 0;border-bottom:1px solid var(--line)}
   .step:last-child{border-bottom:0}
-  .step .no{flex:0 0 34px; height:34px; border-radius:50%; background:var(--ink);
-    color:#fff; font-weight:800; font-size:14px; display:flex;
-    align-items:center; justify-content:center}
-  .step b{display:block; font-size:16px; margin-bottom:3px}
-  .step p{margin:0; color:var(--sub); font-size:14.5px}
-  .docs b{display:block; font-size:16px; margin:0 0 10px; color:var(--gold)}
-  .docs ul{margin:0; padding-left:18px; color:var(--ink2); font-size:14.5px;
-    line-height:1.9}
-  .docs .note{color:var(--sub); font-size:13.5px; margin-top:8px}
-  .warn{background:#fdf6e9; border-radius:12px; padding:18px 20px; margin-top:20px;
-    color:#6e5220; font-size:14.5px}
-  .warn b{color:#4a3610}
-  .cta{background:var(--ink); color:#fff; border-radius:14px; padding:26px 24px;
-    margin-top:30px}
-  .cta b{display:block; font-size:18px; margin-bottom:6px}
-  .cta p{color:#b3b8c0; margin:0 0 16px; font-size:14.5px}
+  .step .no{flex:0 0 40px;height:40px;border-radius:50%;background:var(--pp-dim);
+    color:var(--pp2);font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:center}
+  .step b{display:block;font-size:17px;margin-bottom:4px}
+  .step p{margin:0;color:var(--tx2);font-size:14.5px}
+  .docs b{display:block;font-size:17px;margin:0 0 12px;color:var(--pp2)}
+  .docs ul{margin:0;padding-left:18px;font-size:14.5px;line-height:1.95;color:var(--tx)}
+  .docs .note{color:var(--tx2);font-size:13.5px;margin-top:10px}
+  .docs .note a{color:var(--pp2);font-weight:700}
+  .warn{background:rgba(255,190,80,.08);border:1px solid rgba(255,190,80,.25);
+    border-radius:14px;padding:18px 20px;margin-top:16px;color:#e8c98a;font-size:14.5px;line-height:1.8}
+  .buyer{margin-top:16px}
+  .buyer p{margin:0 0 4px;font-size:15px}
+  .buyer b{color:var(--tx2);font-weight:600;display:inline-block;width:64px}
 </style>
 </head>
 <body>
 
-<section class="sec" style="padding-top:34px">
+<section class="full">
   <div class="wrap">
-    <div class="gold-bar"></div>
-    <h1 class="sec-t">내 차 팔기</h1>
-    <p class="sec-s">차량 명의에 따라 준비하실 서류가 다릅니다. 아래를 확인해 주세요.</p>
-
-    <div class="card" style="margin-bottom:22px">
-      <div class="step"><span class="no">1</span><div>
-        <b>차량 정보 알려주기</b>
+    <p class="eyebrow rv">Sell Your Car</p>
+    <h1 class="t rv d1">내 차 팔기, 네 단계면 끝납니다</h1>
+    <p class="s rv d2">차량 확인부터 명의이전까지 저희가 처리합니다. 서류만 준비해 주세요.</p>
+    <div class="card rv d3" style="padding:8px 26px">
+      <div class="step"><span class="no">1</span><div><b>차량 정보 알려주기</b>
         <p>차량번호와 주행거리를 알려주시면 시세를 확인해 드립니다.</p></div></div>
-      <div class="step"><span class="no">2</span><div>
-        <b>차량 확인 · 금액 협의</b>
+      <div class="step"><span class="no">2</span><div><b>차량 확인 · 금액 협의</b>
         <p>실차를 확인하고 최종 금액을 정합니다. 방문이 어려우시면 출장도 갑니다.</p></div></div>
-      <div class="step"><span class="no">3</span><div>
-        <b>서류 준비</b>
-        <p>아래 목록대로 준비해 주시면 됩니다. 필요하시면 발급 방법도 안내드립니다.</p></div></div>
-      <div class="step"><span class="no">4</span><div>
-        <b>대금 입금 · 명의이전</b>
+      <div class="step"><span class="no">3</span><div><b>서류 준비</b>
+        <p>아래 목록대로 준비해 주시면 됩니다. 발급 방법도 안내드립니다.</p></div></div>
+      <div class="step"><span class="no">4</span><div><b>대금 입금 · 명의이전</b>
         <p>계약과 동시에 입금해 드리고, 이전은 저희가 처리합니다.</p></div></div>
     </div>
+  </div>
+</section>
 
-    <div class="gold-bar"></div>
-    <h2 class="sec-t" style="font-size:20px">준비하실 서류</h2>
-    <p class="sec-s">모든 경우에 <b>자동차등록증 원본 · 신분증 · 차 열쇠 전체 · 차값 받으실 통장</b>이 필요합니다.</p>
-
+<section class="full">
+  <div class="wrap">
+    <p class="eyebrow rv">Documents</p>
+    <h2 class="t rv d1">준비하실 서류</h2>
+    <p class="s rv d2">모든 경우에 <b style="color:#fff">자동차등록증 원본 · 신분증 · 차 열쇠 전체 · 차값 받으실 통장</b>이 필요합니다.</p>
     <div class="grid g3">
-      <div class="card docs"><b>① 개인 명의</b>
-        <ul>
-          <li>인감증명서 (자동차 매도용) 1통</li>
-          <li>인감도장</li>
-        </ul>
-        <p class="note">※ 본인서명사실확인서(매도용)로 대체하시면 인감도장은 필요 없습니다.</p>
-      </div>
-      <div class="card docs"><b>② 개인사업자 명의</b>
-        <ul>
-          <li>위 개인 서류 전부</li>
-          <li>사업자등록증 사본</li>
-          <li>사업자 명의 통장 사본</li>
-        </ul>
-        <p class="note">※ 차량을 경비처리하지 않으셨다면 <a href="/sign/" style="color:var(--gold);font-weight:700">비사업용 사실확인서</a> 서명이 필요합니다.</p>
-      </div>
-      <div class="card docs"><b>③ 법인 명의</b>
-        <ul>
-          <li>법인 인감증명서 (매도용)</li>
-          <li>법인 인감도장</li>
-          <li>등기사항전부증명서 (3개월 이내)</li>
-          <li>사업자등록증 사본</li>
-          <li>법인 명의 통장 사본</li>
-        </ul>
-      </div>
+      <div class="card docs rv"><b>① 개인 명의</b>
+        <ul><li>인감증명서 (자동차 매도용) 1통</li><li>인감도장</li></ul>
+        <p class="note">※ 본인서명사실확인서(매도용)로 대체하시면 인감도장은 필요 없습니다.</p></div>
+      <div class="card docs rv d1"><b>② 개인사업자 명의</b>
+        <ul><li>위 개인 서류 전부</li><li>사업자등록증 사본</li><li>사업자 명의 통장 사본</li></ul>
+        <p class="note">※ 차량을 경비처리하지 않으셨다면 <a href="/sign/">비사업용 사실확인서</a> 서명이 필요합니다.</p></div>
+      <div class="card docs rv d2"><b>③ 법인 명의</b>
+        <ul><li>법인 인감증명서 (매도용)</li><li>법인 인감도장</li><li>등기사항전부증명서 (3개월 이내)</li>
+            <li>사업자등록증 사본</li><li>법인 명의 통장 사본</li></ul></div>
     </div>
-
-    <div class="card docs" style="margin-top:16px">
-      <b>대리인이 오실 때</b>
-      <ul style="margin:0">
-        <li>위임장 (위임인 인감 날인)</li>
-        <li>위임인 인감증명서</li>
-        <li>대리인 신분증</li>
-      </ul>
+    <div class="grid g2" style="margin-top:14px">
+      <div class="card docs rv"><b>대리인이 오실 때</b>
+        <ul><li>위임장 (위임인 인감 날인)</li><li>위임인 인감증명서</li><li>대리인 신분증</li></ul></div>
+      <div class="card docs buyer rv d1"><b>인감증명서 '매수자'란</b>
+        <p style="color:var(--tx2);font-size:13.5px;margin-bottom:10px">주민센터에서 차를 사는 쪽으로 아래대로 적어 주세요.</p>
+        <p><b>상호명</b> 김상혁 (카팡모터스)</p>
+        <p><b>주소</b> 부산광역시 금정구 반송로 425, 3층 311호 (금사동)</p>
+        <p style="color:var(--tx3);font-size:13px;margin-top:8px">※ 주민번호는 상담 시 안내드립니다</p></div>
     </div>
-
-    <div class="warn">
+    <div class="warn rv">
       <b>! 미리 확인해 주세요</b><br>
-      · 압류 · 저당이 있으면 말소 후 이전됩니다<br>
-      · 자동차세 · 과태료는 완납되어 있어야 합니다<br>
-      · 인감증명서는 발급 3개월 이내만 유효합니다
+      압류 · 저당이 있으면 말소 후 이전됩니다 &nbsp;·&nbsp; 자동차세 · 과태료는 완납되어 있어야 합니다 &nbsp;·&nbsp;
+      인감증명서는 발급 3개월 이내만 유효합니다
     </div>
+  </div>
+</section>
 
-    <div class="card" style="margin-top:20px">
-      <b style="display:block;font-size:16px;margin-bottom:10px">인감증명서 발급 시 '매수자'란</b>
-      <p style="margin:0 0 6px;color:var(--sub);font-size:14px">주민센터에서 차를 사는 쪽으로 아래대로 적어 주세요.</p>
-      <p style="margin:0;font-size:15px"><b>상호명</b> &nbsp; 김상혁 (카팡모터스)</p>
-      <p style="margin:0;font-size:15px"><b>주소</b> &nbsp; 부산광역시 금정구 반송로 425, 3층 311호 (금사동)</p>
-      <p style="margin:8px 0 0;color:var(--sub);font-size:13.5px">※ 주민번호는 상담 시 안내드립니다</p>
-    </div>
-
-    <div class="cta">
-      <b>사업자등록증이 있으신가요?</b>
-      <p>차량을 경비처리하지 않으셨다면 비사업용 사실확인서를 작성해 주셔야 합니다.
-         휴대폰으로 1분이면 됩니다.</p>
-      <a href="/sign/" class="btn btn-gold">확인서 작성하러 가기</a>
+<section class="full short">
+  <div class="wrap">
+    <div class="cta rv">
+      <div><b>사업자등록증이 있으신가요?</b>
+        <p>차량을 경비처리하지 않으셨다면 비사업용 사실확인서를 작성해 주셔야 합니다. 휴대폰으로 1분이면 됩니다.</p></div>
+      <a href="/sign/" class="btn btn-pp">확인서 작성하기 →</a>
     </div>
   </div>
 </section>

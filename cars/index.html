@@ -3,31 +3,23 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>판매 차량 · 카팡모터스</title>
+<title>판매 차량 · CARPANG</title>
 <meta name="description" content="카팡모터스가 현재 판매 중인 차량 목록입니다.">
+<meta name="theme-color" content="#0a0a0c">
+<link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="stylesheet" href="/assets/style.css">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚗</text></svg>">
-<style>
-  .bar{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:22px}
-  .chip{padding:9px 15px; border:1.5px solid var(--line); background:#fff;
-    border-radius:999px; font-size:14px; cursor:pointer; white-space:nowrap}
-  .chip.on{background:var(--ink); color:#fff; border-color:var(--ink)}
-  .empty{text-align:center; color:var(--sub); padding:60px 0}
-  .sortsel{margin-left:auto; padding:9px 12px; border:1.5px solid var(--line);
-    border-radius:9px; background:#fff; font-size:14px}
-  @media(max-width:560px){.sortsel{margin-left:0; width:100%}}
-</style>
+<style>.empty{text-align:center;color:var(--tx3);padding:70px 0}</style>
 </head>
 <body>
 
-<section class="sec" style="padding-top:34px">
+<section class="full short" style="padding-top:calc(var(--nav) + 44px)">
   <div class="wrap">
-    <div class="gold-bar"></div>
-    <h1 class="sec-t">판매 차량</h1>
-    <p class="sec-s" id="sub">불러오는 중…</p>
-
+    <p class="eyebrow">Inventory</p>
+    <h1 class="t">판매 차량</h1>
+    <p class="s" id="sub">불러오는 중…</p>
     <div class="bar" id="filters"></div>
-    <div class="grid g3" id="grid"></div>
+    <div class="grid g4" id="grid"></div>
     <div class="empty" id="empty" style="display:none">해당 조건의 차량이 없습니다.</div>
   </div>
 </section>
@@ -42,67 +34,42 @@ fetch("/data/cars.json?" + Date.now())
     전체 = d.cars || [];
     document.getElementById("sub").textContent =
       "총 " + d.count + "대 · " + d.updated + " 기준 · 차량을 누르면 상세 정보로 이동합니다";
-    필터만들기();
-    그리기();
+    필터만들기(); 그리기();
   })
-  .catch(function(){
-    document.getElementById("sub").textContent = "차량 정보를 불러오지 못했습니다.";
-  });
+  .catch(function(){ document.getElementById("sub").textContent = "차량 정보를 불러오지 못했습니다."; });
 
 function 필터만들기(){
   var makers = ["전체"];
   전체.forEach(function(c){ if (makers.indexOf(c.maker) < 0) makers.push(c.maker); });
   document.getElementById("filters").innerHTML =
     makers.map(function(m){
-      var n = m === "전체" ? 전체.length
-        : 전체.filter(function(c){ return c.maker === m; }).length;
-      return '<button class="chip' + (m === 선택 ? " on" : "") +
-             '" data-m="' + m + '">' + m + " " + n + "</button>";
+      var n = m === "전체" ? 전체.length : 전체.filter(function(c){ return c.maker === m; }).length;
+      return '<button class="chip' + (m === 선택 ? " on" : "") + '" data-m="' + m + '">' + m + " " + n + "</button>";
     }).join("") +
     '<select class="sortsel" id="sort">' +
-    '<option value="price-desc">높은 가격순</option>' +
-    '<option value="price-asc">낮은 가격순</option>' +
-    '<option value="km-asc">주행거리 짧은순</option>' +
-    '<option value="year-desc">연식 최신순</option></select>';
+    '<option value="price-desc">높은 가격순</option><option value="price-asc">낮은 가격순</option>' +
+    '<option value="km-asc">주행거리 짧은순</option><option value="year-desc">연식 최신순</option></select>';
 
   document.getElementById("filters").addEventListener("click", function(e){
-    var b = e.target.closest(".chip");
-    if (!b) return;
+    var b = e.target.closest(".chip"); if (!b) return;
     선택 = b.dataset.m;
-    [].forEach.call(document.querySelectorAll(".chip"), function(x){
-      x.classList.toggle("on", x.dataset.m === 선택);
-    });
+    document.querySelectorAll(".chip").forEach(function(x){ x.classList.toggle("on", x.dataset.m === 선택); });
     그리기();
   });
   document.getElementById("sort").addEventListener("change", 그리기);
 }
 
 function 그리기(){
-  var list = 선택 === "전체" ? 전체.slice()
-    : 전체.filter(function(c){ return c.maker === 선택; });
+  var list = 선택 === "전체" ? 전체.slice() : 전체.filter(function(c){ return c.maker === 선택; });
   var s = (document.getElementById("sort") || {}).value || "price-desc";
   list.sort(function(a, b){
-    if (s === "price-asc")  return a.price - b.price;
-    if (s === "km-asc")     return a.mileage - b.mileage;
-    if (s === "year-desc")  return (b.yearRaw || "").localeCompare(a.yearRaw || "");
+    if (s === "price-asc") return a.price - b.price;
+    if (s === "km-asc")    return a.mileage - b.mileage;
+    if (s === "year-desc") return (b.yearRaw || "").localeCompare(a.yearRaw || "");
     return b.price - a.price;
   });
-  document.getElementById("grid").innerHTML = list.map(카드).join("");
+  document.getElementById("grid").innerHTML = list.map(매물카드).join("");
   document.getElementById("empty").style.display = list.length ? "none" : "block";
-}
-
-function 카드(c){
-  return '<a class="car" href="' + c.link + '" target="_blank" rel="noopener">' +
-    '<div class="car-img">' +
-      (c.photos[0] ? '<img loading="lazy" src="' + c.photos[0] + '" alt="">' : '') +
-      (c.diagnosis ? '<span class="badge">엔카진단</span>' : '') +
-    '</div><div class="car-b">' +
-      '<p class="car-n">' + c.maker + ' ' + c.model + '</p>' +
-      '<p class="car-g">' + (c.grade || '&nbsp;') + '</p>' +
-      '<p class="car-m">' + c.year + ' · ' + c.mileage.toLocaleString() + 'km · ' +
-        c.fuel + (c.transmission ? ' · ' + c.transmission : '') + '</p>' +
-      '<p class="car-p">' + c.price.toLocaleString() + '<span>만원</span></p>' +
-    '</div></a>';
 }
 </script>
 </body>
