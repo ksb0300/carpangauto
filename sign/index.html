@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>서류 작성 · 카팡모터스</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="/assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📄</text></svg>">
+<style>
+  .doc{background:#fff; border:1px solid var(--line); border-radius:14px;
+    overflow:hidden; min-height:78vh}
+  .doc iframe{width:100%; height:78vh; border:0; display:block}
+  .setup{padding:56px 24px; text-align:center; color:var(--sub)}
+  .setup b{display:block; color:var(--ink); font-size:17px; margin-bottom:8px}
+</style>
+</head>
+<body>
+
+<section class="sec" style="padding-top:34px">
+  <div class="wrap">
+    <div class="gold-bar"></div>
+    <h1 class="sec-t">비사업용 사실확인서</h1>
+    <p class="sec-s">사업자등록증이 있으신 분 중, 차량을 경비처리하지 않으신 경우
+      작성해 주시는 서류입니다. 휴대폰으로 바로 서명하실 수 있습니다.</p>
+    <div class="doc" id="doc"></div>
+  </div>
+</section>
+
+<script src="/assets/site.js"></script>
+<script>
+/* Apps Script 웹앱 주소.
+   여기로 직접 들어가면 구글이 '악용사례 신고' 배너를 붙여 고객이 불안해한다.
+   iframe 으로 감싸면 배너 없이 우리 도메인 안에서 열린다. */
+var 웹앱주소 = "";
+
+document.getElementById("doc").innerHTML = 웹앱주소
+  ? '<iframe src="' + 웹앱주소 + '" title="비사업용 사실확인서"></iframe>'
+  : '<div class="setup"><b>연결 준비 중입니다</b>' +
+    '서명 페이지 주소가 아직 등록되지 않았습니다.<br>' +
+    '잠시 후 다시 시도해 주세요.</div>';
+</script>
+</body>
+</html>

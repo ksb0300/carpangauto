@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>오시는 길 · 카팡모터스</title>
+<meta name="description" content="부산광역시 금정구 반송로 425, 3층 311호. 카팡모터스 오시는 길.">
+<link rel="stylesheet" href="/assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📍</text></svg>">
+<style>
+  .info dt{color:var(--sub); font-size:13.5px; margin-top:16px}
+  .info dt:first-child{margin-top:0}
+  .info dd{margin:3px 0 0; font-size:16px; font-weight:600}
+  .map{border-radius:14px; overflow:hidden; border:1px solid var(--line);
+    background:#eceef1; min-height:320px; display:flex; align-items:center;
+    justify-content:center; color:var(--sub); font-size:14.5px; text-align:center;
+    padding:20px}
+</style>
+</head>
+<body>
+
+<section class="sec" style="padding-top:34px">
+  <div class="wrap">
+    <div class="gold-bar"></div>
+    <h1 class="sec-t">오시는 길</h1>
+    <p class="sec-s">방문 전 연락 주시면 차량을 미리 준비해 두겠습니다.</p>
+
+    <div class="grid g2" style="align-items:start">
+      <div class="card">
+        <dl class="info" style="margin:0">
+          <dt>주소</dt>
+          <dd>부산광역시 금정구 반송로 425<br>3층 311호 (금사동)</dd>
+          <dt>영업시간</dt>
+          <dd id="hours">매일 09:00 – 19:00</dd>
+          <dt>연락처</dt>
+          <dd id="tel">상담 문의는 엔카 매물 페이지의 연락처를 이용해 주세요</dd>
+        </dl>
+        <a class="btn btn-dark btn-block" style="margin-top:20px"
+           href="https://map.kakao.com/?q=부산광역시 금정구 반송로 425"
+           target="_blank" rel="noopener">카카오맵으로 길찾기</a>
+      </div>
+
+      <a class="map" href="https://map.kakao.com/?q=부산광역시 금정구 반송로 425"
+         target="_blank" rel="noopener">
+        지도를 누르면 카카오맵으로 이동합니다<br>
+        <span style="font-size:13px">부산광역시 금정구 반송로 425</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<script src="/assets/site.js"></script>
+<script>
+  if (매장.전화) {
+    document.getElementById("tel").innerHTML =
+      '<a href="tel:' + 매장.전화.replace(/[^0-9]/g,"") + '">' + 매장.전화 + '</a>';
+  }
+  document.getElementById("hours").textContent = 매장.영업;
+</script>
+</body>
+</html>

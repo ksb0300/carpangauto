@@ -1,0 +1,86 @@
+/* 카팡모터스 — 차콜 + 골드. 인스타·광고물과 같은 톤으로 맞춘다. */
+:root{
+  --ink:#15171b; --ink2:#22252b; --sub:#6c727c; --line:#e5e7ea;
+  --gold:#b08a3a; --gold-lite:#d9b268; --bg:#f7f8fa; --white:#fff;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{margin:0; background:var(--bg); color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",
+              "Malgun Gothic","맑은 고딕",sans-serif;
+  line-height:1.65; -webkit-text-size-adjust:100%}
+img{max-width:100%; display:block}
+a{color:inherit; text-decoration:none}
+
+/* ── 헤더 ── */
+.hd{position:sticky; top:0; z-index:50; background:rgba(21,23,27,.97);
+  backdrop-filter:blur(8px); border-bottom:1px solid rgba(255,255,255,.08)}
+.hd-in{max-width:1080px; margin:0 auto; padding:0 18px;
+  display:flex; align-items:center; justify-content:space-between; height:58px}
+.logo{color:#fff; font-weight:800; font-size:19px; letter-spacing:-.3px}
+.logo em{color:var(--gold-lite); font-style:normal}
+.nav{display:flex; gap:2px}
+.nav a{color:#b9bdc4; font-size:14.5px; padding:9px 12px; border-radius:8px;
+  white-space:nowrap}
+.nav a:hover{color:#fff; background:rgba(255,255,255,.07)}
+.nav a.on{color:#fff; background:rgba(176,138,58,.22)}
+@media(max-width:640px){
+  .hd-in{height:auto; flex-direction:column; padding:12px 14px 10px; gap:8px}
+  .nav{width:100%; overflow-x:auto; justify-content:flex-start;
+    -ms-overflow-style:none; scrollbar-width:none}
+  .nav::-webkit-scrollbar{display:none}
+  .nav a{font-size:14px; padding:8px 11px}
+}
+
+/* ── 공통 레이아웃 ── */
+.wrap{max-width:1080px; margin:0 auto; padding:0 18px}
+.sec{padding:52px 0}
+.sec-t{font-size:23px; font-weight:800; margin:0 0 6px; letter-spacing:-.4px}
+.sec-s{color:var(--sub); font-size:15px; margin:0 0 26px}
+.gold-bar{width:46px; height:4px; background:var(--gold); border-radius:2px;
+  margin-bottom:16px}
+
+/* ── 버튼 ── */
+.btn{display:inline-flex; align-items:center; justify-content:center; gap:7px;
+  padding:15px 26px; border-radius:11px; font-weight:700; font-size:16px;
+  border:0; cursor:pointer}
+.btn-gold{background:var(--gold); color:#fff}
+.btn-dark{background:var(--ink); color:#fff}
+.btn-line{background:transparent; color:var(--ink); border:1.5px solid var(--line)}
+.btn-block{width:100%}
+
+/* ── 카드 ── */
+.card{background:var(--white); border:1px solid var(--line); border-radius:14px;
+  padding:22px 20px}
+.grid{display:grid; gap:16px}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+@media(max-width:860px){.g3{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.g2,.g3{grid-template-columns:1fr}}
+
+/* ── 매물 카드 ── */
+.car{background:var(--white); border:1px solid var(--line); border-radius:14px;
+  overflow:hidden; transition:transform .15s, box-shadow .15s}
+.car:hover{transform:translateY(-3px); box-shadow:0 10px 26px rgba(20,22,26,.10)}
+.car-img{position:relative; aspect-ratio:4/3; background:#eceef1; overflow:hidden}
+.car-img img{width:100%; height:100%; object-fit:cover}
+.badge{position:absolute; left:10px; top:10px; background:rgba(21,23,27,.86);
+  color:#ffd88a; font-size:11.5px; font-weight:700; padding:5px 9px;
+  border-radius:6px; letter-spacing:.2px}
+.car-b{padding:14px 15px 16px}
+.car-n{font-size:15.5px; font-weight:700; line-height:1.4; margin:0 0 3px;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+  overflow:hidden; min-height:43px}
+.car-g{color:var(--sub); font-size:13px; margin:0 0 9px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.car-m{color:var(--sub); font-size:12.5px; margin:0 0 11px}
+.car-p{font-size:20px; font-weight:800; color:var(--gold)}
+.car-p span{font-size:13.5px; font-weight:600; color:var(--sub); margin-left:2px}
+
+/* ── 푸터 ── */
+.ft{background:var(--ink); color:#9aa0a8; padding:38px 0 30px; margin-top:48px;
+  font-size:13.5px}
+.ft a{color:#c9ced5}
+.ft-t{color:#fff; font-weight:800; font-size:17px; margin:0 0 10px}
+.ft-r{border-top:1px solid rgba(255,255,255,.1); margin-top:22px; padding-top:16px;
+  font-size:12.5px; color:#71777f}
