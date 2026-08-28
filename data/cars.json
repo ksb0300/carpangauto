@@ -1,6 +1,6 @@
 {
- "updated": "2026-08-27 21:09",
- "count": 33,
+ "updated": "2026-08-28 21:02",
+ "count": 34,
  "cars": [
   {
    "id": "42351261",
@@ -29,6 +29,32 @@
    "link": "https://fem.encar.com/cars/detail/42351261"
   },
   {
+   "id": "42577207",
+   "plate": "131더2247",
+   "maker": "아우디",
+   "model": "A6",
+   "grade": "45 TFSI 콰트로 S Line",
+   "year": "26년 07월",
+   "yearRaw": "202607",
+   "mileage": 1741,
+   "fuel": "가솔린",
+   "transmission": "오토",
+   "color": "흰색",
+   "price": 8500,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture07/pic4257/42577207_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4257/42577207_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4257/42577207_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4257/42577207_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4257/42577207_040.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4257/42577207_043.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4257/42577207_008.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4257/42577207_019.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42577207"
+  },
+  {
    "id": "42585926",
    "plate": "151러5449",
    "maker": "BMW",
@@ -53,32 +79,6 @@
     "https://ci.encar.com/carpicture08/pic4258/42585926_040.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42585926"
-  },
-  {
-   "id": "42577207",
-   "plate": "131더2247",
-   "maker": "아우디",
-   "model": "A6",
-   "grade": "45 TFSI 콰트로 S Line",
-   "year": "26년 07월",
-   "yearRaw": "202607",
-   "mileage": 1741,
-   "fuel": "가솔린",
-   "transmission": "오토",
-   "color": "흰색",
-   "price": 7990,
-   "diagnosis": true,
-   "photos": [
-    "https://ci.encar.com/carpicture07/pic4257/42577207_027.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4257/42577207_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4257/42577207_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4257/42577207_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4257/42577207_008.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4257/42577207_035.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4257/42577207_006.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4257/42577207_050.jpg?impolicy=widthRate&wid=800"
-   ],
-   "link": "https://fem.encar.com/cars/detail/42577207"
   },
   {
    "id": "42295193",
@@ -677,6 +677,32 @@
     "https://ci.encar.com/carpicture09/pic4219/42193880_018.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42193880"
+  },
+  {
+   "id": "42263583",
+   "plate": "159나8612",
+   "maker": "아우디",
+   "model": "A6",
+   "grade": "35 TDI",
+   "year": "16년 04월",
+   "yearRaw": "201604",
+   "mileage": 116387,
+   "fuel": "디젤",
+   "transmission": "오토",
+   "color": "검정색",
+   "price": 1390,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture06/pic4226/42263583_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4226/42263583_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4226/42263583_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4226/42263583_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4226/42263583_016.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4226/42263583_041.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4226/42263583_032.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4226/42263583_042.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42263583"
   },
   {
    "id": "41588196",
