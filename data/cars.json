@@ -1,6 +1,6 @@
 {
- "updated": "2026-08-30 21:01",
- "count": 34,
+ "updated": "2026-09-01 21:02",
+ "count": 33,
  "cars": [
   {
    "id": "42351261",
@@ -523,32 +523,6 @@
    "link": "https://fem.encar.com/cars/detail/42517582"
   },
   {
-   "id": "42295663",
-   "plate": "39수3700",
-   "maker": "현대",
-   "model": "넥쏘",
-   "grade": "프리미엄",
-   "year": "23년 08월",
-   "yearRaw": "202308",
-   "mileage": 30964,
-   "fuel": "수소",
-   "transmission": "오토",
-   "color": "은회색",
-   "price": 2390,
-   "diagnosis": true,
-   "photos": [
-    "https://ci.encar.com/carpicture09/pic4229/42295663_027.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4229/42295663_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4229/42295663_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4229/42295663_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4229/42295663_045.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4229/42295663_034.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4229/42295663_020.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4229/42295663_024.jpg?impolicy=widthRate&wid=800"
-   ],
-   "link": "https://fem.encar.com/cars/detail/42295663"
-  },
-  {
    "id": "42518291",
    "plate": "311루1792",
    "maker": "제네시스",
@@ -653,32 +627,6 @@
    "link": "https://fem.encar.com/cars/detail/42550882"
   },
   {
-   "id": "42193880",
-   "plate": "136어3189",
-   "maker": "제네시스",
-   "model": "EQ900",
-   "grade": "3.3 T-GDI AWD",
-   "year": "16년 06월",
-   "yearRaw": "201606",
-   "mileage": 176080,
-   "fuel": "가솔린",
-   "transmission": "오토",
-   "color": "검정색",
-   "price": 1390,
-   "diagnosis": false,
-   "photos": [
-    "https://ci.encar.com/carpicture09/pic4219/42193880_001.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4219/42193880_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4219/42193880_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4219/42193880_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4219/42193880_024.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4219/42193880_010.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4219/42193880_047.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4219/42193880_018.jpg?impolicy=widthRate&wid=800"
-   ],
-   "link": "https://fem.encar.com/cars/detail/42193880"
-  },
-  {
    "id": "42263583",
    "plate": "159나8612",
    "maker": "아우디",
@@ -703,6 +651,32 @@
     "https://ci.encar.com/carpicture06/pic4226/42263583_040.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42263583"
+  },
+  {
+   "id": "42193880",
+   "plate": "136어3189",
+   "maker": "제네시스",
+   "model": "EQ900",
+   "grade": "3.3 T-GDI AWD",
+   "year": "16년 06월",
+   "yearRaw": "201606",
+   "mileage": 176080,
+   "fuel": "가솔린",
+   "transmission": "오토",
+   "color": "검정색",
+   "price": 1390,
+   "diagnosis": false,
+   "photos": [
+    "https://ci.encar.com/carpicture09/pic4219/42193880_001.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4219/42193880_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4219/42193880_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4219/42193880_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4219/42193880_024.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4219/42193880_010.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4219/42193880_047.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4219/42193880_018.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42193880"
   },
   {
    "id": "41588196",
