@@ -1,6 +1,6 @@
 {
- "updated": "2026-09-01 21:02",
- "count": 33,
+ "updated": "2026-09-03 21:01",
+ "count": 32,
  "cars": [
   {
    "id": "42351261",
@@ -99,10 +99,10 @@
     "https://ci.encar.com/carpicture09/pic4229/42295193_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture09/pic4229/42295193_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture09/pic4229/42295193_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4229/42295193_009.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4229/42295193_042.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4229/42295193_016.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4229/42295193_047.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture09/pic4229/42295193_006.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4229/42295193_022.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4229/42295193_054.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4229/42295193_035.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42295193"
   },
@@ -159,32 +159,6 @@
    "link": "https://fem.encar.com/cars/detail/42568440"
   },
   {
-   "id": "42584618",
-   "plate": "01오8134",
-   "maker": "아우디",
-   "model": "Q4 e-트론",
-   "grade": "45 스포트백",
-   "year": "25년 09월",
-   "yearRaw": "202509",
-   "mileage": 18913,
-   "fuel": "전기",
-   "transmission": "오토",
-   "color": "흰색",
-   "price": 4800,
-   "diagnosis": true,
-   "photos": [
-    "https://ci.encar.com/carpicture08/pic4258/42584618_027.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4258/42584618_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4258/42584618_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4258/42584618_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4258/42584618_032.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4258/42584618_006.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4258/42584618_023.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4258/42584618_045.jpg?impolicy=widthRate&wid=800"
-   ],
-   "link": "https://fem.encar.com/cars/detail/42584618"
-  },
-  {
    "id": "42551877",
    "plate": "124가6696",
    "maker": "현대",
@@ -209,6 +183,32 @@
     "https://ci.encar.com/carpicture05/pic4255/42551877_034.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42551877"
+  },
+  {
+   "id": "42584618",
+   "plate": "01오8134",
+   "maker": "아우디",
+   "model": "Q4 e-트론",
+   "grade": "45 스포트백",
+   "year": "25년 09월",
+   "yearRaw": "202509",
+   "mileage": 18913,
+   "fuel": "전기",
+   "transmission": "오토",
+   "color": "흰색",
+   "price": 4640,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture08/pic4258/42584618_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4258/42584618_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4258/42584618_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4258/42584618_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4258/42584618_031.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4258/42584618_022.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4258/42584618_041.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4258/42584618_016.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42584618"
   },
   {
    "id": "42562882",
@@ -393,32 +393,6 @@
    "link": "https://fem.encar.com/cars/detail/42321574"
   },
   {
-   "id": "42573093",
-   "plate": "135서1801",
-   "maker": "기아",
-   "model": "쏘렌토",
-   "grade": "가솔린 2.5T 2WD",
-   "year": "25년 05월",
-   "yearRaw": "202505",
-   "mileage": 38119,
-   "fuel": "가솔린",
-   "transmission": "오토",
-   "color": "흰색",
-   "price": 3450,
-   "diagnosis": true,
-   "photos": [
-    "https://ci.encar.com/carpicture07/pic4257/42573093_027.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4257/42573093_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4257/42573093_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4257/42573093_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4257/42573093_036.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4257/42573093_031.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4257/42573093_007.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4257/42573093_023.jpg?impolicy=widthRate&wid=800"
-   ],
-   "link": "https://fem.encar.com/cars/detail/42573093"
-  },
-  {
    "id": "42618931",
    "plate": "58누3317",
    "maker": "벤츠",
@@ -567,10 +541,10 @@
     "https://ci.encar.com/carpicture08/pic4228/42286157_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture08/pic4228/42286157_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture08/pic4228/42286157_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4228/42286157_008.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4228/42286157_015.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4228/42286157_041.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4228/42286157_042.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture08/pic4228/42286157_032.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4228/42286157_046.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4228/42286157_006.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4228/42286157_018.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42286157"
   },
@@ -627,32 +601,6 @@
    "link": "https://fem.encar.com/cars/detail/42550882"
   },
   {
-   "id": "42263583",
-   "plate": "159나8612",
-   "maker": "아우디",
-   "model": "A6",
-   "grade": "35 TDI",
-   "year": "16년 04월",
-   "yearRaw": "201604",
-   "mileage": 116387,
-   "fuel": "디젤",
-   "transmission": "오토",
-   "color": "검정색",
-   "price": 1390,
-   "diagnosis": true,
-   "photos": [
-    "https://ci.encar.com/carpicture06/pic4226/42263583_027.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture06/pic4226/42263583_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture06/pic4226/42263583_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture06/pic4226/42263583_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture06/pic4226/42263583_033.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture06/pic4226/42263583_007.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture06/pic4226/42263583_010.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture06/pic4226/42263583_040.jpg?impolicy=widthRate&wid=800"
-   ],
-   "link": "https://fem.encar.com/cars/detail/42263583"
-  },
-  {
    "id": "42193880",
    "plate": "136어3189",
    "maker": "제네시스",
@@ -677,6 +625,32 @@
     "https://ci.encar.com/carpicture09/pic4219/42193880_018.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42193880"
+  },
+  {
+   "id": "42263583",
+   "plate": "159나8612",
+   "maker": "아우디",
+   "model": "A6",
+   "grade": "35 TDI",
+   "year": "16년 04월",
+   "yearRaw": "201604",
+   "mileage": 116387,
+   "fuel": "디젤",
+   "transmission": "오토",
+   "color": "검정색",
+   "price": 1390,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture06/pic4226/42263583_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4226/42263583_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4226/42263583_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4226/42263583_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4226/42263583_033.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4226/42263583_007.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4226/42263583_010.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4226/42263583_040.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42263583"
   },
   {
    "id": "41588196",
