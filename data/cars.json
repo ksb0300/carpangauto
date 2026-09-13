@@ -1,5 +1,5 @@
 {
- "updated": "2026-09-12 21:02",
+ "updated": "2026-09-13 21:00",
  "count": 25,
  "cars": [
   {
@@ -248,17 +248,17 @@
    "fuel": "전기",
    "transmission": "오토",
    "color": "청색",
-   "price": 4290,
+   "price": 4240,
    "diagnosis": true,
    "photos": [
     "https://ci.encar.com/carpicture05/pic4255/42550914_027.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture05/pic4255/42550914_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture05/pic4255/42550914_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture05/pic4255/42550914_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4255/42550914_019.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4255/42550914_023.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4255/42550914_042.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4255/42550914_006.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture05/pic4255/42550914_008.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4255/42550914_040.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4255/42550914_007.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4255/42550914_041.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42550914"
   },
@@ -541,10 +541,10 @@
     "https://ci.encar.com/carpicture08/pic4248/42485025_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture08/pic4248/42485025_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture08/pic4248/42485025_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4248/42485025_010.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4248/42485025_021.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4248/42485025_020.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture08/pic4248/42485025_022.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4248/42485025_041.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture08/pic4248/42485025_017.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4248/42485025_021.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42485025"
   },
