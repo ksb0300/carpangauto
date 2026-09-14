@@ -1,6 +1,6 @@
 {
- "updated": "2026-09-13 21:00",
- "count": 25,
+ "updated": "2026-09-14 21:04",
+ "count": 26,
  "cars": [
   {
    "id": "42351261",
@@ -131,6 +131,32 @@
     "https://ci.encar.com/carpicture08/pic4218/42184774_043.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42184774"
+  },
+  {
+   "id": "42726388",
+   "plate": "185서4239",
+   "maker": "BMW",
+   "model": "5시리즈",
+   "grade": "530i xDrive M 스포츠",
+   "year": "24년 11월",
+   "yearRaw": "202411",
+   "mileage": 30643,
+   "fuel": "가솔린",
+   "transmission": "오토",
+   "color": "흰색",
+   "price": 6450,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture02/pic4272/42726388_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4272/42726388_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4272/42726388_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4272/42726388_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4272/42726388_044.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4272/42726388_050.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4272/42726388_009.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4272/42726388_016.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42726388"
   },
   {
    "id": "42568440",
@@ -385,10 +411,10 @@
     "https://ci.encar.com/carpicture10/pic4270/42700355_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture10/pic4270/42700355_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture10/pic4270/42700355_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture10/pic4270/42700355_007.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture10/pic4270/42700355_017.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture10/pic4270/42700355_041.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture10/pic4270/42700355_016.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture10/pic4270/42700355_023.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture10/pic4270/42700355_022.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture10/pic4270/42700355_018.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture10/pic4270/42700355_020.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42700355"
   },
