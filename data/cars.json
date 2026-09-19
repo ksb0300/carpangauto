@@ -1,6 +1,6 @@
 {
- "updated": "2026-09-17 21:01",
- "count": 26,
+ "updated": "2026-09-19 21:01",
+ "count": 27,
  "cars": [
   {
    "id": "42351261",
@@ -29,32 +29,6 @@
    "link": "https://fem.encar.com/cars/detail/42351261"
   },
   {
-   "id": "42577207",
-   "plate": "131더2247",
-   "maker": "아우디",
-   "model": "A6",
-   "grade": "45 TFSI 콰트로 S Line",
-   "year": "26년 07월",
-   "yearRaw": "202607",
-   "mileage": 1741,
-   "fuel": "가솔린",
-   "transmission": "오토",
-   "color": "흰색",
-   "price": 8350,
-   "diagnosis": true,
-   "photos": [
-    "https://ci.encar.com/carpicture07/pic4257/42577207_027.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4257/42577207_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4257/42577207_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4257/42577207_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4257/42577207_048.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4257/42577207_017.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4257/42577207_021.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4257/42577207_005.jpg?impolicy=widthRate&wid=800"
-   ],
-   "link": "https://fem.encar.com/cars/detail/42577207"
-  },
-  {
    "id": "42585926",
    "plate": "151러5449",
    "maker": "BMW",
@@ -79,6 +53,32 @@
     "https://ci.encar.com/carpicture08/pic4258/42585926_043.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42585926"
+  },
+  {
+   "id": "42577207",
+   "plate": "131더2247",
+   "maker": "아우디",
+   "model": "A6",
+   "grade": "45 TFSI 콰트로 S Line",
+   "year": "26년 07월",
+   "yearRaw": "202607",
+   "mileage": 1741,
+   "fuel": "가솔린",
+   "transmission": "오토",
+   "color": "흰색",
+   "price": 7990,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture07/pic4257/42577207_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4257/42577207_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4257/42577207_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4257/42577207_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4257/42577207_019.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4257/42577207_033.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4257/42577207_042.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4257/42577207_044.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42577207"
   },
   {
    "id": "42295193",
@@ -404,17 +404,17 @@
    "fuel": "전기",
    "transmission": "오토",
    "color": "쥐색",
-   "price": 3300,
+   "price": 3290,
    "diagnosis": true,
    "photos": [
     "https://ci.encar.com/carpicture10/pic4270/42700355_027.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture10/pic4270/42700355_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture10/pic4270/42700355_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture10/pic4270/42700355_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture10/pic4270/42700355_010.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture10/pic4270/42700355_036.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture10/pic4270/42700355_034.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture10/pic4270/42700355_006.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture10/pic4270/42700355_022.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture10/pic4270/42700355_041.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture10/pic4270/42700355_024.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture10/pic4270/42700355_009.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42700355"
   },
@@ -469,6 +469,32 @@
     "https://ci.encar.com/carpicture09/pic4219/42193712_040.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42193712"
+  },
+  {
+   "id": "42757118",
+   "plate": "05어3945",
+   "maker": "현대",
+   "model": "캐스퍼",
+   "grade": "프리미엄",
+   "year": "25년 10월",
+   "yearRaw": "202510",
+   "mileage": 14284,
+   "fuel": "전기",
+   "transmission": "오토",
+   "color": "검정색",
+   "price": 2490,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture05/pic4275/42757118_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4275/42757118_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4275/42757118_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4275/42757118_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4275/42757118_044.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4275/42757118_024.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4275/42757118_016.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4275/42757118_032.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42757118"
   },
   {
    "id": "42517582",
