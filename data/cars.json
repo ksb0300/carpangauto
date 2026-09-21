@@ -1,6 +1,6 @@
 {
- "updated": "2026-09-20 21:00",
- "count": 27,
+ "updated": "2026-09-21 21:05",
+ "count": 29,
  "cars": [
   {
    "id": "42351261",
@@ -14,17 +14,17 @@
    "fuel": "가솔린",
    "transmission": "오토",
    "color": "흰색",
-   "price": 9900,
+   "price": 9740,
    "diagnosis": true,
    "photos": [
     "https://ci.encar.com/carpicture05/pic4235/42351261_027.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture05/pic4235/42351261_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture05/pic4235/42351261_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture05/pic4235/42351261_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4235/42351261_015.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4235/42351261_020.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4235/42351261_032.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4235/42351261_024.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture05/pic4235/42351261_005.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4235/42351261_034.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4235/42351261_044.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4235/42351261_033.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42351261"
   },
@@ -66,17 +66,17 @@
    "fuel": "가솔린",
    "transmission": "오토",
    "color": "흰색",
-   "price": 7990,
+   "price": 7890,
    "diagnosis": true,
    "photos": [
     "https://ci.encar.com/carpicture07/pic4257/42577207_027.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture07/pic4257/42577207_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture07/pic4257/42577207_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture07/pic4257/42577207_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4257/42577207_019.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4257/42577207_033.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4257/42577207_022.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture07/pic4257/42577207_042.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4257/42577207_044.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture07/pic4257/42577207_050.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4257/42577207_047.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42577207"
   },
@@ -170,17 +170,17 @@
    "fuel": "가솔린+전기",
    "transmission": "오토",
    "color": "검정색",
-   "price": 5650,
+   "price": 5590,
    "diagnosis": true,
    "photos": [
     "https://ci.encar.com/carpicture06/pic4256/42568440_027.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture06/pic4256/42568440_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture06/pic4256/42568440_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture06/pic4256/42568440_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture06/pic4256/42568440_021.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture06/pic4256/42568440_032.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture06/pic4256/42568440_031.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture06/pic4256/42568440_047.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture06/pic4256/42568440_043.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4256/42568440_017.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4256/42568440_009.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4256/42568440_005.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42568440"
   },
@@ -211,32 +211,6 @@
    "link": "https://fem.encar.com/cars/detail/42584618"
   },
   {
-   "id": "42551877",
-   "plate": "124가6696",
-   "maker": "현대",
-   "model": "팰리세이드",
-   "grade": "디젤 2.2 4WD",
-   "year": "23년 10월",
-   "yearRaw": "202310",
-   "mileage": 37405,
-   "fuel": "디젤",
-   "transmission": "오토",
-   "color": "흰색",
-   "price": 4490,
-   "diagnosis": true,
-   "photos": [
-    "https://ci.encar.com/carpicture05/pic4255/42551877_027.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4255/42551877_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4255/42551877_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4255/42551877_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4255/42551877_009.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4255/42551877_007.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4255/42551877_024.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4255/42551877_045.jpg?impolicy=widthRate&wid=800"
-   ],
-   "link": "https://fem.encar.com/cars/detail/42551877"
-  },
-  {
    "id": "42562882",
    "plate": "268가3223",
    "maker": "BMW",
@@ -255,12 +229,38 @@
     "https://ci.encar.com/carpicture06/pic4256/42562882_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture06/pic4256/42562882_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture06/pic4256/42562882_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture06/pic4256/42562882_018.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture06/pic4256/42562882_047.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture06/pic4256/42562882_005.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture06/pic4256/42562882_010.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture06/pic4256/42562882_019.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4256/42562882_022.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4256/42562882_045.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4256/42562882_043.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42562882"
+  },
+  {
+   "id": "42551877",
+   "plate": "124가6696",
+   "maker": "현대",
+   "model": "팰리세이드",
+   "grade": "디젤 2.2 4WD",
+   "year": "23년 10월",
+   "yearRaw": "202310",
+   "mileage": 37405,
+   "fuel": "디젤",
+   "transmission": "오토",
+   "color": "흰색",
+   "price": 4290,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture05/pic4255/42551877_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4255/42551877_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4255/42551877_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4255/42551877_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4255/42551877_020.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4255/42551877_032.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4255/42551877_036.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4255/42551877_034.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42551877"
   },
   {
    "id": "42481724",
@@ -367,6 +367,32 @@
    "link": "https://fem.encar.com/cars/detail/42604274"
   },
   {
+   "id": "42764458",
+   "plate": "42서5766",
+   "maker": "벤츠",
+   "model": "EQC",
+   "grade": "EQC400 4MATIC",
+   "year": "20년 06월",
+   "yearRaw": "202006",
+   "mileage": 86248,
+   "fuel": "전기",
+   "transmission": "오토",
+   "color": "흰색",
+   "price": 3490,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture06/pic4276/42764458_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4276/42764458_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4276/42764458_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4276/42764458_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4276/42764458_033.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4276/42764458_047.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4276/42764458_020.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4276/42764458_023.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42764458"
+  },
+  {
    "id": "42321574",
    "plate": "234노6727",
    "maker": "벤츠",
@@ -417,6 +443,32 @@
     "https://ci.encar.com/carpicture10/pic4270/42700355_009.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42700355"
+  },
+  {
+   "id": "42773383",
+   "plate": "135보2818",
+   "maker": "BMW",
+   "model": "2시리즈",
+   "grade": "218d 럭셔리",
+   "year": "22년 11월",
+   "yearRaw": "202211",
+   "mileage": 61675,
+   "fuel": "디젤",
+   "transmission": "오토",
+   "color": "흰색",
+   "price": 3090,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture07/pic4277/42773383_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42773383_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42773383_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42773383_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42773383_040.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42773383_044.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42773383_046.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42773383_021.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42773383"
   },
   {
    "id": "42618931",
