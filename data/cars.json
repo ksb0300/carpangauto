@@ -1,5 +1,5 @@
 {
- "updated": "2026-09-27 21:01",
+ "updated": "2026-09-28 21:03",
  "count": 33,
  "cars": [
   {
@@ -281,10 +281,10 @@
     "https://ci.encar.com/carpicture08/pic4248/42481724_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture08/pic4248/42481724_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture08/pic4248/42481724_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4248/42481724_020.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4248/42481724_024.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4248/42481724_034.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4248/42481724_019.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture08/pic4248/42481724_022.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4248/42481724_032.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4248/42481724_046.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4248/42481724_040.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42481724"
   },
@@ -586,17 +586,17 @@
    "fuel": "디젤",
    "transmission": "오토",
    "color": "흰색",
-   "price": 2600,
+   "price": 2590,
    "diagnosis": true,
    "photos": [
     "https://ci.encar.com/carpicture08/pic4278/42780057_027.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture08/pic4278/42780057_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture08/pic4278/42780057_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture08/pic4278/42780057_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4278/42780057_018.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture08/pic4278/42780057_045.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4278/42780057_005.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4278/42780057_007.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4278/42780057_024.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture08/pic4278/42780057_032.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4278/42780057_043.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42780057"
   },
@@ -731,32 +731,6 @@
    "link": "https://fem.encar.com/cars/detail/42286157"
   },
   {
-   "id": "42793148",
-   "plate": "199라6223",
-   "maker": "현대",
-   "model": "캐스퍼",
-   "grade": "터보 디 에센셜",
-   "year": "24년 07월",
-   "yearRaw": "202407",
-   "mileage": 27883,
-   "fuel": "가솔린",
-   "transmission": "오토",
-   "color": "흰색",
-   "price": 1590,
-   "diagnosis": false,
-   "photos": [
-    "https://ci.encar.com/carpicture09/pic4279/42793148_001.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4279/42793148_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4279/42793148_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4279/42793148_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4279/42793148_018.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4279/42793148_022.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4279/42793148_040.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4279/42793148_020.jpg?impolicy=widthRate&wid=800"
-   ],
-   "link": "https://fem.encar.com/cars/detail/42793148"
-  },
-  {
    "id": "42263583",
    "plate": "159나8612",
    "maker": "아우디",
@@ -807,6 +781,32 @@
     "https://ci.encar.com/carpicture09/pic4219/42193880_006.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42193880"
+  },
+  {
+   "id": "42797803",
+   "plate": "173도4096",
+   "maker": "현대",
+   "model": "쏘나타",
+   "grade": "LPI 모던",
+   "year": "18년 10월",
+   "yearRaw": "201810",
+   "mileage": 114228,
+   "fuel": "LPG(일반인 구입)",
+   "transmission": "오토",
+   "color": "검정색",
+   "price": 1190,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture09/pic4279/42797803_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4279/42797803_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4279/42797803_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4279/42797803_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4279/42797803_044.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4279/42797803_010.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4279/42797803_035.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4279/42797803_018.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42797803"
   },
   {
    "id": "42525730",
