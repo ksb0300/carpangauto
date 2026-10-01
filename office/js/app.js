@@ -83,6 +83,7 @@ function Shell({ app, children, path }) {
       <nav>${nav.map(([p, l]) => html`<a href=${"#" + p} class=${path.startsWith(p) || (p === "/cars" && path.startsWith("/car/")) || (p === "/dashboard" && path === "/") ? "on" : ""}>${l}</a>`)}</nav>
       <div class="me">
         ${DEMO && html`<span class="badge amber">데모</span>`}
+        <a class="me-name" href="/" title="홈페이지(매물)로">홈페이지</a>
         <a class="me-name" href="#/password" title="비밀번호 변경">${profile.name} · ${{ admin: "대표", staff: "직원", dealer: "딜러" }[profile.role]}</a>
         <button class="btn ghost sm" onClick=${async () => { await db.auth.signOut(); location.reload(); }}>로그아웃</button>
       </div>
