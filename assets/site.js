@@ -1,8 +1,8 @@
 /* 헤더·푸터는 페이지마다 같다. 한 곳에서 만들어 끼운다.
    (정적 사이트라 서버 템플릿이 없다.) */
 var 매장 = {
-  이름: "카팡모터스",
-  영문: "CARPANG",
+  이름: "TierONE",
+  영문: "TierONE",
   주소: "부산광역시 기장군 장안읍 반룡산단3로 95 경동오토필드 604, 605호",
   대표: "김상혁",
   전화: "051-711-7818",     // 매장 대표번호
@@ -33,14 +33,14 @@ function 전화링크(번호) {
 
   document.body.insertAdjacentHTML("afterbegin",
     '<header class="hd"><div class="hd-in">' +
-    '<a href="/" class="logo"><img src="/assets/logo.svg?v=ac6e2cbc" alt="' + 매장.영문 + '"></a>' +
+    '<a href="/" class="logo"><img src="/assets/logo.svg?v=a6256462" alt="' + 매장.영문 + '"></a>' +
     '<a class="tel btn-tel" href="tel:' + 매장.전화.replace(/[^0-9]/g, "") + '">전화 문의</a>' +
     '<nav class="nav">' + nav + "</nav>" +
     "</div></header>");
 
   document.body.insertAdjacentHTML("beforeend",
     '<footer class="ft"><div class="wrap"><div class="ft-top">' +
-    '<div class="col"><img src="/assets/logo.svg?v=ac6e2cbc" alt="' + 매장.영문 + '">' +
+    '<div class="col"><img src="/assets/logo.svg?v=a6256462" alt="' + 매장.영문 + '">' +
     "<p style='margin:0 0 4px'>" + 매장.주소 + "</p>" +
     "<p style='margin:0'>" + 매장.영업 + "</p></div>" +
     '<div class="col"><b>CONTACT</b>' +
@@ -48,11 +48,15 @@ function 전화링크(번호) {
     "<p style='margin:0'>상담 " + 전화링크(매장.휴대폰) + "</p></div>" +
     '<div class="col"><b>MENU</b>' +
     메뉴.map(function (m) { return "<p style='margin:0 0 4px'><a href='" + m[0] + "'>" + m[1] + "</a></p>"; }).join("") +
+    "<p style='margin:8px 0 0'><a href='/office/' class='staff'>직원 로그인</a></p>" +
     "</div></div>" +
     '<div class="ft-r">' + 매장.이름 + " · 대표 " + 매장.대표 +
     " · 차량 정보는 엔카 등록 정보를 따릅니다" +
     "<br>© " + new Date().getFullYear() + " " + 매장.영문 + "</div>" +
     "</div></footer>");
+
+  /* 직원·딜러가 로그인해 있으면 내부 정보 (손님에게는 아무 일도 안 한다) */
+  var ms = document.createElement("script"); ms.src = "/assets/member.js?v=c9b1541c"; document.body.appendChild(ms);
 
   /* 스크롤하며 나타나는 요소 */
   if ("IntersectionObserver" in window) {
@@ -67,7 +71,7 @@ function 전화링크(번호) {
 
 /* 매물 카드 — 홈과 판매차량 페이지가 같이 쓴다 */
 function 매물카드(c) {
-  return '<a class="car" href="' + c.link + '" target="_blank" rel="noopener">' +
+  return '<a class="car" href="' + c.link + '" target="_blank" rel="noopener" data-plate="' + (c.plate || "") + '" data-price="' + c.price + '">' +
     '<div class="car-img">' +
       (c.photos[0] ? '<img loading="lazy" src="' + c.photos[0] + '" alt="">' : "") +
       (c.diagnosis ? '<span class="badge">엔카진단</span>' : "") +

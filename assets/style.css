@@ -1,4 +1,4 @@
-/* CARPANG — 검정 바탕 · 보라 포인트 (로고 색 #8B2FFF)
+/* TierONE — 검정 바탕 · 보라 포인트 (로고 색 #8B2FFF)
    풀스크린 섹션 + 스크롤 스냅. 하이엔드모터스의 어두운 톤,
    미우미우의 한 화면씩 넘어가는 리듬. */
 :root{
@@ -175,3 +175,17 @@ a{color:inherit;text-decoration:none}
 .rv.in{opacity:1;transform:none}
 .rv.d1{transition-delay:.1s}.rv.d2{transition-delay:.2s}.rv.d3{transition-delay:.3s}
 @media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none;transition:none}}
+
+/* 직원·딜러 로그인 시 내부 정보 (assets/member.js) */
+.mbar { position: fixed; top: var(--nav); left: 0; right: 0; z-index: 99; background: #1b1430; border-bottom: 1px solid #3a2a55; color: #d9cdf5; font-size: 13px; }
+.mbar-in { max-width: 1200px; margin: 0 auto; padding: 8px 20px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.mbar .grow { flex: 1; } .mbar a { color: #c9a7ff; font-weight: 700; }
+.mbar button { background: transparent; border: 1px solid #5B3A93; color: #d9cdf5; border-radius: 6px; padding: 4px 10px; font: inherit; cursor: pointer; }
+.car-int { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px 10px; margin-top: 10px; padding: 10px; border-radius: 8px;
+  background: #1b1430; border: 1px solid #3a2a55; font-size: 12px; }
+.car-int div { display: flex; justify-content: space-between; gap: 6px; } .car-int span { color: #9a8cb8; } .car-int b { color: #fff; font-weight: 700; }
+.car-int b.pos { color: #7ee2a8; } .car-int b.neg { color: #ff8a8a; } .car-int .dim { color: #9a8cb8; grid-column: 1 / -1; }
+.car-int .int-go { grid-column: 1 / -1; color: #c9a7ff; font-weight: 700; margin-top: 2px; cursor: pointer; }
+.int-stats { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin: 0 0 18px; font-size: 14px; }
+.int-hide .car-int, .int-hide .int-stats { display: none !important; }
+.ft a.staff { opacity: .6; font-size: 12px; }
