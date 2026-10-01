@@ -56,6 +56,10 @@ export function BankPage({ app }) {
       matched_by: m ? by : null }).eq("id", t.id));
     setPick(null); loadTx();
   });
+  const editMemo = t => {
+    const m = window.prompt("상세메모", t.memo || ""); if (m === null) return;
+    run(async () => { await q(app.db.from("bank_txs").update({ memo: m.trim() || null }).eq("id", t.id)); loadTx(); }, "메모를 저장했습니다");
+  };
   const autoAll = async () => {
     const list = (txs || []).filter(t => !t.match_kind).map(t => [t, 자동확정(cand[t.id] || [])]).filter(([, m]) => m);
     if (!list.length) return toast("확실하게 맞는 거래가 없습니다. 후보를 보고 직접 연결하세요.");
@@ -94,7 +98,7 @@ export function BankPage({ app }) {
   const sum = k => shown.reduce((t, x) => t + Number(x[k] || 0), 0);
   const curAcc = accounts.find(a => a.id === acc);
 
-  return html`<div class="bar"><h2>통장 입출금</h2><span class="muted small">${PB_NOTE}</span><span class="grow"></span>
+  return html`<div class="bar"><h2>통장시재 관리</h2><span class="muted small">${PB_NOTE}</span><span class="grow"></span>
       <button class="btn" onClick=${importPopbillAccounts}>팝빌 등록계좌 가져오기</button>
       <button class="btn" onClick=${() => setAdding(true)}>+ 계좌 추가</button></div>
     ${adding && html`<${AccountForm} app=${app} onDone=${() => { setAdding(false); loadAcc(); }} />`}
@@ -119,7 +123,7 @@ export function BankPage({ app }) {
       <${Period} value=${period} onChange=${setPeriod} />
       <${Seg} value=${only} onChange=${setOnly} options=${["전체", "미매칭", "입금", "출금"]} />
       <span class="grow"></span>
-      <button class="btn primary" disabled=${busy || !data} onClick=${autoAll}>자동 매칭</button>
+      <button class="btn primary" disabled=${busy || !data} onClick=${autoAll}>AI 매칭</button>
       <button class="btn" disabled=${!shown.length} onClick=${() => downloadCsv("통장입출금", [["일자", "시간", "입금", "출금", "잔액", "적요", "매칭", "차량", "딜러", "메모"],
         ...shown.map(t => [t.tx_date, t.tx_time, t.deposit, t.withdraw, t.balance, t.remark, t.match_kind, car[t.car_id]?.plate, dealer[t.dealer_id]?.name, t.memo])])}>엑셀(CSV)</button>
     </div>
@@ -136,11 +140,11 @@ export function BankPage({ app }) {
         return html`<tr class=${t.match_kind ? "matched" : ""}>
           <td class="nowrap">${t.tx_date} <span class="muted small">${(t.tx_time || "").slice(0, 5)}</span></td>
           ${W(t.deposit, "blue")}${W(t.withdraw, "red")}<td class="r muted">${t.balance != null ? won(t.balance) : ""}</td>
-          <td class="ellipsis" title=${t.remark}>${t.remark}</td>
+          <td class="ellipsis" title=${t.remark}>${t.remark}${t.memo ? html`<br /><span class="muted small">📝 ${t.memo}</span>` : ""}</td>
           <td>${t.match_kind ? html`<span class="badge blue">${t.match_kind}</span> ${t.car_id ? html`<a href=${`#/car/${t.car_id}`}>${car[t.car_id]?.plate || ""}</a>` : ""}
                  ${t.dealer_id && !t.car_id ? dealer[t.dealer_id]?.name : ""} <span class="muted small">${t.matched_by}</span>`
             : c[0] ? html`<span class="small">후보: ${c[0].label} <span class="muted">(${c[0].score}점)</span></span>` : html`<span class="muted small">후보 없음</span>`}</td>
-          <td class="nowrap">${t.match_kind ? html`<button class="btn sm ghost" onClick=${() => setMatch(t, null)}>해제</button>`
+          <td class="nowrap"><button class="btn sm ghost" title="상세메모" onClick=${() => editMemo(t)}>메모</button>${t.match_kind ? html`<button class="btn sm ghost" onClick=${() => setMatch(t, null)}>해제</button>`
             : html`${c[0] && html`<button class="btn sm primary" onClick=${() => setMatch(t, c[0])}>연결</button>`}
                    <button class="btn sm" onClick=${() => setPick(pick === t.id ? null : t.id)}>직접</button>`}</td>
         </tr>

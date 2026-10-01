@@ -90,12 +90,37 @@ function InfoTab({ app, car, sale, office }) {
     if (ok) go("/cars");
   };
   return html`<div class="card">
-    <div class="bar"><h3>제시정보</h3><span class="grow"></span>
+    <div class="bar no-print"><h3>제시정보</h3><span class="grow"></span>
+      <button class="btn ghost" onClick=${() => print()}>인쇄</button>
+      <button class="btn ghost" onClick=${() => { document.body.classList.add("print-ledger"); setTimeout(() => { print(); document.body.classList.remove("print-ledger"); }, 50); }}>매입장 출력</button>
       ${app.profile.role === "admin" && car.seller_ssn_masked && !ssn && html`<button class="btn sm ghost" onClick=${() =>
         run(async () => setSsn(await q(app.db.rpc("reveal_ssn", { p_target: "car_seller", p_id: car.id }))))}>주민번호 원문 보기</button>`}
       ${office && html`<button class="btn" onClick=${() => go(`/car/${car.id}/edit`)}>수정</button>
         <button class="btn danger" onClick=${remove}>제시 삭제</button>`}
     </div>
     <div class="kvgrid">${rows.map(([k, v]) => html`<div><span>${k}</span><b>${v || html`<i class="muted">-</i>`}</b></div>`)}</div>
+    <${BuyLedger} app=${app} car=${car} ssn=${ssn} />
+  </div>`;
+}
+
+/** 매입장 (차 한 대) — 인쇄 전용. 똑순이 상세보기의 '매입장 출력' */
+function BuyLedger({ app, car, ssn }) {
+  const st = app.settings;
+  const R = (k, v) => html`<tr><th>${k}</th><td>${v || ""}</td></tr>`;
+  return html`<div class="buy-ledger statement">
+    <h2 style="text-align:center;letter-spacing:12px">매 입 장</h2>
+    <div class="st-meta"><span>${st.company_name}</span><span>사업자번호 ${st.biz_no || ""}</span><span>대표 ${st.ceo_name || ""}</span><span>${st.address || ""}</span></div>
+    <div class="two">
+      <table class="st"><caption>차량</caption><tbody>
+        ${R("관리번호", car.code)}${R("제시일", car.purchase_date)}${R("이전일", car.transfer_date)}${R("차명", car.car_name)}${R("차량번호", car.plate)}
+        ${R("제시전 번호", car.plate_before)}${R("차종", car.car_kind)}${R("관인계약서번호", car.contract_no)}</tbody></table>
+      <table class="st"><caption>매도자 (전소유자)</caption><tbody>
+        ${R("성명/상호", car.seller_name)}${R("구분", car.seller_type)}${R("주민(법인)번호", ssn || car.seller_ssn_masked)}${R("사업자번호", car.seller_biz_no)}
+        ${R("주소", [car.seller_zip, car.seller_addr1, car.seller_addr2].filter(Boolean).join(" "))}${R("연락처", car.seller_phone)}</tbody></table>
+    </div>
+    <table class="st" style="margin-top:12px"><caption>매입 금액</caption><tbody>
+      <tr><th>매입금액</th><td class="r"><b>${won(car.purchase_amount)}원</b></td><th>공급가액</th><td class="r">${won(car.purchase_supply)}</td><th>세액</th><td class="r">${won(car.purchase_vat)}</td></tr>
+      <tr><th>증빙</th><td>${car.evidence}</td><th>계산서 발행일</th><td>${car.invoice_date || ""}</td><th>사실확인서</th><td>${car.fact_confirm || ""}</td></tr></tbody></table>
+    <div class="st-meta" style="margin-top:28px;justify-content:space-between"><span>작성일 ${new Date().toISOString().slice(0, 10)}</span><span>매도자 ____________ (서명)</span><span>매수자 ${st.company_name} ____________ (인)</span></div>
   </div>`;
 }

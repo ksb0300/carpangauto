@@ -12,6 +12,7 @@ import { BankPage } from "./pages/bank.js";
 import { BrokeragePage } from "./pages/brokerage.js";
 import { LedgerPage } from "./pages/ledger.js";
 import { ReportsPage } from "./pages/reports.js";
+import { PurchasesPage, CostsPage, LoansPage, SalesPage } from "./pages/lists.js";
 
 function useHash() {
   const [h, setH] = useState(location.hash.slice(1) || "/");
@@ -74,13 +75,13 @@ function Shell({ app, children, path }) {
   const { profile, db } = app;
   const office = profile.role !== "dealer";
   const nav = office
-    ? [["/dashboard", "대시보드"], ["/cars", "차량"], ["/settlements", "정산"], ["/issue", "발행"], ["/bank", "통장"], ["/brokerage", "알선"],
-       ["/ledger", "장부"], ["/reports", "보고서"], ["/settings", "설정"]]
-    : [["/cars", "내 차량"], ["/settlements", "정산"], ["/brokerage", "알선"], ["/reports", "실적"]];
+    ? [["/dashboard", "대시보드"], ["/purchases", "제시차량"], ["/costs", "상품화비용"], ["/loans", "재고금융"], ["/sales", "매도차량"],
+       ["/settlements", "정산내역"], ["/issue", "매출관리"], ["/brokerage", "타상사알선"], ["/bank", "통장입출금"], ["/reports", "종합업무현황"], ["/settings", "환경설정"]]
+    : [["/purchases", "내 제시차량"], ["/sales", "매도차량"], ["/settlements", "정산내역"], ["/brokerage", "알선"], ["/reports", "내 실적"]];
   return html`<div class="shell">
     <header class="top">
       <a class="brand" href="#/">TierONE <span>업무관리</span></a>
-      <nav>${nav.map(([p, l]) => html`<a href=${"#" + p} class=${path.startsWith(p) || (p === "/cars" && path.startsWith("/car/")) || (p === "/dashboard" && path === "/") ? "on" : ""}>${l}</a>`)}</nav>
+      <nav>${nav.map(([p, l]) => html`<a href=${"#" + p} class=${path.startsWith(p) || (p === "/purchases" && (path.startsWith("/car/") || path.startsWith("/cars"))) || (p === "/dashboard" && path === "/") ? "on" : ""}>${l}</a>`)}</nav>
       <div class="me">
         ${DEMO && html`<span class="badge amber">데모</span>`}
         <a class="me-name" href="/" title="홈페이지(매물)로">홈페이지</a>
@@ -102,6 +103,10 @@ function Router({ app }) {
   else if (a === "cars" && b === "new") page = html`<${CarForm} app=${app} />`;
   else if (a === "car" && c === "edit") page = html`<${CarForm} app=${app} id=${b} />`;
   else if (a === "car") page = html`<${CarDetail} app=${app} id=${b} tab=${c || "info"} />`;
+  else if (a === "purchases") page = html`<${PurchasesPage} app=${app} />`;
+  else if (a === "costs") page = html`<${CostsPage} app=${app} tab=${b || "car"} />`;
+  else if (a === "loans") page = html`<${LoansPage} app=${app} tab=${b || "list"} />`;
+  else if (a === "sales") page = html`<${SalesPage} app=${app} />`;
   else if (a === "settlements") page = html`<${Settlements} app=${app} />`;
   else if (a === "settings") page = html`<${Settings} app=${app} tab=${b || "company"} />`;
   else if (a === "dashboard" || (a === "" && office)) page = html`<${Dashboard} app=${app} />`;
@@ -111,7 +116,7 @@ function Router({ app }) {
   else if (a === "ledger") page = html`<${LedgerPage} app=${app} tab=${decodeURIComponent(b || "지출")} />`;
   else if (a === "reports") page = html`<${ReportsPage} app=${app} tab=${b} />`;
   else if (a === "password") page = html`<${ChangePassword} db=${app.db} onDone=${() => (location.hash = "/")} />`;
-  else page = html`<${CarList} app=${app} query=${path.split("?")[1] || ""} />`;
+  else page = html`<${PurchasesPage} app=${app} />`;
   return html`<${Shell} app=${app} path=${path}>${page}</${Shell}>`;
 }
 

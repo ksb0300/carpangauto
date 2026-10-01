@@ -37,7 +37,7 @@ export function LedgerPage({ app, tab = "지출" }) {
       여기에는 그 밖의 것만 적으세요. 항목 목록은 설정 → 항목에서 바꿉니다.</p>`;
 }
 
-function EntryForm({ app, kind, items, init, onDone }) {
+export function EntryForm({ app, kind, items, init, onDone }) {
   const [f, setF] = useState({ item: items[0], amount: 0, taxable: true, entry_date: today(), pay_method: kind === "매출" ? "계좌이체" : "카드",
     evidence: (EVID[kind] || EVID.지출)[0], invoice_date: "", memo: "", ...init });
   const set = k => v => setF(p => ({ ...p, [k]: v?.target ? v.target.value : v }));

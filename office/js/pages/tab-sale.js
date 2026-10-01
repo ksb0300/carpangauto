@@ -26,6 +26,7 @@ export function SaleTab({ app, car, sale, buyers, settlement, reload, locked, of
       <div><span>매도일</span><b>${sale.sale_date}</b></div>
       <div><span>매도딜러</span><b>${dealer?.name || "-"}${sale.other_dealer ? " (타상사딜러)" : ""}</b></div>
       <div><span>매도유형</span><b>${sale.sale_type}</b></div>
+      <div><span>알선딜러</span><b>${app.dealers.find(d => d.id === sale.broker_dealer_id)?.name || "-"}</b></div>
       <div><span>매도금액</span><b>${won(sale.sale_amount)} <small class="muted">(공급가 ${won(sale.sale_supply)} / 부가세 ${won(sale.sale_vat)})</small></b></div>
       <div><span>상사매도비</span><b>${won(sale.sale_fee)}</b></div>
       <div><span>성능보험료</span><b>${won(sale.perf_insurance)}</b></div>
@@ -41,7 +42,7 @@ export function SaleTab({ app, car, sale, buyers, settlement, reload, locked, of
 function SaleForm({ app, car, sale, buyers, onDone }) {
   const [f, setF] = useState(sale ? { ...sale } : {
     sale_date: today(), dealer_id: car.dealer_id, other_dealer: false, sale_type: "소매", sale_amount: 0,
-    plate_out: car.plate, sale_fee: app.settings.sale_fee, perf_insurance: 0, memo: "" });
+    plate_out: car.plate, sale_fee: app.settings.sale_fee, perf_insurance: 0, memo: "", broker_dealer_id: null });
   const [bs, setBs] = useState(buyers.length ? buyers.map(b => ({ ...b, ssn: "" })) : [newBuyer(100)]);
   const [busy, setBusy] = useState(false);
   const set = k => v => setF(p => ({ ...p, [k]: v }));
@@ -60,7 +61,8 @@ function SaleForm({ app, car, sale, buyers, onDone }) {
     setBusy(true);
     const ok = await run(async () => {
       const row = { car_id: car.id, sale_date: f.sale_date, dealer_id: f.dealer_id, other_dealer: f.other_dealer, sale_type: f.sale_type,
-        sale_amount: f.sale_amount, plate_out: f.plate_out || null, sale_fee: f.sale_fee, perf_insurance: f.perf_insurance, memo: f.memo || null };
+        sale_amount: f.sale_amount, plate_out: f.plate_out || null, sale_fee: f.sale_fee, perf_insurance: f.perf_insurance, memo: f.memo || null,
+        broker_dealer_id: f.broker_dealer_id || null };
       if (sale) await q(app.db.from("car_sales").update(row).eq("car_id", car.id));
       else await q(app.db.from("car_sales").insert(row));
       const keep = new Set(bs.filter(b => b.id).map(b => b.id));
@@ -87,6 +89,8 @@ function SaleForm({ app, car, sale, buyers, onDone }) {
       <${Field} label="매도일" req><input type="date" value=${f.sale_date} onInput=${e => set("sale_date")(e.target.value)} required /><//>
       <${Field} label="매도딜러"><div class="row"><${Select} value=${f.dealer_id} onChange=${set("dealer_id")} options=${app.dealers.map(d => [d.id, d.name])} />
         <label class="check"><input type="checkbox" checked=${f.other_dealer} onChange=${e => set("other_dealer")(e.target.checked)} /> 타상사딜러</label></div><//>
+      <${Field} label="알선딜러" hint="다른 딜러가 손님을 데려와 판 경우 — 정산 때 정산금을 나눕니다">
+        <${Select} value=${f.broker_dealer_id} onChange=${set("broker_dealer_id")} empty="없음" options=${app.dealers.filter(d => d.id !== f.dealer_id).map(d => [d.id, d.name])} /><//>
       <${Field} label="매도유형"><${Select} value=${f.sale_type} onChange=${set("sale_type")} options=${["소매", "도매", "경매", "수출", "폐차"]} /><//>
       <${Field} label="매도금액" req hint=${f.sale_amount ? `공급가 ${won(vat.공급가)} / 부가세 ${won(vat.부가세)}` : "부가세 포함"}><${Money} value=${f.sale_amount} onInput=${set("sale_amount")} /><//>
       <${Field} label="상사매도비" hint="상사 매출로 잡힙니다"><${Money} value=${f.sale_fee} onInput=${set("sale_fee")} /><//>

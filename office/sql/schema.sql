@@ -755,3 +755,30 @@ end $$;
 -- 사명 변경: 카팡모터스 → TierONE (2026-10-01, 사업자등록증 상호 변경 완료)
 alter table settings alter column company_name set default 'TierONE';
 update settings set company_name = 'TierONE' where company_name in ('카팡모터스', '카팡');
+
+
+-- 20261001000003_tsn_parity.sql
+-- 똑순이와 기능 맞추기 (2026-10-01)
+--  · 매도의 알선딜러 + 정산의 알선딜러 몫 (똑순이 ALSON_* / OWNER_DLR_PAY_AMT)
+--  · 재고금융 연장 이력
+
+alter table car_sales
+  add column broker_dealer_id uuid references dealers(id);            -- 알선딜러 (차주딜러 외에 팔아 준 딜러)
+
+alter table settlements
+  add column broker_dealer_id     uuid references dealers(id),
+  add column broker_amount        bigint not null default 0,          -- 정산기준금액 중 알선딜러 몫
+  add column broker_withholding   boolean not null default true,
+  add column broker_income        bigint not null default 0,
+  add column broker_income_tax    bigint not null default 0,
+  add column broker_local_tax     bigint not null default 0,
+  add column broker_tax_total     bigint not null default 0,
+  add column broker_payout        bigint not null default 0;          -- 알선딜러 실지급액
+comment on column settlements.payout is '차주딜러 실지급액 (알선 몫을 뺀 금액)';
+
+alter table car_loans
+  add column extended_months int not null default 0;                   -- 연장한 개월 수 합 (months 에 이미 더해져 있음)
+
+-- 딜러: 알선딜러로 들어간 정산도 본인 것이면 읽기
+create policy dealer_settlements_broker on settlements for select to authenticated
+  using (my_role() = 'dealer' and broker_dealer_id = my_dealer_id());

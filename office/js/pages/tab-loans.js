@@ -28,6 +28,13 @@ export function LoansTab({ app, car, loans, reload, locked, office }) {
     await run(() => q(app.db.from("loan_payments").delete().eq("id", p.id)), "납입 기록을 지웠습니다");
     reload();
   };
+  const extend = async l => {
+    const m = Number(String(window.prompt(`${l.months}개월 → 몇 개월 연장할까요?`, "3") || "").replace(/\D/g, ""));
+    if (!m) return;
+    await run(() => q(app.db.from("car_loans").update({ months: l.months + m, extended_months: (l.extended_months || 0) + m,
+      memo: [l.memo, `${today()} ${m}개월 연장`].filter(Boolean).join(" / ") }).eq("id", l.id)), `${m}개월 연장했습니다`);
+    reload();
+  };
   const remove = async l => {
     if (!confirm("이 재고금융을 삭제할까요? 이자납입 기록도 함께 지워집니다.")) return;
     await run(() => q(app.db.from("car_loans").delete().eq("id", l.id)), "삭제했습니다");
@@ -60,6 +67,7 @@ export function LoansTab({ app, car, loans, reload, locked, office }) {
         ${l.memo && html`<div class="muted small">메모: ${l.memo}</div>`}
         ${edit && html`<div class="actions">
           <button class="btn sm" disabled=${done} onClick=${() => pay(l)}>이자납입</button>
+          <button class="btn sm" disabled=${done} onClick=${() => extend(l)}>연장</button>
           ${done ? html`<button class="btn sm" onClick=${() => setStatus(l, "진행중")}>상환완료 취소</button>`
                  : html`<button class="btn sm" onClick=${() => setStatus(l, "상환완료")}>상환완료</button>`}
           <button class="btn sm danger" disabled=${done} title=${done ? "상환완료를 먼저 취소하세요" : ""} onClick=${() => remove(l)}>삭제</button>
@@ -85,7 +93,7 @@ function LoanForm({ app, car, onDone }) {
 
   const save = async e => {
     e.preventDefault();
-    if (!f.amount || !f.dealer_rate) return toast("대출금액과 딜러이율은 꼭 입력하세요.", "err");
+    if (!f.amount || f.dealer_rate === "") return toast("대출금액과 딜러이율은 꼭 입력하세요. (딜러에게 이자를 안 받으면 0)", "err");
     if (lender?.credit_limit && f.amount > left && !confirm(`잔여한도(${won(left)})를 넘습니다. 그래도 등록할까요?`)) return;
     const ok = await run(() => q(app.db.from("car_loans").insert({ ...f, car_id: car.id, lender_rate: f.lender_rate === "" ? null : Number(f.lender_rate),
       dealer_rate: Number(f.dealer_rate), memo: f.memo || null })), "재고금융을 등록했습니다");

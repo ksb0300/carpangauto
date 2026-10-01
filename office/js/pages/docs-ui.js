@@ -27,7 +27,7 @@ export async function issueMany(app, docs) {
   return { ok, fails };
 }
 
-export function DocTable({ app, docs, reload, showCar = false, cars = {}, select }) {
+export function DocTable({ app, docs, reload, showCar = false, cars = {}, select, selectAll = false }) {
   const [open, setOpen] = useState(null);
   const [edit, setEdit] = useState(null);
   const office = app.profile.role !== "dealer";
@@ -55,7 +55,7 @@ export function DocTable({ app, docs, reload, showCar = false, cars = {}, select
   });
 
   if (!docs.length) return html`<div class="empty">문서가 없습니다.</div>`;
-  const pending = docs.filter(d => ["대기", "실패"].includes(d.status));
+  const pending = selectAll ? docs : docs.filter(d => ["대기", "실패"].includes(d.status));
   return html`<div class="table-wrap"><table class="grid">
     <thead><tr>
       ${sel && html`<th><input type="checkbox" checked=${pending.length && pending.every(d => sel.has(d.id))}
@@ -63,7 +63,7 @@ export function DocTable({ app, docs, reload, showCar = false, cars = {}, select
       <th>거래일</th><th>종류</th>${showCar && html`<th>차량</th>`}<th>항목</th><th>상대방</th><th class="r">금액</th><th class="r">부가세</th>
       <th>상태</th><th>승인번호</th><th></th></tr></thead>
     <tbody>${docs.map(d => html`<tr>
-      ${sel && html`<td>${["대기", "실패"].includes(d.status) && html`<input type="checkbox" checked=${sel.has(d.id)}
+      ${sel && html`<td>${(selectAll || ["대기", "실패"].includes(d.status)) && html`<input type="checkbox" checked=${sel.has(d.id)}
         onChange=${e => setSel(s => { const n = new Set(s); e.target.checked ? n.add(d.id) : n.delete(d.id); return n; })} />`}</td>`}
       <td>${d.trade_date}</td>
       <td>${d.doc_type === "현금영수증" ? `현금영수증·${d.usage === "지출증빙용" ? "지출" : "소득"}` : `세금계산서·${d.purpose}`}</td>

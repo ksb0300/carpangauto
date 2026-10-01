@@ -2,7 +2,9 @@
 import { html, useState, useEffect, Loading, run, won, today } from "../ui.js";
 import { q } from "../db.js";
 import { loadAll } from "./report-data.js";
-import { 종합현황 } from "../report-calc.js";
+import { 종합현황, 이자납부예정, 월별추이 } from "../report-calc.js";
+import { planLines } from "./tab-docs.js";
+import { TrendChart } from "./reports.js";
 import { 미납이자 } from "../calc.js";
 import { monthRange } from "../ui.js";
 
@@ -11,10 +13,10 @@ export function Dashboard({ app }) {
   useEffect(() => { run(async () => {
     const [all, docs, unmatched] = await Promise.all([
       loadAll(app.db),
-      q(app.db.from("issue_docs").select("id,status,amount").in("status", ["대기", "실패"])),
+      q(app.db.from("issue_docs").select("id,status,amount,car_id,doc_type,buyer_id,source")),
       q(app.db.from("bank_txs").select("id").is("match_kind", null)),
     ]);
-    setD({ ...all, docs, unmatched });
+    setD({ ...all, allDocs: docs, docs: docs.filter(x => ["대기", "실패"].includes(x.status)), unmatched });
   }); }, []);
   if (!d) return html`<${Loading} />`;
 
@@ -35,12 +37,27 @@ export function Dashboard({ app }) {
   const used = id => act.filter(l => l.lender_id === id).reduce((a, l) => a + Number(l.amount), 0);
   const 정보없음 = !app.settings.biz_no;
 
+  // 똑순이 대시보드: 현금영수증·세금계산서 미발행 리스트 (매도했는데 그 증빙이 아직 발행 안 된 것)
+  const dealerOf = id => app.dealers.find(x => x.id === id);
+  const 미발행 = { 현금영수증: [], 세금계산서: [] };
+  for (const s of d.sales) {
+    const c = car[s.car_id]; if (!c) continue;
+    const buyers = d.buyers.filter(b => b.car_id === s.car_id);
+    for (const l of planLines({ car: c, sale: s, buyers, dealer: dealerOf(s.dealer_id || c.dealer_id), settings: app.settings })) {
+      if (!미발행[l.evidence]) continue;
+      const done = d.allDocs.some(x => x.car_id === c.id && x.source === l.source && (x.buyer_id || null) === (l.buyer?.id || null) && x.status === "발행");
+      if (!done) 미발행[l.evidence].push({ c, s, l, 경과: Math.round((Date.parse(t) - Date.parse(s.sale_date)) / 864e5) });
+    }
+  }
+  const 이자예정 = 이자납부예정(d, t).filter(x => (Date.parse(x.납입예정일) - Date.parse(t)) / 864e5 <= 31);
+  const 추이 = 월별추이(d, t.slice(0, 7), 12).map(r => ({ ...r, label: String(+r.월.slice(5)) }));
+
   const todo = [
     정보없음 && { href: "#/settings/company", tone: "bad", text: "상사정보(사업자번호·대표자·주소)를 먼저 입력하세요 — 발행·보고서에 필요합니다." },
-    미정산.length && { href: "#/cars?tab=매도", tone: "warn", text: `매도했지만 정산완료 안 된 차량 ${미정산.length}대` },
+    미정산.length && { href: "#/sales", tone: "warn", text: `매도했지만 정산완료 안 된 차량 ${미정산.length}대` },
     d.docs.length && { href: "#/issue/wait", tone: 실패 ? "bad" : "warn", text: `발행대기 ${d.docs.length}건 (${won(d.docs.reduce((a, x) => a + Number(x.amount), 0))}원)${실패 ? ` · 실패 ${실패}건` : ""}` },
     d.unmatched.length && { href: "#/bank", tone: "warn", text: `통장 입출금 중 장부와 연결 안 된 거래 ${d.unmatched.length}건` },
-    만기임박.length && { href: "#/reports/loans", tone: "bad", text: `재고금융 만기 2주 이내·지난 것 ${만기임박.length}건 (${만기임박.map(l => car[l.car_id].plate).slice(0, 4).join(", ")}${만기임박.length > 4 ? " 외" : ""})` },
+    만기임박.length && { href: "#/loans", tone: "bad", text: `재고금융 만기 2주 이내·지난 것 ${만기임박.length}건 (${만기임박.map(l => car[l.car_id].plate).slice(0, 4).join(", ")}${만기임박.length > 4 ? " 외" : ""})` },
     장기.length && { href: "#/reports/summary", tone: "warn", text: `90일 넘은 재고 ${장기.length}대 (${장기.map(c => c.plate).slice(0, 4).join(", ")}${장기.length > 4 ? " 외" : ""})` },
   ].filter(Boolean);
 
@@ -50,13 +67,29 @@ export function Dashboard({ app }) {
         <span class=${"badge " + (x.tone === "bad" ? "red" : "amber")}>${x.tone === "bad" ? "급함" : "확인"}</span><a href=${x.href}>${x.text}</a></li>`)}</ul>`}</div>
     <h3>이번 달</h3>
     <div class="stat-grid">
-      <a class="stat" href="#/cars"><span>재고</span><b>${s.재고.대수}대</b><small>${won(s.재고.금액)}원 · 평균 ${s.재고.평균일수}일</small></a>
+      <a class="stat" href="#/purchases"><span>재고</span><b>${s.재고.대수}대</b><small>${won(s.재고.금액)}원 · 평균 ${s.재고.평균일수}일</small></a>
       <a class="stat" href="#/reports/summary"><span>이번 달 매입 / 매도</span><b>${s.매입.대수} / ${s.매도.대수}대</b><small>매도 ${won(s.매도.금액)}원</small></a>
       <a class="stat" href="#/settlements"><span>이번 달 정산 지급</span><b>${won(s.정산.실지급)}</b><small>${s.정산.건수}건 · 원천징수 ${won(s.정산.세액)}</small></a>
       <a class="stat" href="#/reports/summary"><span>이번 달 상사 수익</span><b class=${s.수익합계 < 0 ? "red" : ""}>${won(s.수익합계)}</b><small>운영이익 ${won(s.운영이익)}</small></a>
-      <a class="stat" href="#/reports/loans"><span>재고금융 진행중</span><b>${won(s.재고.재고금융)}</b><small>딜러 미납이자 ${won(미납합)}</small></a>
+      <a class="stat" href="#/loans"><span>재고금융 진행중</span><b>${won(s.재고.재고금융)}</b><small>딜러 미납이자 ${won(미납합)}</small></a>
     </div>
-    ${lenders.length > 0 && html`<div class="card"><h3>재고금융 한도</h3><table class="st"><tbody>${lenders.map(l => {
+    <div class="two">
+      ${["현금영수증", "세금계산서"].map(k => html`<div class="card"><div class="bar"><h3>${k === "현금영수증" ? "현금영수증" : "전자세금계산서"} 미발행 리스트</h3><span class="grow"></span>
+        <a class="btn sm" href="#/issue/wait">발행대기 리스트</a></div>
+        ${!미발행[k].length ? html`<p class="muted">없음</p>` : html`<div class="table-wrap"><table class="grid click"><thead><tr><th>차량</th><th class="r">금액</th><th>고객명</th><th>거래일자</th><th class="r">경과일</th></tr></thead>
+          <tbody>${미발행[k].slice(0, 8).map(x => html`<tr onClick=${() => (location.hash = `/car/${x.c.id}/docs`)}><td><b>${x.c.plate}</b> <span class="small">${x.l.parts.join("+")}</span></td>
+            <td class="r">${won(x.l.amount)}</td><td>${(x.l.buyer || x.l.dealer)?.name || "-"}</td><td>${x.s.sale_date}</td><td class=${"r" + (x.경과 > 3 ? " red" : "")}>${x.경과}</td></tr>`)}</tbody></table></div>
+          ${미발행[k].length > 8 ? html`<p class="note">외 ${미발행[k].length - 8}건</p>` : ""}`}</div>`)}
+    </div>
+    <div class="two">
+      <div class="card"><div class="bar"><h3>미납 이자 납부 대상</h3><span class="grow"></span><a class="btn sm" href="#/loans/interest">이자납입 리스트</a></div>
+        ${!이자예정.length ? html`<p class="muted">한 달 안에 낼 이자가 없습니다.</p>` : html`<div class="table-wrap"><table class="grid click"><thead><tr><th>차량</th><th>재고금융사</th><th class="r">대출금액</th><th class="r">월이자</th><th>납입예정일</th></tr></thead>
+          <tbody>${이자예정.map(x => html`<tr onClick=${() => (location.hash = `/car/${x.car.id}/loans`)}><td><b>${x.car.plate}</b></td><td>${x.금융사}</td><td class="r">${won(x.대출금액)}</td>
+            <td class="r">${x.월이자 ? won(x.월이자) : html`<span class="muted" title="캐피탈이율 미입력">-</span>`}</td><td>${x.납입예정일}</td></tr>`)}</tbody></table></div>
+          <p class="note">상사가 재고금융사에 내는 이자입니다(캐피탈이율 × 대출금 ÷ 12). 납입예정일은 설정 → 재고금융사의 이자지급일, 없으면 실행일 기준.</p>`}</div>
+      <div class="card"><h3>최근 12개월 제시 · 매도 추이</h3><${TrendChart} rows=${추이} a=${{ key: "제시", label: "제시(대)" }} b=${{ key: "매도", label: "매도(대)" }} /></div>
+    </div>
+    ${lenders.length > 0 && html`<div class="card"><h3>재고금융 이용 현황</h3><table class="st"><tbody>${lenders.map(l => {
       const u = used(l.id) + Number(l.existing_amount || 0), lim = Number(l.credit_limit), pct = Math.round(u / lim * 100);
       return html`<tr><th>${l.name}</th><td><div class="bar-meter"><i class=${pct > 100 ? "over" : ""} style=${`width:${Math.min(100, pct)}%`}></i></div></td>
         <td class="r">${won(u)} / ${won(lim)}</td><td class=${"r" + (lim - u < 0 ? " red" : "")}>잔여 ${won(lim - u)}</td></tr>`; })}</tbody></table></div>`}`;

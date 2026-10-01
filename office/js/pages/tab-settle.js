@@ -25,10 +25,13 @@ export function SettleTab({ app, car, costs, loans, sale, settlement, reload, of
     allow_negative: settlement.allow_negative, other_revenue: settlement.other_revenue || [],
     offsets: fin ? settlement.offsets : [...autoOffsets(loans, settlement.settle_date), ...(settlement.offsets || []).filter(o => !o.auto)],
     loan_repay: settlement.loan_repay, memo: settlement.memo || "",
+    broker_amount: Number(settlement.broker_amount) || 0, broker_withholding: settlement.broker_withholding !== false,
   } : {
     settle_date: today(), withholding: dealer?.kind === "개인", method: app.settings.settle_method, allow_negative: false,
     other_revenue: [], offsets: autoOffsets(loans, today()), loan_repay: true, memo: "",
+    broker_amount: 0, broker_withholding: app.dealers.find(d => d.id === sale.broker_dealer_id)?.kind === "개인",
   };
+  const broker = app.dealers.find(d => d.id === sale.broker_dealer_id);
   const [f, setF] = useState(init);
   const [busy, setBusy] = useState(false);
   const [mode, setMode] = useState("딜러용");     // 인쇄 양식
@@ -42,6 +45,7 @@ export function SettleTab({ app, car, costs, loans, sale, settlement, reload, of
     비용: costs.map(c => ({ 금액: Number(c.amount), 과세: c.taxable, 지출구분: c.paid_by, 정산반영: c.include_in_settlement })),
     상계: f.offsets.map(o => ({ 항목: o.항목, 금액: Number(o.금액) || 0 })),
     원천징수대상: f.withholding, 방식: f.method, 마이너스허용: f.allow_negative,
+    알선: broker ? { 금액: f.broker_amount, 원천징수대상: f.broker_withholding } : null,
   }), [f, costs, sale, car]);
 
   const rowUpd = (k, i, key, v) => setF(p => ({ ...p, [k]: p[k].map((x, j) => j === i ? { ...x, [key]: v } : x) }));
@@ -56,6 +60,9 @@ export function SettleTab({ app, car, costs, loans, sale, settlement, reload, of
       sale_total: r.A, purchase_total: r.B, cost_total: r.C.금액, base_amount: r.D, base_supply: r.D공급가, base_vat: r.D부가세,
       income_amount: r.소득금액, income_tax: r.소득세, local_tax: r.지방세, tax_total: r.징수세액,
       offset_total: r.L, payout: r.실지급액, net_income: r.세후소득, detail: r, finalized: !!finalize,
+      broker_dealer_id: broker?.id || null, broker_amount: r.알선?.기준 || 0, broker_withholding: f.broker_withholding,
+      broker_income: r.알선?.소득금액 || 0, broker_income_tax: r.알선?.소득세 || 0, broker_local_tax: r.알선?.지방세 || 0,
+      broker_tax_total: r.알선?.세액 || 0, broker_payout: r.알선?.지급액 || 0,
     };
     await run(() => q(app.db.from("settlements").upsert(row, { onConflict: "car_id" })), finalize ? "정산을 확정했습니다" : "임시저장했습니다");
     setBusy(false); reload();
@@ -87,6 +94,9 @@ export function SettleTab({ app, car, costs, loans, sale, settlement, reload, of
           <${Seg} value=${f.method} onChange=${v => !ro && set("method")(v)} options=${["일괄", "분할"]} /><//>
         <${Field} label="손실일 때"><${Seg} value=${f.allow_negative ? "마이너스" : "0"} onChange=${v => !ro && set("allow_negative")(v === "마이너스")} options=${[["0", "0으로"], ["마이너스", "마이너스로"]]} /><//>
         <${Field} label="재고금융" hint="정산완료 시 진행중 대출을 상환완료 처리"><label class="check"><input type="checkbox" disabled=${ro} checked=${f.loan_repay} onChange=${e => set("loan_repay")(e.target.checked)} /> 상환완료 종결처리</label><//>
+        ${broker && html`<${Field} label=${`알선딜러 몫 — ${broker.name}`} hint=${`정산기준금액 ${won(r.D + (r.알선?.기준 || 0))} 중 알선딜러에게 줄 금액`}>
+          <div class="row"><${Money} value=${f.broker_amount} readOnly=${ro} onInput=${v => set("broker_amount")(v)} />
+          <${Seg} value=${f.broker_withholding ? "대상" : "미대상"} onChange=${v => !ro && set("broker_withholding")(v === "대상")} options=${["대상", "미대상"]} /></div><//>`}
         <${Field} label="정산메모" wide><input disabled=${ro} value=${f.memo} onInput=${e => set("memo")(e.target.value)} /><//>
       </div>
       <div class="two">
@@ -155,7 +165,10 @@ function Statement({ app, car, sale, dealer, f, r, fin, mode, costs = [], loans 
         ${L("상계 합계 (L)", r.L, "", "em")}
       </tbody></table>
     </div>
-    <div class="payout"><span>딜러 실지급액 (O)</span><b>${won(r.실지급액)}원</b><small>O = A − (I + L)</small></div>
+    ${r.알선 && html`<table class="st" style="margin-top:14px"><caption>알선딜러 몫 — ${app.dealers.find(d => d.id === sale.broker_dealer_id)?.name || ""}</caption><tbody>
+      ${L("알선 정산기준금액", r.알선.기준)}${L("소득금액", r.알선.소득금액)}${L("세액", r.알선.세액, f.method === "일괄" ? "13.3%" : "부가세 + 3.3%")}
+      ${L("알선딜러 실지급액", r.알선.지급액, "", "em")}</tbody></table>`}
+    <div class="payout"><span>${r.알선 ? "차주딜러" : "딜러"} 실지급액 (O)</span><b>${won(r.실지급액)}원</b><small>O = A − (I + L)${r.알선 ? " − 알선 몫" : ""}</small></div>
     ${mode === "상사용" && html`<div class="print-only-extra">
       <table class="st" style="margin-top:14px"><caption>상품화비용 상세</caption><tbody>
         ${costs.map(c => html`<tr><th>${c.item} <span class="muted small">${c.paid_by} · ${c.evidence || "-"}${c.include_in_settlement ? "" : " · 정산제외"}</span></th>

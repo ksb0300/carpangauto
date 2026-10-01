@@ -1,6 +1,6 @@
 // 타상사 알선매도: 알선수수료에서 공제비용·세액(13.3%)을 빼 딜러지급액을 정하고, 필요하면 증빙을 발행한다.
 // 똑순이는 '등록과 동시에 발행'이 기본으로 켜져 있어 실수 신고 위험이 있었다 → 여기서는 기본 꺼짐.
-import { html, useState, useEffect, useMemo, Money, Field, Select, Seg, Loading, Empty, run, won, today, toast, ask, Period, initPeriod, downloadCsv } from "../ui.js";
+import { html, useState, useEffect, useMemo, Money, Field, Select, Seg, Loading, Empty, run, won, today, toast, ask, Period, initPeriod, downloadCsv, W } from "../ui.js";
 import { q } from "../db.js";
 import { 알선정산 } from "../calc.js";
 import { DocForm } from "./docs-ui.js";
@@ -10,14 +10,18 @@ export function BrokeragePage({ app }) {
   const [period, setPeriod] = useState(initPeriod("월"));
   const [edit, setEdit] = useState(null);
   const [doc, setDoc] = useState(null);
+  const [dealerF, setDealerF] = useState(null);
   const office = app.profile.role !== "dealer";
   const dealer = Object.fromEntries(app.dealers.map(d => [d.id, d]));
   const load = () => run(async () => setRows(await q(app.db.from("brokerages").select("*")
     .gte("sale_date", period.from).lte("sale_date", period.to).order("sale_date", { ascending: false }))));
   useEffect(() => { load(); }, [period.from, period.to]);
 
-  const sum = k => (rows || []).reduce((t, r) => t + Number(r[k] || 0), 0);
-  return html`<div class="bar"><h2>타상사 알선</h2><${Period} value=${period} onChange=${setPeriod} /><span class="grow"></span>
+  const all = rows;
+  const shown = (all || []).filter(r => !dealerF || r.dealer_id === dealerF);
+  const sum = k => shown.reduce((t, r) => t + Number(r[k] || 0), 0);
+  return html`<div class="bar"><h2>타상사알선매도 관리</h2><span class="muted">알선매도일</span><${Period} value=${period} onChange=${setPeriod} />
+      ${office && html`<${Select} value=${dealerF} onChange=${setDealerF} empty="알선딜러 전체" options=${app.dealers.map(d => [d.id, d.name])} />`}<span class="grow"></span>
       ${rows?.length > 0 && html`<button class="btn" onClick=${() => downloadCsv("알선매출", [["알선일", "딜러", "항목", "차량", "고객/상사", "타상사딜러", "수수료", "공제비용", "세액", "딜러지급", "원천", "방식", "증빙"],
         ...rows.map(r => [r.sale_date, dealer[r.dealer_id]?.name, r.item, [r.plate, r.car_name].filter(Boolean).join(" "), r.customer_name, r.other_dealer,
           r.fee, r.deduct_cost, r.tax_total, r.payout, r.withholding ? "대상" : "미대상", r.method, r.evidence])])}>엑셀(CSV)</button>`}
@@ -27,18 +31,20 @@ export function BrokeragePage({ app }) {
       <${DocForm} app=${app} init=${{ source: "알선수수료", brokerage_id: doc.id, amount: Number(doc.fee), item_name: `${doc.item} ${doc.plate || ""}`.trim(),
         trade_date: doc.sale_date, doc_type: doc.evidence === "세금계산서" ? "세금계산서" : "현금영수증", customer_name: doc.customer_name || "",
         corp_name: doc.customer_name || "", identity: doc.phone || "", phone: doc.phone || "" }} onDone=${() => setDoc(null)} /></div>`}
-    ${!rows ? html`<${Loading} />` : !rows.length ? html`<${Empty}>이 기간 알선 건이 없습니다.<//>` : html`
+    ${all && all.length > 0 && html`<div class="table-wrap"><table class="grid sumtable"><thead><tr><th>합계표</th><th class="r">건수</th><th class="r">합계금액</th><th class="r">공급가액</th><th class="r">세액</th><th class="r">딜러지급액</th></tr></thead>
+      <tbody><tr><th>합계</th><td class="r">${shown.length}</td>${W(sum("fee"))}${W(sum("supply"))}${W(sum("tax_total"))}${W(sum("payout"))}</tr></tbody></table></div>`}
+    ${!all ? html`<${Loading} />` : !shown.length ? html`<${Empty}>이 기간 알선 건이 없습니다.<//>` : html`
     <div class="table-wrap"><table class=${"grid" + (office ? " click" : "")}>
       <thead><tr><th>알선일</th><th>딜러</th><th>항목</th><th>차량</th><th>고객/상사</th><th class="r">수수료</th><th class="r">공제</th>
         <th class="r">세액</th><th class="r">딜러지급</th><th>증빙</th>${office && html`<th></th>`}</tr></thead>
-      <tbody>${rows.map(r => html`<tr onClick=${() => office && setEdit(r)}>
+      <tbody>${shown.map(r => html`<tr onClick=${() => office && setEdit(r)}>
         <td>${r.sale_date}</td><td>${dealer[r.dealer_id]?.name || "-"}</td><td>${r.item}</td>
         <td>${[r.plate, r.car_name].filter(Boolean).join(" ") || "-"}</td><td>${r.customer_name || "-"}${r.other_dealer ? html` <span class="muted small">(${r.other_dealer})</span>` : ""}</td>
         <td class="r">${won(r.fee)}</td><td class="r">${won(r.deduct_cost)}</td><td class="r">${won(r.tax_total)}</td><td class="r"><b>${won(r.payout)}</b></td>
         <td>${r.evidence}</td>
         ${office && html`<td onClick=${e => e.stopPropagation()}>${r.evidence !== "미발행" && r.evidence !== "카드" &&
           html`<button class="btn sm" onClick=${() => setDoc(r)}>증빙 발행</button>`}</td>`}</tr>`)}</tbody>
-      <tfoot><tr><td colspan="5">${rows.length}건</td><td class="r">${won(sum("fee"))}</td><td class="r">${won(sum("deduct_cost"))}</td>
+      <tfoot><tr><td colspan="5">${shown.length}건</td><td class="r">${won(sum("fee"))}</td><td class="r">${won(sum("deduct_cost"))}</td>
         <td class="r">${won(sum("tax_total"))}</td><td class="r">${won(sum("payout"))}</td><td colspan=${office ? 2 : 1}></td></tr></tfoot>
     </table></div>`}`;
 }

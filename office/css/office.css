@@ -169,3 +169,19 @@ a.stat { color: inherit; } a.stat:hover { border-color: var(--pri); }
 .me .me-name { color: #cbd0d8; } .me .me-name:hover { color: #fff; }
 @media (max-width: 760px) { .me .me-name { max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } }
 .login-box h2 { margin: 0; }
+
+/* 똑순이식 목록 */
+.grid.sumtable { font-size: 13px; } .grid.sumtable th { background: #fafbfc; } .grid.sumtable tr.em th, .grid.sumtable tr.em td { font-weight: 800; }
+.print-receipts { display: none; }
+.receipt { width: 320px; margin: 0 auto 24px; padding: 12px; border: 1px dashed #999; page-break-after: always; font-size: 12px; }
+.receipt h3 { text-align: center; } .receipt .st th { width: 90px; }
+.buy-ledger { display: none; }
+.chart { width: 100%; height: 180px; } .chart text { font-size: 10px; fill: var(--sub); }
+.chart .b1 { fill: #94a3b8; } .chart .b2 { fill: var(--pri); }
+.legend { display: flex; gap: 12px; font-size: 12px; color: var(--sub); } .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+@media print {
+  body:has(.print-receipts) .page > *:not(.print-receipts) { display: none !important; }
+  body:has(.print-receipts) .print-receipts { display: block !important; }
+  body.print-ledger .page > *:not(.buy-ledger) { display: none !important; }
+  body.print-ledger .buy-ledger { display: block !important; }
+}

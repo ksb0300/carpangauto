@@ -154,6 +154,15 @@ export function 원천징수자료(data, from, to) {
     rows.push({ 일자: s.settle_date, 구분: "차량정산", dealer_id: did, 딜러: dealer[did]?.name, car_id: c.id, 차량: `${c.plate} ${c.car_name}`, 방식: s.method,
       ...원천징수분해({ 방식: s.method, 소득금액: s.income_amount, 소득세: s.income_tax, 지방세: s.local_tax, 징수세액: s.tax_total }), 징수세액: n(s.tax_total) });
   }
+  for (const s of data.settlements || []) {             // 차량정산 중 알선딜러 몫
+    if (!s.finalized || !n(s.broker_amount) || !s.broker_withholding || !inP(s.settle_date, from, to)) continue;
+    const c = car[s.car_id]; if (!c) continue;
+    const 분 = s.method === "분할"
+      ? { 지급액: n(s.broker_income), 소득세: n(s.broker_income_tax), 지방세: n(s.broker_local_tax), 예수부가세: n(s.broker_tax_total) - n(s.broker_income_tax) - n(s.broker_local_tax) }
+      : 원천징수분해({ 방식: "일괄", 소득금액: s.broker_income, 징수세액: s.broker_tax_total });
+    rows.push({ 일자: s.settle_date, 구분: "차량정산(알선)", dealer_id: s.broker_dealer_id, 딜러: dealer[s.broker_dealer_id]?.name,
+      차주딜러: dealer[sale[s.car_id]?.dealer_id || c.dealer_id]?.name, car_id: c.id, 차량: `${c.plate} ${c.car_name}`, 방식: s.method, ...분, 징수세액: n(s.broker_tax_total) });
+  }
   for (const b of data.brokerages || []) {
     if (!b.withholding || !inP(b.sale_date, from, to)) continue;
     const 분 = b.method === "분할"
@@ -319,4 +328,117 @@ export function 거래키(t, i = 0) {
   let h = 0x811c9dc5;
   for (let k = 0; k < s.length; k++) { h ^= s.charCodeAt(k); h = Math.imul(h, 0x01000193) >>> 0; }
   return "X" + h.toString(16).padStart(8, "0") + (t.balance == null ? "-" + i : "");
+}
+
+// ───────────────────────── 똑순이 종합업무현황과 같은 집계 (2026-10-01 추가) ─────────────────────────
+const dayDiff = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 86_400_000);
+const avg = arr => arr.length ? Math.round(arr.reduce((s, x) => s + x, 0) / arr.length) : 0;
+
+/** 딜러가 낸 이자 (기간) = 이자납입 + 정산 미납이자 상계 — 딜러별 */
+function 딜러입금이자(data, from, to) {
+  const m = {};
+  for (const r of 딜러이자행(data, from, to)) m[r.dealer_id || "-"] = (m[r.dealer_id || "-"] || 0) + r.금액;
+  return m;
+}
+
+/**
+ * 딜러별 종합업무현황 (똑순이 '딜러별 종합업무현황'과 같은 칸).
+ * 현 제시현황은 오늘 기준 재고, 나머지는 [from, to] 기간.
+ */
+export function 딜러별종합현황(data, from, to, 오늘 = to) {
+  const cars = live(data.cars), car = idx(cars);
+  const 입금이자 = 딜러입금이자(data, from, to);
+  const out = {};
+  const get = id => out[id || "-"] ||= { dealer_id: id || null,
+    재고건수: 0, 재고금액: 0, 재고일수: [],
+    매입건수: 0, 매입금액: 0, 과표금액: 0, 매입공제세액: 0, 공제건: 0, 미공제건: 0,
+    상품화금액: 0, 상품화세액: 0,
+    대출금액: 0, 캐피탈이자: 0, 딜러청구이자: 0, 딜러입금이자: 0, 미납이자: 0,
+    매도건수: 0, 매도금액: 0, 매도이익금: 0, 매도비: 0, 매도일수: [] };
+  for (const c of cars) {
+    if (c.status === "재고" && c.purchase_date <= 오늘) { const x = get(c.dealer_id); x.재고건수++; x.재고금액 += n(c.purchase_amount); x.재고일수.push(dayDiff(c.purchase_date, 오늘)); }
+    if (inP(c.purchase_date, from, to)) {
+      const v = 부가세분리(c.purchase_amount);           // DB 의 purchase_supply/vat 와 같은 값
+      const x = get(c.dealer_id); x.매입건수++; x.매입금액 += n(c.purchase_amount); x.과표금액 += v.공급가;
+      if (c.evidence === "계산서") x.미공제건++; else { x.공제건++; x.매입공제세액 += v.부가세; }
+    }
+  }
+  for (const k of data.costs || []) {
+    const c = car[k.car_id]; if (!c) continue;
+    if (inP(k.paid_date || c.purchase_date, from, to)) { const x = get(c.dealer_id); x.상품화금액 += n(k.amount); x.상품화세액 += 부가세분리(k.amount, k.taxable).부가세; }
+  }
+  const pay = id => (data.payments || []).filter(p => p.loan_id === id).reduce((s, p) => s + n(p.amount), 0);
+  for (const l of data.loans || []) {
+    const c = car[l.car_id]; if (!c) continue;
+    const x = get(c.dealer_id);
+    if (l.status === "진행중") x.대출금액 += n(l.amount);
+    x.캐피탈이자 += 기간이자(l.amount, l.lender_rate, l.start_date, l.repaid_date, from, to);
+    x.딜러청구이자 += 기간이자(l.amount, l.dealer_rate, l.start_date, l.repaid_date, from, to);
+    if (l.status === "진행중") {
+      const 일 = Math.round(n(l.amount) * (Number(l.dealer_rate) || 0) / 100 / 365);
+      x.미납이자 += Math.max(0, 일 * Math.max(1, dayDiff(l.start_date, 오늘) + 1) - pay(l.id));
+    }
+  }
+  for (const s of data.sales || []) {
+    const c = car[s.car_id]; if (!c || !inP(s.sale_date, from, to)) continue;
+    const x = get(s.dealer_id || c.dealer_id);
+    const cost = (data.costs || []).filter(k => k.car_id === c.id).reduce((t, k) => t + n(k.amount), 0);
+    x.매도건수++; x.매도금액 += n(s.sale_amount); x.매도비 += n(s.sale_fee);
+    x.매도이익금 += n(s.sale_amount) - n(c.purchase_amount) - cost;
+    x.매도일수.push(dayDiff(c.purchase_date, s.sale_date));
+  }
+  for (const [id, v] of Object.entries(입금이자)) get(id === "-" ? null : id).딜러입금이자 += v;
+  return Object.values(out).map(({ 재고일수, 매도일수, ...x }) => ({ ...x, 평균재고일: avg(재고일수), 평균매도일: avg(매도일수) }));
+}
+
+/** 딜러 월별 수익 (똑순이 '딜러 월별 수익 내역'): 정산월 × 딜러. 알선 몫은 알선딜러 줄로 따로 */
+export function 딜러월별(data, from, to) {
+  const car = idx(live(data.cars)), sale = idx(data.sales, "car_id");
+  const loanCar = {}; for (const l of data.loans || []) (loanCar[l.car_id] ||= []).push(l);
+  const out = {};
+  const add = (ym, dealer, f) => { const k = ym + "|" + (dealer || "-");
+    const x = out[k] ||= { 정산월: ym, dealer_id: dealer || null, 건수: 0, 제시금액: 0, 매도금액: 0, 상품화비: 0, 재고금융이자: 0, 소득금액: 0, 세금: 0, 실지급액: 0 };
+    f(x); };
+  for (const s of data.settlements || []) {
+    const c = car[s.car_id]; if (!c || !s.finalized || !inP(s.settle_date, from, to)) continue;
+    const ym = s.settle_date.slice(0, 7), owner = sale[s.car_id]?.dealer_id || c.dealer_id;
+    const 이자 = (s.offsets || []).filter(o => o.항목 === "재고금융(미납)이자").reduce((t, o) => t + n(o.금액), 0)
+      + (loanCar[c.id] || []).reduce((t, l) => t + (data.payments || []).filter(p => p.loan_id === l.id).reduce((u, p) => u + n(p.amount), 0), 0);
+    add(ym, owner, x => { x.건수++; x.제시금액 += n(s.purchase_total); x.매도금액 += n(s.sale_total); x.상품화비 += n(s.cost_total);
+      x.재고금융이자 += 이자; x.소득금액 += n(s.income_amount); x.세금 += n(s.tax_total); x.실지급액 += n(s.payout); });
+    if (n(s.broker_amount) > 0) add(ym, s.broker_dealer_id, x => { x.건수++; x.소득금액 += n(s.broker_income);
+      x.세금 += n(s.broker_tax_total); x.실지급액 += n(s.broker_payout); });
+  }
+  return Object.values(out).sort((a, b) => a.정산월.localeCompare(b.정산월));
+}
+
+/** 이번에 낼 재고금융 이자 (상사 → 금융사): 금융사 이자지급일 기준 다음 납입일과 월이자 */
+export function 이자납부예정(data, 오늘) {
+  const lender = idx(data.lenders), car = idx(live(data.cars));
+  const next = day => {
+    const [y, m] = 오늘.split("-").map(Number);
+    const mk = (yy, mm) => { const last = new Date(Date.UTC(yy, mm, 0)).getUTCDate();
+      return `${yy}-${String(mm).padStart(2, "0")}-${String(Math.min(day, last)).padStart(2, "0")}`; };
+    const 이번 = mk(y, m);
+    return 이번 >= 오늘 ? 이번 : (m === 12 ? mk(y + 1, 1) : mk(y, m + 1));
+  };
+  return (data.loans || []).filter(l => l.status === "진행중" && car[l.car_id]).map(l => {
+    const day = Number(lender[l.lender_id]?.interest_day) || Number(l.start_date.slice(8, 10));
+    return { loan: l, car: car[l.car_id], 금융사: lender[l.lender_id]?.name, 대출금액: n(l.amount),
+      월이자: Math.round(n(l.amount) * (Number(l.lender_rate) || 0) / 100 / 12), 납입예정일: next(day) };
+  }).sort((a, b) => a.납입예정일.localeCompare(b.납입예정일));
+}
+
+/** 최근 N개월 제시·매도 추이 (대시보드·운영보고서 그래프) */
+export function 월별추이(data, 끝월, 개월 = 12) {
+  const [y, m] = 끝월.split("-").map(Number);
+  const months = Array.from({ length: 개월 }, (_, i) => new Date(Date.UTC(y, m - 1 - (개월 - 1 - i), 1)).toISOString().slice(0, 7));
+  const cars = live(data.cars), car = idx(cars);
+  return months.map(ym => ({
+    월: ym,
+    제시: cars.filter(c => c.purchase_date?.startsWith(ym)).length,
+    매도: (data.sales || []).filter(s => car[s.car_id] && s.sale_date?.startsWith(ym)).length,
+    제시금액: cars.filter(c => c.purchase_date?.startsWith(ym)).reduce((t, c) => t + n(c.purchase_amount), 0),
+    매도금액: (data.sales || []).filter(s => car[s.car_id] && s.sale_date?.startsWith(ym)).reduce((t, s) => t + n(s.sale_amount), 0),
+  }));
 }
