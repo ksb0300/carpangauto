@@ -1,6 +1,6 @@
 {
- "updated": "2026-10-01 21:08",
- "count": 36,
+ "updated": "2026-10-02 21:16",
+ "count": 40,
  "cars": [
   {
    "id": "42351261",
@@ -159,6 +159,32 @@
    "link": "https://fem.encar.com/cars/detail/42568440"
   },
   {
+   "id": "42779163",
+   "plate": "275무2019",
+   "maker": "기아",
+   "model": "스포티지",
+   "grade": "HEV 1.6 4WD",
+   "year": "25년 10월",
+   "yearRaw": "202510",
+   "mileage": 3439,
+   "fuel": "가솔린+전기",
+   "transmission": "오토",
+   "color": "검정색",
+   "price": 5000,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture07/pic4277/42779163_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42779163_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42779163_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42779163_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42779163_044.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42779163_047.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42779163_021.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42779163_024.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42779163"
+  },
+  {
    "id": "42584618",
    "plate": "01오8134",
    "maker": "아우디",
@@ -237,32 +263,6 @@
    "link": "https://fem.encar.com/cars/detail/42806257"
   },
   {
-   "id": "42775839",
-   "plate": "64저3793",
-   "maker": "BYD",
-   "model": "씨라이언 7 ",
-   "grade": "플러스",
-   "year": "26년 05월",
-   "yearRaw": "202605",
-   "mileage": 6942,
-   "fuel": "전기",
-   "transmission": "오토",
-   "color": "흰색",
-   "price": 4190,
-   "diagnosis": true,
-   "photos": [
-    "https://ci.encar.com/carpicture07/pic4277/42775839_027.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4277/42775839_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4277/42775839_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4277/42775839_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4277/42775839_049.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4277/42775839_006.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4277/42775839_035.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4277/42775839_033.jpg?impolicy=widthRate&wid=800"
-   ],
-   "link": "https://fem.encar.com/cars/detail/42775839"
-  },
-  {
    "id": "42481724",
    "plate": "121라9496",
    "maker": "BMW",
@@ -289,30 +289,56 @@
    "link": "https://fem.encar.com/cars/detail/42481724"
   },
   {
-   "id": "42779163",
-   "plate": "275무2019",
-   "maker": "기아",
-   "model": "스포티지",
-   "grade": "HEV 1.6 4WD",
-   "year": "25년 10월",
-   "yearRaw": "202510",
-   "mileage": 3439,
-   "fuel": "가솔린+전기",
+   "id": "42828503",
+   "plate": "45가1668",
+   "maker": "BYD",
+   "model": "씨라이언 7 ",
+   "grade": "플러스",
+   "year": "26년 05월",
+   "yearRaw": "202605",
+   "mileage": 6496,
+   "fuel": "전기",
    "transmission": "오토",
-   "color": "검정색",
-   "price": 4100,
+   "color": "흰색",
+   "price": 4110,
    "diagnosis": true,
    "photos": [
-    "https://ci.encar.com/carpicture07/pic4277/42779163_027.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4277/42779163_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4277/42779163_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4277/42779163_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4277/42779163_018.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4277/42779163_020.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4277/42779163_008.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4277/42779163_040.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture02/pic4282/42828503_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4282/42828503_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4282/42828503_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4282/42828503_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4282/42828503_042.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4282/42828503_008.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4282/42828503_007.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4282/42828503_015.jpg?impolicy=widthRate&wid=800"
    ],
-   "link": "https://fem.encar.com/cars/detail/42779163"
+   "link": "https://fem.encar.com/cars/detail/42828503"
+  },
+  {
+   "id": "42775839",
+   "plate": "64저3793",
+   "maker": "BYD",
+   "model": "씨라이언 7 ",
+   "grade": "플러스",
+   "year": "26년 05월",
+   "yearRaw": "202605",
+   "mileage": 6942,
+   "fuel": "전기",
+   "transmission": "오토",
+   "color": "흰색",
+   "price": 4090,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture07/pic4277/42775839_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42775839_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42775839_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42775839_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42775839_044.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42775839_046.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42775839_020.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42775839_041.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42775839"
   },
   {
    "id": "42775853",
@@ -523,6 +549,32 @@
    "link": "https://fem.encar.com/cars/detail/42700355"
   },
   {
+   "id": "42831004",
+   "plate": "102조9178",
+   "maker": "미니",
+   "model": "쿠퍼",
+   "grade": "5도어 페이버드",
+   "year": "24년 11월",
+   "yearRaw": "202411",
+   "mileage": 43378,
+   "fuel": "가솔린",
+   "transmission": "오토",
+   "color": "검정색",
+   "price": 3050,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture03/pic4283/42831004_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4283/42831004_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4283/42831004_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4283/42831004_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4283/42831004_008.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4283/42831004_036.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4283/42831004_034.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4283/42831004_031.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42831004"
+  },
+  {
    "id": "42618931",
    "plate": "58누3317",
    "maker": "벤츠",
@@ -593,10 +645,10 @@
     "https://ci.encar.com/carpicture02/pic4282/42826707_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture02/pic4282/42826707_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture02/pic4282/42826707_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture02/pic4282/42826707_051.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture02/pic4282/42826707_019.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture02/pic4282/42826707_034.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture02/pic4282/42826707_007.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture02/pic4282/42826707_046.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4282/42826707_035.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4282/42826707_024.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4282/42826707_020.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42826707"
   },
@@ -625,6 +677,32 @@
     "https://ci.encar.com/carpicture09/pic4279/42790171_008.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42790171"
+  },
+  {
+   "id": "42830983",
+   "plate": "68다7414",
+   "maker": "기아",
+   "model": "니로",
+   "grade": "어스",
+   "year": "22년 07월",
+   "yearRaw": "202207",
+   "mileage": 73807,
+   "fuel": "전기",
+   "transmission": "오토",
+   "color": "쥐색",
+   "price": 2600,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture03/pic4283/42830983_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4283/42830983_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4283/42830983_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4283/42830983_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4283/42830983_005.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4283/42830983_010.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4283/42830983_022.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4283/42830983_018.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42830983"
   },
   {
    "id": "42780057",
@@ -781,6 +859,32 @@
     "https://ci.encar.com/carpicture01/pic4251/42517582_047.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42517582"
+  },
+  {
+   "id": "42830994",
+   "plate": "373저1168",
+   "maker": "쉐보레(GM대우)",
+   "model": "이쿼녹스",
+   "grade": "4WD LT",
+   "year": "20년 12월",
+   "yearRaw": "202012",
+   "mileage": 85202,
+   "fuel": "디젤",
+   "transmission": "오토",
+   "color": "흰색",
+   "price": 2000,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture03/pic4283/42830994_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4283/42830994_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4283/42830994_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4283/42830994_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4283/42830994_022.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4283/42830994_019.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4283/42830994_020.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4283/42830994_036.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42830994"
   },
   {
    "id": "42518291",
