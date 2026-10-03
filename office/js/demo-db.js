@@ -72,9 +72,17 @@ async function install() {
       ["기아 EV6 롱레인지", "33머7081", 28_900_000, d1, 303_450],
       ["벤츠 C200d", "19조0174", 23_000_000, d2, 0],
     ];
+    const ids = [];
     for (const [name, plate, amt, dealer, tax] of cars)
-      await tx.query(`insert into cars (car_name, plate, plate_before, purchase_amount, purchase_fee, acq_tax, dealer_id, purchase_date, seller_name)
-                      values ($1,$2,$2,$3,600000,$4,$5,$6,'예시 매도자')`, [name, plate, amt, tax, dealer, today]);
+      ids.push((await tx.query(`insert into cars (car_name, plate, plate_before, purchase_amount, purchase_fee, acq_tax, dealer_id, purchase_date, seller_name)
+                      values ($1,$2,$2,$3,600000,$4,$5,$6,'예시 매도자') returning id`, [name, plate, amt, tax, dealer, today])).rows[0].id);
+    // 예시 성능점검 (KAIWA 연동 결과 모양) — 하나는 90일 넘겨 대시보드 알림이 보이게
+    const ago = n => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10);
+    for (const [car, no, d, price, res] of [
+      [ids[0], "9800066713", 95, 127380, { 사고이력: "없음", 단순수리: "없음", "침수·화재": "없음", "렌트·영업용": "없음", 튜닝: "없음" }],
+      [ids[2], "9800068333", 10, 420420, { 사고이력: "없음", 단순수리: "있음", "침수·화재": "없음", "렌트·영업용": "없음", 튜닝: "없음" }]])
+      await tx.query(`insert into car_inspections (car_id, reserve_id, check_no, recept_date, expire_date, place, insurer, check_price, insur_price, result)
+                      values ($1, $2, $3, $4::date, $4::date + 119, '예시 점검장', '흥국화재', 44000, $5, $6)`, [car, Number(no), no, ago(d), price, JSON.stringify(res)]);
   });
 }
 

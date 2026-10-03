@@ -185,3 +185,6 @@ a.stat { color: inherit; } a.stat:hover { border-color: var(--pri); }
   body.print-ledger .page > *:not(.buy-ledger) { display: none !important; }
   body.print-ledger .buy-ledger { display: block !important; }
 }
+.insp-row { padding: 10px 0; border-bottom: 1px solid var(--line2); } .insp-row:last-child { border-bottom: 0; }
+.insp-row.old { opacity: .7; } .insp-line { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+.insp-flags { margin-top: 6px; } .note.red { color: #b91c1c; }

@@ -8,6 +8,7 @@ const EMPTY = {
   seller_name: "", seller_type: "개인", seller_biz_no: "", seller_phone: "", seller_email: "",
   seller_zip: "", seller_addr1: "", seller_addr2: "", contract_no: "", invoice_date: null, fact_confirm: null,
   memo: "", association_memo: "", parking_zone_id: null, key_no: "",
+  vin: "", model_year: "", first_reg_date: null, mileage: null, fuel: "", transmission: "", motor_type: "",
 };
 const EDITABLE = Object.keys(EMPTY);
 
@@ -89,6 +90,17 @@ export function CarForm({ app, id }) {
       <${Field} label="Key번호"><input value=${f.key_no || ""} onInput=${setT("key_no")} /><//>
       <${Field} label="특이사항" wide><input value=${f.memo || ""} onInput=${setT("memo")} /><//>
       <${Field} label="조합제시메모" wide><input value=${f.association_memo || ""} onInput=${setT("association_memo")} /><//>
+    </div>
+
+    <h3>차량 정보 <span class="muted small">성능점검이 연동되면 빈 칸이 자동으로 채워집니다</span></h3>
+    <div class="fgrid">
+      <${Field} label="차대번호"><input value=${f.vin || ""} onInput=${setT("vin")} /><//>
+      <${Field} label="연식"><input value=${f.model_year || ""} onInput=${setT("model_year")} /><//>
+      <${Field} label="최초등록일"><input type="date" value=${f.first_reg_date || ""} onInput=${setT("first_reg_date")} /><//>
+      <${Field} label="주행거리(km)"><${Money} value=${f.mileage || 0} onInput=${v => set("mileage")(v || null)} /><//>
+      <${Field} label="연료"><${Select} value=${f.fuel} onChange=${set("fuel")} empty="선택" options=${["가솔린", "디젤", "LPG", "하이브리드", "전기", "수소전기", "기타"]} /><//>
+      <${Field} label="변속기"><${Select} value=${f.transmission} onChange=${set("transmission")} empty="선택" options=${["자동", "수동", "세미오토", "무단변속기", "기타"]} /><//>
+      <${Field} label="원동기형식"><input value=${f.motor_type || ""} onInput=${setT("motor_type")} /><//>
     </div>
   </form>`;
 }

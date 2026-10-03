@@ -782,3 +782,50 @@ alter table car_loans
 -- 딜러: 알선딜러로 들어간 정산도 본인 것이면 읽기
 create policy dealer_settlements_broker on settlements for select to authenticated
   using (my_role() = 'dealer' and broker_dealer_id = my_dealer_id());
+
+
+-- 20261003000001_kaiwa.sql
+-- 성능점검(KAIWA) 연동: 점검 이력, 차량 기본정보 자동 채우기, 기록부 PDF 첨부, 만료 알림 표시
+
+-- 차량 기본정보 (성능기록부에서 비어 있을 때만 채운다)
+alter table cars
+  add column vin            text,   -- 차대번호
+  add column model_year     text,   -- 연식
+  add column first_reg_date date,   -- 최초등록일
+  add column mileage        int,    -- 주행거리(km, 점검 당시)
+  add column fuel           text,
+  add column transmission   text,
+  add column motor_type     text;   -- 원동기형식
+
+-- 기록부 PDF 는 '성능' 으로 분류
+alter table car_files drop constraint if exists car_files_kind_check;
+alter table car_files add constraint car_files_kind_check check (kind in ('제시', '매도', '정산', '성능', '기타'));
+
+create table car_inspections (
+  id           uuid primary key default gen_random_uuid(),
+  car_id       uuid not null references cars(id) on delete cascade,
+  source       text not null default 'KAIWA',
+  reserve_id   bigint unique,          -- KAIWA 예약번호 (같은 점검 두 번 안 넣는다)
+  check_no     text,                   -- 성능번호
+  recept_date  date not null,          -- 접수(점검)일
+  expire_date  date,                   -- 성능점검 유효기한
+  place        text,                   -- 점검장
+  insurer      text,                   -- 보증보험사
+  check_price  int not null default 0, -- 점검비
+  insur_price  int not null default 0, -- 성능보험료
+  mileage      int,
+  result       jsonb not null default '{}',   -- 사고이력·단순수리·침수·렌트·튜닝 등 체크 결과
+  warnings     text[] not null default '{}',
+  file_id      uuid references car_files(id) on delete set null,
+  cost_id      uuid references car_costs(id) on delete set null,
+  alerted_at   timestamptz,            -- 만료 임박 알림 보낸 시각
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now()
+);
+create index car_inspections_car_idx on car_inspections (car_id, recept_date desc);
+
+create trigger car_inspections_audit after insert or update or delete on car_inspections for each row execute function audit();
+alter table car_inspections enable row level security;
+create policy office_all on car_inspections for all to authenticated using (is_office()) with check (is_office());
+create policy dealer_inspections on car_inspections for select to authenticated
+  using (my_role() = 'dealer' and exists (select 1 from cars c where c.id = car_id and c.dealer_id = my_dealer_id()));

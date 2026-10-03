@@ -7,16 +7,18 @@ import { planLines } from "./tab-docs.js";
 import { TrendChart } from "./reports.js";
 import { 미납이자 } from "../calc.js";
 import { monthRange } from "../ui.js";
+import { inspState, ALERT_DAYS } from "./tab-insp.js";
 
 export function Dashboard({ app }) {
   const [d, setD] = useState(null);
   useEffect(() => { run(async () => {
-    const [all, docs, unmatched] = await Promise.all([
+    const [all, docs, unmatched, insp] = await Promise.all([
       loadAll(app.db),
       q(app.db.from("issue_docs").select("id,status,amount,car_id,doc_type,buyer_id,source")),
       q(app.db.from("bank_txs").select("id").is("match_kind", null)),
+      q(app.db.from("car_inspections").select("car_id,recept_date,expire_date").order("recept_date", { ascending: false })),
     ]);
-    setD({ ...all, allDocs: docs, docs: docs.filter(x => ["대기", "실패"].includes(x.status)), unmatched });
+    setD({ ...all, allDocs: docs, docs: docs.filter(x => ["대기", "실패"].includes(x.status)), unmatched, insp });
   }); }, []);
   if (!d) return html`<${Loading} />`;
 
@@ -32,6 +34,11 @@ export function Dashboard({ app }) {
     .filter(l => (Date.parse(l.만기) - Date.parse(t)) / 864e5 <= 14).sort((a, b) => a.만기.localeCompare(b.만기));
   const 미납합 = act.reduce((a, l) => a + 미납이자({ 대출금액: l.amount, 딜러이율: l.dealer_rate, 개월: l.months, 실행일: l.start_date, 납입이자누계: pay(l.id) }, t), 0);
   const 장기 = live.filter(c => c.status === "재고" && (Date.parse(t) - Date.parse(c.purchase_date)) / 864e5 >= 90);
+  // 성능점검: 재고 차마다 가장 최근 점검이 90일 지났거나 만료된 것
+  const 최근점검 = {}; for (const i of d.insp) 최근점검[i.car_id] ??= i;
+  const 성능 = live.filter(c => c.status === "재고" && 최근점검[c.id]).map(c => ({ c, s: inspState(최근점검[c.id], t) }))
+    .filter(x => x.s.경과 >= ALERT_DAYS || x.s.tone === "red").sort((a, b) => b.s.경과 - a.s.경과);
+  const 성능만료 = 성능.filter(x => x.s.tone === "red");
   const 실패 = d.docs.filter(x => x.status === "실패").length;
   const lenders = d.lenders.filter(l => l.active && Number(l.credit_limit));
   const used = id => act.filter(l => l.lender_id === id).reduce((a, l) => a + Number(l.amount), 0);
@@ -58,6 +65,8 @@ export function Dashboard({ app }) {
     d.docs.length && { href: "#/issue/wait", tone: 실패 ? "bad" : "warn", text: `발행대기 ${d.docs.length}건 (${won(d.docs.reduce((a, x) => a + Number(x.amount), 0))}원)${실패 ? ` · 실패 ${실패}건` : ""}` },
     d.unmatched.length && { href: "#/bank", tone: "warn", text: `통장 입출금 중 장부와 연결 안 된 거래 ${d.unmatched.length}건` },
     만기임박.length && { href: "#/loans", tone: "bad", text: `재고금융 만기 2주 이내·지난 것 ${만기임박.length}건 (${만기임박.map(l => car[l.car_id].plate).slice(0, 4).join(", ")}${만기임박.length > 4 ? " 외" : ""})` },
+    성능.length && { href: `#/car/${성능[0].c.id}/info`, tone: 성능만료.length ? "bad" : "warn",
+      text: `성능점검 ${ALERT_DAYS}일 지난 재고 ${성능.length}대${성능만료.length ? ` (만료 ${성능만료.length}대)` : ""} — 재점검 확인 (${성능.map(x => `${x.c.plate} ${x.s.남은 !== null && x.s.남은 >= 0 ? "D-" + x.s.남은 : "만료"}`).slice(0, 4).join(", ")}${성능.length > 4 ? " 외" : ""})` },
     장기.length && { href: "#/reports/summary", tone: "warn", text: `90일 넘은 재고 ${장기.length}대 (${장기.map(c => c.plate).slice(0, 4).join(", ")}${장기.length > 4 ? " 외" : ""})` },
   ].filter(Boolean);
 

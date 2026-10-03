@@ -2,7 +2,7 @@
 import { html, useState, useEffect, Select, run, toast, ask } from "../ui.js";
 import { q } from "../db.js";
 
-const KINDS = ["제시", "매도", "정산", "기타"];
+const KINDS = ["제시", "매도", "정산", "성능", "기타"];
 const MAX = 20 * 1024 * 1024;
 const safe = s => s.replace(/[^\w.\-가-힣]/g, "_").slice(-80);
 

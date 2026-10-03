@@ -6,6 +6,7 @@ import { SaleTab } from "./tab-sale.js";
 import { SettleTab } from "./tab-settle.js";
 import { DocsTab } from "./tab-docs.js";
 import { FilesTab } from "./tab-files.js";
+import { InspectionCard } from "./tab-insp.js";
 
 export async function loadCar(db, id) {
   const [car, costs, loans, sale, buyers, settlement] = await Promise.all([
@@ -76,6 +77,8 @@ function InfoTab({ app, car, sale, office }) {
     ["제시금액", `${won(car.purchase_amount)} (공급가 ${won(car.purchase_supply)} / 부가세 ${won(car.purchase_vat)})`],
     ["상사매입비", won(car.purchase_fee)], ["(예상)취득세", won(car.acq_tax)],
     ["차종", car.car_kind], ["차량번호(제시전)", car.plate_before], ["제시증빙", car.evidence],
+    ["차대번호", car.vin], ["연식", car.model_year], ["최초등록일", car.first_reg_date],
+    ["주행거리", car.mileage != null ? `${won(car.mileage)} km` : null], ["연료 · 변속기", [car.fuel, car.transmission].filter(Boolean).join(" · ")], ["원동기형식", car.motor_type],
     ["매도자", car.seller_name ? `${car.seller_name} (${car.seller_type})` : null],
     ["주민(법인)번호", ssn ? html`<b>${ssn}</b>` : car.seller_ssn_masked],
     ["사업자번호", car.seller_biz_no], ["연락처", car.seller_phone], ["이메일", car.seller_email],
@@ -100,7 +103,8 @@ function InfoTab({ app, car, sale, office }) {
     </div>
     <div class="kvgrid">${rows.map(([k, v]) => html`<div><span>${k}</span><b>${v || html`<i class="muted">-</i>`}</b></div>`)}</div>
     <${BuyLedger} app=${app} car=${car} ssn=${ssn} />
-  </div>`;
+  </div>
+  <${InspectionCard} app=${app} car=${car} office=${office} />`;
 }
 
 /** 매입장 (차 한 대) — 인쇄 전용. 똑순이 상세보기의 '매입장 출력' */
