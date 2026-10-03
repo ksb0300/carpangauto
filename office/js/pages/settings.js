@@ -3,7 +3,7 @@ import { q } from "../db.js";
 import { DEMO } from "../config.js";
 import { popbill, accounts } from "../pb.js";
 
-const TABS = [["company", "상사정보"], ["ops", "운영설정"], ["dealers", "대표·딜러"], ["lenders", "재고금융사"], ["parking", "주차구역"],
+const TABS = [["company", "상사정보"], ["ops", "운영설정"], ["dealers", "대표·딜러"], ["lenders", "재고금융사"],
   ["items", "항목"], ["popbill", "팝빌 연동"], ["accounts", "계정·권한"]];
 
 export function Settings({ app, tab }) {

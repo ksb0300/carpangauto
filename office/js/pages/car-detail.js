@@ -70,7 +70,6 @@ export function CarDetail({ app, id, tab }) {
 }
 
 function InfoTab({ app, car, sale, office }) {
-  const zone = app.parking.find(p => p.id === car.parking_zone_id);
   const rows = [
     ["매입담당", (d => d ? d.name + (d.partner ? " (대표)" : " (딜러)") : html`<span class="red">미지정</span>`)(app.dealers.find(x => x.id === car.dealer_id))],
     ["매입일", car.purchase_date],
@@ -80,7 +79,7 @@ function InfoTab({ app, car, sale, office }) {
     ["브랜드 · 모델", [car.brand, car.model, car.grade].filter(Boolean).join(" · ")], ["통합키", car.fskey],
     ["차대번호", car.vin], ["연식", car.model_year], ["최초등록일", car.first_reg_date],
     ["주행거리", car.mileage != null ? `${won(car.mileage)} km` : null], ["연료 · 변속기", [car.fuel, car.transmission].filter(Boolean).join(" · ")], ["원동기형식", car.motor_type],
-    ["주차위치", zone?.name], ["Key번호", car.key_no], ["메모", car.memo],
+    ["Key번호", car.key_no], ["메모", car.memo],
   ];
   const remove = async () => {
     if (sale) return toast("매도된 차량은 삭제할 수 없습니다. 매도취소 후 삭제하세요.", "err");

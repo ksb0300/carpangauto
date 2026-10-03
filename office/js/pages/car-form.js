@@ -6,7 +6,7 @@ import { 부가세분리, 예상취득세 } from "../calc.js";
 // 차명은 통합키에서 고르고(브랜드·모델·등급 따라옴), 차량정보(차대번호·연식·주행거리 등)는 성능점검(KAIWA)이 채운다.
 const EMPTY = {
   dealer_id: null, car_name: "", plate: "", purchase_date: today(), purchase_amount: 0, purchase_fee: 0, acq_tax: 0,
-  evidence: "의제매입", purchase_channel: null, parking_zone_id: null, key_no: "", memo: "",
+  evidence: "의제매입", purchase_channel: null, key_no: "", memo: "",
   fskey: null, car_type: null, brand: null, model: null, grade: null, fuel: null,
 };
 const EDITABLE = Object.keys(EMPTY);   // 수정할 때도 이 칸들만 보낸다 (예전에 넣은 매도자 정보 등은 그대로 둔다)
@@ -30,7 +30,7 @@ function KeyPicker({ app, f, onPick, onText }) {
     if (my === keySeq) setList(data || []);
   };
   return html`<div class="keypick">
-    <input placeholder="차명 입력 — 예) 쏘렌토, 그랜저 하이브리드, X3 30e" value=${f.car_name} required autocomplete="off"
+    <input placeholder="예) 쏘렌토" value=${f.car_name} required autocomplete="off"
       onInput=${e => search(e.target.value)} onFocus=${e => !f.fskey && e.target.value && search(e.target.value)} onBlur=${() => setTimeout(() => setList(null), 200)} />
     ${list && html`<div class="keylist">${!list.length ? html`<div class="muted small">맞는 통합키가 없습니다. 그대로 쓰면 직접 입력한 차명으로 저장됩니다.</div>`
       : list.map(k => html`<button type="button" onMouseDown=${e => e.preventDefault()} onClick=${() => { onPick(k); setList(null); }}>
@@ -82,7 +82,7 @@ export function CarForm({ app, id }) {
       <button type="button" class="btn ghost" onClick=${() => history.back()}>취소</button>
       <button class="btn primary" disabled=${busy}>${busy ? "저장 중…" : "저장"}</button></div>
     <div class="fgrid">
-      <${Field} label="차명" req wide hint=${f.fskey ? `통합키: ${f.fskey}` : "치면 통합키 목록이 나옵니다 — 골라야 브랜드·모델이 따라옵니다"}>
+      <${Field} label="차명" req wide hint=${f.fskey ? `통합키: ${f.fskey}` : "대충 적어도 됩니다 (예: 쏘렌토) — 엔카 광고가 올라가면 통합키로 차명이 자동으로 바뀝니다. 아래 목록에서 골라도 됩니다"}>
         <${KeyPicker} app=${app} f=${f} onPick=${k => setF(p => ({ ...p, ...keyPatch(k, p) }))} onText=${v => setF(p => ({ ...p, car_name: v, fskey: null }))} /><//>
       <${Field} label="차량번호" req><input placeholder="12가3456" value=${f.plate} onInput=${setT("plate")} required /><//>
       <${Field} label="매입일" req><input type="date" value=${f.purchase_date} onInput=${setT("purchase_date")} required /><//>
@@ -92,12 +92,12 @@ export function CarForm({ app, id }) {
         <${Select} value=${f.dealer_id} onChange=${pickDealer} empty="선택" options=${app.dealers.filter(d => d.active || d.id === f.dealer_id).map(d => [d.id, d.name + (d.partner ? "" : " (딜러)")])} /><//>
       <${Field} label="매입처" hint=${channel && Number(channel.fee) ? `매입수수료 ${won(channel.fee)}원 자동` : ""}>
         <${Select} value=${f.purchase_channel} onChange=${set("purchase_channel")} empty="선택" options=${(app.settings.purchase_channels || []).map(c => c.name)} /><//>
-      <${Field} label="매입증빙"><${Seg} value=${f.evidence} onChange=${set("evidence")} options=${["의제매입", "세금계산서", "계산서"]} /><//>
+      <${Field} label="매입증빙" hint=${f.evidence === "세금계산서" ? "사업자(렌트사·법인 등)에게 사서 세금계산서를 받은 경우" : "개인에게 산 경우 (대부분)"}>
+        <${Seg} value=${f.evidence} onChange=${set("evidence")} options=${["의제매입", "세금계산서"]} /><//>
       <${Field} label="취득세" hint=${`자동계산 ${won(autoTax)}원`}>
         <div class="row"><${Money} value=${f.acq_tax} onInput=${v => { setTaxEdited(true); set("acq_tax")(v); }} />
         <button type="button" class="btn sm" onClick=${() => { setTaxEdited(false); set("acq_tax")(autoTax); }}>자동계산</button></div><//>
       ${f.dealer_id && !partner && html`<${Field} label="상사매입비" hint="딜러 차 — 상품화비용으로 자동 반영"><${Money} value=${f.purchase_fee} onInput=${set("purchase_fee")} /><//>`}
-      <${Field} label="주차위치"><${Select} value=${f.parking_zone_id} onChange=${set("parking_zone_id")} empty="선택" options=${app.parking.map(p => [p.id, p.name])} /><//>
       <${Field} label="Key번호"><input value=${f.key_no || ""} onInput=${setT("key_no")} /><//>
       <${Field} label="메모" wide><input value=${f.memo || ""} onInput=${setT("memo")} /><//>
     </div>
