@@ -43,7 +43,7 @@ export function Settlements({ app }) {
       <button class="btn" disabled=${!rows.length} onClick=${download}>엑셀다운로드</button></div>
     <div class="bar">
       <input class="search" placeholder="차량번호·차명" value=${text} onInput=${e => setText(e.target.value)} />
-      <${Select} value=${dealerF} onChange=${setDealerF} empty="담당딜러 전체" options=${app.dealers.map(d => [d.id, d.name])} />
+      <${Select} value=${dealerF} onChange=${setDealerF} empty="매입담당 전체" options=${app.dealers.map(d => [d.id, d.name])} />
       <${Select} value=${key} onChange=${setKey} options=${["정산일", "매도일", "제시일"]} />
       <${Period} value=${period} onChange=${setPeriod} />
       <${Seg} value=${only} onChange=${setOnly} options=${["완료", "임시", "전체"]} />

@@ -42,7 +42,7 @@ function Filters({ app, f, setF, dateKeys, sortKeys, extra }) {
   const office = app.profile.role !== "dealer";
   return html`<div class="bar">
     <input class="search" placeholder="차량번호·차명" value=${f.q} onInput=${e => setF(p => ({ ...p, q: e.target.value }))} />
-    ${office && html`<${Select} value=${f.dealer} onChange=${v => setF(p => ({ ...p, dealer: v }))} empty="담당딜러 전체" options=${app.dealers.map(d => [d.id, d.name])} />`}
+    ${office && html`<${Select} value=${f.dealer} onChange=${v => setF(p => ({ ...p, dealer: v }))} empty="매입담당 전체" options=${app.dealers.map(d => [d.id, d.name])} />`}
     ${dateKeys.length > 1 && html`<${Select} value=${f.dateKey} onChange=${v => setF(p => ({ ...p, dateKey: v }))} options=${dateKeys} />`}
     <label class="check"><input type="checkbox" checked=${f.useDate} onChange=${e => setF(p => ({ ...p, useDate: e.target.checked }))} /> 기간</label>
     ${f.useDate && html`<${Period} value=${f.period} onChange=${v => setF(p => ({ ...p, period: v }))} />`}
