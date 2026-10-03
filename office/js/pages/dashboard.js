@@ -42,8 +42,10 @@ export function Dashboard({ app }) {
     .filter(x => x.s.경과 >= ALERT_DAYS || x.s.tone === "red").sort((a, b) => b.s.경과 - a.s.경과);
   const 성능만료 = 성능.filter(x => x.s.tone === "red");
   const 실패 = d.docs.filter(x => x.status === "실패").length;
-  const lenders = d.lenders.filter(l => l.active && Number(l.credit_limit));
-  const used = id => act.filter(l => l.lender_id === id).reduce((a, l) => a + Number(l.amount), 0);
+  // 한도를 넣었거나 대출이 있는 금융사 전부 (대출 많은 순) — 한도 없으면 사용액만
+  const used = id => act.filter(l => l.lender_id === id).reduce((a, l) => a + Number(l.amount) - Number(l.principal_repaid || 0), 0);
+  const cnt = id => act.filter(l => l.lender_id === id).length;
+  const lenders = d.lenders.filter(l => (l.active && Number(l.credit_limit)) || cnt(l.id)).sort((a, b) => used(b.id) - used(a.id));
   const 정보없음 = !app.settings.biz_no;
 
   // 똑순이 대시보드: 현금영수증·세금계산서 미발행 리스트 (매도했는데 그 증빙이 아직 발행 안 된 것)
@@ -120,11 +122,14 @@ export function Dashboard({ app }) {
           <td class="r">${x.월이자 ? won(x.월이자) : html`<span class="muted" title="캐피탈이율 미입력">-</span>`}</td><td>${x.납입예정일}</td></tr>`)}</tbody></table></div>`,
       html`<a class="btn sm" href="#/loans/interest">이자납입 리스트</a>`) },
     trend: { title: "최근 12개월 매입·매도 추이", size: "half", render: () => card("최근 12개월 매입 · 매도 추이", html`<${TrendChart} rows=${추이} a=${{ key: "제시", label: "매입(대)" }} b=${{ key: "매도", label: "매도(대)" }} />`) },
-    lenders: { title: "재고금융 한도 현황", size: "full", render: () => card("재고금융 한도 현황", !lenders.length ? html`<p class="muted">한도를 넣은 금융사가 없습니다. 재고금융 → 금융사별 현황 → 조건 설정에서 넣으세요.</p>`
+    lenders: { title: "재고금융 한도 현황", size: "full", render: () => card("재고금융 한도 현황", !lenders.length ? html`<p class="muted">진행중 재고금융이 없습니다.</p>`
       : html`<table class="st"><tbody>${lenders.map(l => {
-      const u = used(l.id) + Number(l.existing_amount || 0), lim = Number(l.credit_limit), pct = Math.round(u / lim * 100);
-      return html`<tr><th>${l.name}</th><td><div class="bar-meter"><i class=${pct > 100 ? "over" : ""} style=${`width:${Math.min(100, pct)}%`}></i></div></td>
-        <td class="r">${won(u)} / ${won(lim)}</td><td class=${"r" + (lim - u < 0 ? " red" : "")}>잔여 ${won(lim - u)}</td></tr>`; })}</tbody></table>`) },
+      const u = used(l.id) + Number(l.existing_amount || 0), lim = Number(l.credit_limit), pct = lim ? Math.round(u / lim * 100) : 0;
+      return html`<tr><th>${l.name} <span class="muted small">${cnt(l.id)}건</span></th>
+        <td>${lim ? html`<div class="bar-meter"><i class=${pct > 100 ? "over" : ""} style=${`width:${Math.min(100, pct)}%`}></i></div>` : html`<a class="muted small" href=${`#/loans/lender/${l.id}`}>한도 미입력 — 넣기</a>`}</td>
+        <td class="r">${won(u)}${lim ? ` / ${won(lim)}` : ""}</td><td class=${"r" + (lim && lim - u < 0 ? " red" : "")}>${lim ? `잔여 ${won(lim - u)}` : ""}</td></tr>`; })}
+      <tr class="em"><th>합계</th><td></td><td class="r">${won(lenders.reduce((t, l) => t + used(l.id) + Number(l.existing_amount || 0), 0))}</td><td></td></tr></tbody></table>`,
+      html`<a class="btn sm" href="#/loans/lenders">금융사별 현황</a>`) },
   };
   const layout = normalize(app.profile.dashboard);
 
