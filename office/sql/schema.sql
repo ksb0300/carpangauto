@@ -893,3 +893,83 @@ drop policy dealer_self on dealers;
 drop policy dealer_brokerages on brokerages;
 drop policy dealer_docs on issue_docs;
 drop policy dealer_inspections on car_inspections;
+
+
+-- 20261003000004_ledger_parity.sql
+-- 매입매출 관리대장(엑셀)에서 해 오던 것들
+--   · 매입처 + 매입수수료 자동 (헤이딜러 제로/셀프·엔카 60만원, 설정에서 바꿈)
+--   · 판매유형: 내수판매 / 수출 / 엔카믿고 / 알선판매  (엔카믿고 매도비 242,000)
+--   · 수출이면 성능점검비를 22,000원으로 (돌리면 원래 금액)
+--   · 할부금융 수수료: 할부금액 × 할부피% − 원천징수(3.3%, 10원 미만 절사) = 수익
+--   · 브랜드·모델·등급 (엔카 차종 정보로 채움)
+
+-- ── 매입처
+alter table settings add column purchase_channels jsonb not null default
+  '[{"name":"헤이딜러 제로","fee":600000},{"name":"헤이딜러 셀프","fee":600000},{"name":"엔카","fee":600000},{"name":"당근","fee":0},{"name":"신차 및 지인","fee":0},{"name":"대차","fee":0}]';
+alter table settings add column sale_fee_encar int not null default 242000;   -- 엔카믿고 매도비
+alter table cars add column purchase_channel text;
+
+create or replace function cars_channel_fee() returns trigger language plpgsql security definer set search_path = public as $$
+declare fee bigint;
+begin
+  select (c->>'fee')::bigint into fee from settings s, jsonb_array_elements(s.purchase_channels) c
+   where s.id = 1 and c->>'name' = new.purchase_channel;
+  delete from car_costs where car_id = new.id and auto_source = '매입수수료';
+  if coalesce(fee, 0) > 0 then
+    insert into car_costs (car_id, item, paid_by, taxable, amount, paid_date, include_in_settlement, auto_source, sort, memo)
+    values (new.id, '매입수수료', '딜러', true, fee, new.purchase_date, true, '매입수수료', -3, new.purchase_channel);
+  end if;
+  return new;
+end $$;
+create trigger cars_channel_fee after insert or update of purchase_channel, purchase_date on cars
+  for each row execute function cars_channel_fee();
+
+-- ── 판매유형
+alter table car_sales drop constraint car_sales_sale_type_check;
+update car_sales set sale_type = '내수판매' where sale_type not in ('수출');
+alter table car_sales alter column sale_type set default '내수판매';
+alter table car_sales add constraint car_sales_sale_type_check check (sale_type in ('내수판매', '수출', '엔카믿고', '알선판매'));
+
+-- ── 수출이면 성능점검비 22,000 (환급 행 대신 금액 자체를 바꾼다)
+alter table car_costs add column export_original bigint;     -- 수출로 바꾸기 전 금액 (되돌릴 때 씀)
+delete from car_costs where auto_source = '수출환급';
+create or replace function car_sales_export_refund() returns trigger language plpgsql security definer set search_path = public as $$
+declare cid uuid := coalesce(new.car_id, old.car_id);
+begin
+  if tg_op <> 'DELETE' and new.sale_type = '수출' then
+    update car_costs set export_original = amount, amount = 22000
+     where car_id = cid and item = '성능점검비' and export_original is null and amount > 22000;
+  else
+    update car_costs set amount = export_original, export_original = null
+     where car_id = cid and item = '성능점검비' and export_original is not null;
+  end if;
+  return coalesce(new, old);
+end $$;
+
+-- ── 할부금융 수수료
+alter table car_sales
+  add column installment_amount bigint not null default 0,          -- 할부금액
+  add column installment_rate   numeric(6,3) not null default 0,    -- 할부피 (%)
+  add column installment_fee    bigint not null default 0,          -- 수수료 = 금액 × 할부피
+  add column installment_tax    bigint not null default 0,          -- 원천징수 (소득세 3% + 지방세 0.3%, 각 10원 미만 절사)
+  add column installment_income bigint not null default 0;          -- 수익 = 수수료 − 원천징수
+
+create or replace function car_sales_before_write() returns trigger language plpgsql as $$
+declare it bigint;
+begin
+  new.sale_supply := round(new.sale_amount / 1.1);
+  new.sale_vat    := new.sale_amount - new.sale_supply;
+  new.installment_fee := floor(coalesce(new.installment_amount, 0) * coalesce(new.installment_rate, 0) / 100);
+  it := floor(new.installment_fee * 0.03 / 10) * 10;
+  new.installment_tax := it + floor(it * 0.1 / 10) * 10;
+  new.installment_income := new.installment_fee - new.installment_tax;
+  return new;
+end $$;
+
+-- ── 브랜드·모델·등급 (엔카 차종)
+alter table cars
+  add column brand       text,      -- 제조사 (엔카 manufacturerName)
+  add column model       text,      -- 모델 (엔카 modelName)
+  add column grade       text,      -- 등급
+  add column encar_id    bigint,    -- 엔카 매물 번호
+  add column jato_id     bigint;    -- 엔카 차종 통합 코드 (jatoVehicleId)

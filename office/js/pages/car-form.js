@@ -8,9 +8,13 @@ const EMPTY = {
   seller_name: "", seller_type: "개인", seller_biz_no: "", seller_phone: "", seller_email: "",
   seller_zip: "", seller_addr1: "", seller_addr2: "", contract_no: "", invoice_date: null, fact_confirm: null,
   memo: "", association_memo: "", parking_zone_id: null, key_no: "",
+  purchase_channel: null, brand: "", model: "", grade: "",
   vin: "", model_year: "", first_reg_date: null, mileage: null, fuel: "", transmission: "", motor_type: "",
 };
 const EDITABLE = Object.keys(EMPTY);
+// 엔카 제조사 이름 그대로 (엔카 연동이 채우는 값과 같게)
+const BRANDS = ["현대", "기아", "제네시스", "쉐보레(GM대우)", "르노코리아(삼성)", "KG모빌리티(쌍용)", "벤츠", "BMW", "아우디", "폭스바겐", "미니", "포르쉐",
+  "볼보", "테슬라", "렉서스", "토요타", "혼다", "랜드로버", "재규어", "지프", "포드", "링컨", "캐딜락", "닛산", "푸조", "BYD", "폴스타", "마세라티", "벤틀리", "람보르기니", "페라리"];
 
 export function CarForm({ app, id }) {
   const [f, setF] = useState(null);
@@ -72,6 +76,8 @@ export function CarForm({ app, id }) {
       <${Field} label="차종·차명" req>
         <div class="row"><${Select} value=${f.car_kind} onChange=${set("car_kind")} options=${["승용", "승합", "경차", "화물", "특수"]} />
         <input placeholder="예) BMW 530e M 스포츠" value=${f.car_name} onInput=${setT("car_name")} required /></div><//>
+      <${Field} label="매입처" hint=${(c => c && Number(c.fee) ? `매입수수료 ${won(c.fee)}원 자동` : "")((app.settings.purchase_channels || []).find(c => c.name === f.purchase_channel))}>
+        <${Select} value=${f.purchase_channel} onChange=${set("purchase_channel")} empty="선택" options=${(app.settings.purchase_channels || []).map(c => c.name)} /><//>
       <${Field} label="차량번호(제시후)" req><input placeholder="12가3456" value=${f.plate} onInput=${setT("plate")} required /><//>
       <${Field} label="차량번호(제시전)"><input value=${f.plate_before || ""} onInput=${setT("plate_before")} /><//>
       <${Field} label="매도자(전소유자)"><input value=${f.seller_name || ""} onInput=${setT("seller_name")} /><//>
@@ -102,6 +108,10 @@ export function CarForm({ app, id }) {
 
     <h3>차량 정보 <span class="muted small">성능점검이 연동되면 빈 칸이 자동으로 채워집니다</span></h3>
     <div class="fgrid">
+      <${Field} label="브랜드" hint="엔카에 올라가면 자동으로 채워집니다"><input list="brands" value=${f.brand || ""} onInput=${setT("brand")} />
+        <datalist id="brands">${BRANDS.map(b => html`<option value=${b} />`)}</datalist><//>
+      <${Field} label="모델"><input value=${f.model || ""} onInput=${setT("model")} /><//>
+      <${Field} label="등급"><input value=${f.grade || ""} onInput=${setT("grade")} /><//>
       <${Field} label="차대번호"><input value=${f.vin || ""} onInput=${setT("vin")} /><//>
       <${Field} label="연식"><input value=${f.model_year || ""} onInput=${setT("model_year")} /><//>
       <${Field} label="최초등록일"><input type="date" value=${f.first_reg_date || ""} onInput=${setT("first_reg_date")} /><//>

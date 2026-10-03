@@ -310,7 +310,7 @@ function Share({ app, data, period }) {
   const b = 수익배분(data, period.from, period.to, t);
   const partners = app.dealers.filter(d => d.partner && d.active);
   const 실적 = Object.fromEntries(대표별실적(data, period.from, period.to, t).map(r => [r.dealer_id, r.손익]));
-  const label = { 대표차량손익: "대표 차량 손익", 상사매도비: "상사매도비 (딜러 차)", 성능보험료: "성능보험료 수입 (딜러 차)", 상사매입비: "상사매입비 (딜러 차)",
+  const label = { 대표차량손익: "대표 차량 손익", 상사매도비: "상사매도비 (딜러 차)", 성능보험료: "성능보험료 수입 (딜러 차)", 상사매입비: "상사매입비 (딜러 차)", 할부금융수익: "할부금융 수익 (딜러 차)",
     딜러이자: "딜러 이자 수입", 캐피탈이자: "재고금융 이자 (딜러 차)", 알선몫: "타상사 알선 상사몫", 기타매출: "기타 매출(장부)" };
   return html`<div class="two">
     <div class="card"><h3>회사 순이익</h3><table class="st"><tbody>

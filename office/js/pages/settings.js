@@ -20,6 +20,7 @@ function Ops({ app }) {
   const set = k => v => setF(p => ({ ...p, [k]: v }));
   const save = () => run(async () => {
     const { id, updated_at, revenue_items, expense_items, ...row } = f;
+    row.purchase_channels = (f.purchase_channels || []).filter(c => c.name.trim()).map(c => ({ name: c.name.trim(), fee: Number(c.fee) || 0 }));
     await q(app.db.from("settings").update(row).eq("id", 1));
     await app.reload();
   }, "저장했습니다");
@@ -29,10 +30,18 @@ function Ops({ app }) {
       <${Field} label="상사매입비 → 상품화비용 자동입력"><${Seg} value=${f.purchase_fee_to_cost ? "예" : "아니오"} onChange=${v => set("purchase_fee_to_cost")(v === "예")} options=${["예", "아니오"]} /><//>
       <${Field} label="취득세 → 상품화비용 자동입력"><${Seg} value=${f.acq_tax_to_cost ? "예" : "아니오"} onChange=${v => set("acq_tax_to_cost")(v === "예")} options=${["예", "아니오"]} /><//>
       <${Field} label="상사매도비" hint="매도 때 기본값 · 상사 매출"><${Money} value=${f.sale_fee} onInput=${set("sale_fee")} /><//>
+      <${Field} label="엔카믿고 매도비" hint="판매유형이 엔카믿고일 때"><${Money} value=${f.sale_fee_encar} onInput=${set("sale_fee_encar")} /><//>
       <${Field} label="딜러 정산 13.3% 처리" hint=${f.settle_method === "일괄" ? "마진에서 13.3% 일률 적용" : "10% 예수부가세 처리 후 나머지에서 3.3%"}>
         <${Seg} value=${f.settle_method} onChange=${set("settle_method")} options=${["일괄", "분할"]} /><//>
       <${Field} label="현금영수증 발행형태" hint="차량 → 매출증빙에서 발행대기를 만들 때"><${Seg} value=${f.cash_issue_form} onChange=${set("cash_issue_form")} options=${[["건별", "차량대금·매도비·보험료 각각"], ["합산", "합산 1장"]]} /><//>
     </div>
+    <h3>매입처 · 매입수수료</h3>
+    <p class="note">차량 등록 때 매입처를 고르면 수수료가 상품화비용에 '매입수수료'로 자동으로 들어갑니다 (0원이면 안 들어감).</p>
+    ${(f.purchase_channels || []).map((c, i) => html`<div class="row line">
+      <input placeholder="매입처" value=${c.name} onInput=${e => set("purchase_channels")(f.purchase_channels.map((x, j) => j === i ? { ...x, name: e.target.value } : x))} />
+      <${Money} value=${c.fee} onInput=${v => set("purchase_channels")(f.purchase_channels.map((x, j) => j === i ? { ...x, fee: v } : x))} />
+      <button type="button" class="btn sm ghost" onClick=${() => set("purchase_channels")(f.purchase_channels.filter((_, j) => j !== i))}>✕</button></div>`)}
+    <button type="button" class="btn sm" onClick=${() => set("purchase_channels")([...(f.purchase_channels || []), { name: "", fee: 0 }])}>+ 매입처 추가</button>
     <div class="actions"><button class="btn primary" onClick=${save}>저장</button></div>
   </div>`;
 }

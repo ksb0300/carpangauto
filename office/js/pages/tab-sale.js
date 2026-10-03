@@ -1,6 +1,8 @@
 import { html, useState, Money, Field, Select, run, won, today, toast, go } from "../ui.js";
 import { q } from "../db.js";
-import { 부가세분리 } from "../calc.js";
+import { 부가세분리, 할부수수료 } from "../calc.js";
+
+export const SALE_TYPES = ["내수판매", "수출", "엔카믿고", "알선판매"];
 
 let tmp = 0;
 const newBuyer = share => ({ _new: ++tmp, name: "", ssn: "", biz_no: "", phone: "", zip: "", addr: "", memo: "", share_rate: share });
@@ -30,6 +32,7 @@ export function SaleTab({ app, car, sale, buyers, settlement, reload, locked, of
       <div><span>매도금액</span><b>${won(sale.sale_amount)} <small class="muted">(공급가 ${won(sale.sale_supply)} / 부가세 ${won(sale.sale_vat)})</small></b></div>
       <div><span>상사매도비</span><b>${won(sale.sale_fee)}</b></div>
       <div><span>성능보험료</span><b>${won(sale.perf_insurance)}</b></div>
+      ${Number(sale.installment_amount) > 0 && html`<div><span>할부금융 수익</span><b>${won(sale.installment_income)} <small class="muted">(할부 ${won(sale.installment_amount)} × ${Number(sale.installment_rate)}% = ${won(sale.installment_fee)} − 원천징수 ${won(sale.installment_tax)})</small></b></div>`}
       <div><span>출고 번호판</span><b>${sale.plate_out || car.plate}</b></div>
       <div><span>특이사항</span><b>${sale.memo || "-"}</b></div>
     </div>
@@ -41,13 +44,18 @@ export function SaleTab({ app, car, sale, buyers, settlement, reload, locked, of
 
 function SaleForm({ app, car, sale, buyers, onDone }) {
   const [f, setF] = useState(sale ? { ...sale } : {
-    sale_date: today(), dealer_id: car.dealer_id, other_dealer: false, sale_type: "소매", sale_amount: 0,
-    plate_out: car.plate, sale_fee: app.settings.sale_fee, perf_insurance: 0, memo: "", broker_dealer_id: null });
+    sale_date: today(), dealer_id: car.dealer_id, other_dealer: false, sale_type: "내수판매", sale_amount: 0,
+    plate_out: car.plate, sale_fee: app.settings.sale_fee, perf_insurance: 0, memo: "", broker_dealer_id: null,
+    installment_amount: 0, installment_rate: 0 });
   const [bs, setBs] = useState(buyers.length ? buyers.map(b => ({ ...b, ssn: "" })) : [newBuyer(100)]);
   const [busy, setBusy] = useState(false);
   const set = k => v => setF(p => ({ ...p, [k]: v }));
   const upd = (i, k, v) => setBs(x => x.map((b, j) => j === i ? { ...b, [k]: v } : b));
   const vat = 부가세분리(f.sale_amount);
+  const 할부 = 할부수수료(f.installment_amount, f.installment_rate);
+  // 엔카믿고면 매도비 242,000 (설정값), 다른 유형으로 돌리면 기본 매도비
+  const pickType = v => setF(p => ({ ...p, sale_type: v,
+    sale_fee: v === "엔카믿고" ? (app.settings.sale_fee_encar ?? 242000) : p.sale_type === "엔카믿고" ? app.settings.sale_fee : p.sale_fee }));
   const shareSum = bs.reduce((s, b) => s + Number(b.share_rate || 0), 0);
 
   const save = async e => {
@@ -62,7 +70,8 @@ function SaleForm({ app, car, sale, buyers, onDone }) {
     const ok = await run(async () => {
       const row = { car_id: car.id, sale_date: f.sale_date, dealer_id: f.dealer_id, other_dealer: f.other_dealer, sale_type: f.sale_type,
         sale_amount: f.sale_amount, plate_out: f.plate_out || null, sale_fee: f.sale_fee, perf_insurance: f.perf_insurance, memo: f.memo || null,
-        broker_dealer_id: f.broker_dealer_id || null };
+        broker_dealer_id: f.broker_dealer_id || null,
+        installment_amount: Number(f.installment_amount) || 0, installment_rate: Number(f.installment_rate) || 0 };
       if (sale) await q(app.db.from("car_sales").update(row).eq("car_id", car.id));
       else await q(app.db.from("car_sales").insert(row));
       const keep = new Set(bs.filter(b => b.id).map(b => b.id));
@@ -91,10 +100,14 @@ function SaleForm({ app, car, sale, buyers, onDone }) {
         <label class="check"><input type="checkbox" checked=${f.other_dealer} onChange=${e => set("other_dealer")(e.target.checked)} /> 타상사딜러</label></div><//>
       <${Field} label="알선딜러" hint="다른 딜러가 손님을 데려와 판 경우 — 정산 때 정산금을 나눕니다">
         <${Select} value=${f.broker_dealer_id} onChange=${set("broker_dealer_id")} empty="없음" options=${app.dealers.filter(d => d.id !== f.dealer_id).map(d => [d.id, d.name])} /><//>
-      <${Field} label="매도유형"><${Select} value=${f.sale_type} onChange=${set("sale_type")} options=${["소매", "도매", "경매", "수출", "폐차"]} /><//>
+      <${Field} label="판매유형" hint=${f.sale_type === "수출" ? "수출 — 성능점검비가 22,000원으로 바뀝니다" : f.sale_type === "엔카믿고" ? "엔카믿고 — 매도비 242,000원" : ""}>
+        <${Select} value=${f.sale_type} onChange=${pickType} options=${SALE_TYPES} /><//>
       <${Field} label="매도금액" req hint=${f.sale_amount ? `공급가 ${won(vat.공급가)} / 부가세 ${won(vat.부가세)}` : "부가세 포함"}><${Money} value=${f.sale_amount} onInput=${set("sale_amount")} /><//>
       <${Field} label="상사매도비" hint="상사 매출로 잡힙니다"><${Money} value=${f.sale_fee} onInput=${set("sale_fee")} /><//>
       <${Field} label="성능보험료" hint="상사 매출로 잡힙니다"><${Money} value=${f.perf_insurance} onInput=${set("perf_insurance")} /><//>
+      <${Field} label="할부금액" hint="할부(금융)로 판 경우"><${Money} value=${f.installment_amount} onInput=${set("installment_amount")} /><//>
+      <${Field} label="할부피(%)" hint=${할부.수수료 ? `수수료 ${won(할부.수수료)} − 원천징수 ${won(할부.원천징수)} = 수익 ${won(할부.수익)}` : "수익 = 할부금액 × 할부피 − 원천징수 3.3%"}>
+        <input inputmode="decimal" value=${f.installment_rate || ""} onInput=${e => set("installment_rate")(e.target.value)} /><//>
       <${Field} label="출고 번호판"><input value=${f.plate_out || ""} onInput=${e => set("plate_out")(e.target.value)} /><//>
       <${Field} label="특이사항" wide><input value=${f.memo || ""} onInput=${e => set("memo")(e.target.value)} /><//>
     </div>
