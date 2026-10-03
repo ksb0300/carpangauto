@@ -973,3 +973,43 @@ alter table cars
   add column grade       text,      -- 등급
   add column encar_id    bigint,    -- 엔카 매물 번호
   add column jato_id     bigint;    -- 엔카 차종 통합 코드 (jatoVehicleId)
+
+
+-- 20261003000005_lender_rules.sql
+-- 재고금융사마다 다른 조건 (기본기간·연장·이율·연장 조건·상환해지수수료)
+--   부산은행: 3개월 + 연장 2개월(총 5), 6.9% 고정
+--   JB우리:   3개월 + 연장 2개월, 연장하려면 원금 10% 먼저 상환, 연장분 이율 7.9%
+--   상환해지수수료는 금융사별로 확인 중 (방식: 없음 / 정률 / 일할)
+
+alter table lenders
+  add column base_months      int not null default 3,          -- 기본 대출기간 (개월)
+  add column ext_months       int not null default 0,          -- 연장 가능 (개월, 0 = 연장 불가)
+  add column base_rate        numeric(6,3),                    -- 기본 이율 (연 %)
+  add column ext_rate         numeric(6,3),                    -- 연장분 이율 (비우면 기본 이율 그대로)
+  add column ext_repay_pct    numeric(5,2) not null default 0, -- 연장하려면 먼저 갚아야 할 원금 비율 (%)
+  add column repay_fee_method text not null default '없음' check (repay_fee_method in ('없음', '정률', '일할')),
+  add column repay_fee_pct    numeric(6,3) not null default 0, -- 상환해지수수료율 (%)
+  add column rule_memo        text;                            -- 그 밖의 조건 메모
+
+-- 대출마다 실행 당시 조건을 그대로 남긴다 (나중에 금융사 조건을 바꿔도 지난 대출 계산이 안 바뀌게)
+alter table car_loans
+  add column base_months       int,                  -- 기본기간 (연장 전)
+  add column ext_rate          numeric(6,3),         -- 연장분 이율
+  add column ext_start         date,                 -- 연장 시작일 (= 기본 만기일)
+  add column principal_repaid  bigint not null default 0,   -- 연장 때 먼저 갚은 원금
+  add column repay_fee         bigint;               -- 상환 때 낸 해지수수료
+
+-- 금융사 이름을 실제 이름으로 (매입매출대장과 같게)
+update lenders set name = '부산은행' where name = 'BNK';
+update lenders set name = 'JB우리' where name = '우리캐피탈';
+update lenders set name = 'KB국민' where name = 'KB캐피탈';
+insert into lenders (name, sort, active) values ('신한은행', 5, true), ('키움증권', 6, true) on conflict (name) do nothing;
+
+update lenders set base_months = 3, ext_months = 2, base_rate = 6.9, ext_rate = null, ext_repay_pct = 0 where name = '부산은행';
+update lenders set base_months = 3, ext_months = 2, base_rate = 6.9, ext_rate = 7.9, ext_repay_pct = 10 where name = 'JB우리';
+update lenders set base_rate = 6.9, rule_memo = '기간·연장 조건 확인 필요' where name = 'KB국민';
+update lenders set rule_memo = '조건 확인 필요' where name in ('신한은행', '키움증권');
+
+-- 기존 대출에 실행 당시 조건 채우기
+update car_loans l set base_months = coalesce(l.base_months, x.base_months), ext_rate = coalesce(l.ext_rate, x.ext_rate)
+  from lenders x where x.id = l.lender_id;

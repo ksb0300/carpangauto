@@ -8,6 +8,7 @@ import { TrendChart } from "./reports.js";
 import { 미납이자 } from "../calc.js";
 import { monthRange } from "../ui.js";
 import { inspState, ALERT_DAYS } from "./tab-insp.js";
+import { 할일 } from "./lenders.js";
 
 export function Dashboard({ app }) {
   const [d, setD] = useState(null);
@@ -30,8 +31,8 @@ export function Dashboard({ app }) {
   const 미정산 = d.sales.filter(x => car[x.car_id] && !settled.has(x.car_id));
   const pay = id => d.payments.filter(p => p.loan_id === id).reduce((a, p) => a + Number(p.amount), 0);
   const act = d.loans.filter(l => l.status === "진행중" && car[l.car_id]);
-  const 만기임박 = act.map(l => { const e = new Date(l.start_date + "T00:00:00Z"); e.setUTCMonth(e.getUTCMonth() + l.months); return { ...l, 만기: e.toISOString().slice(0, 10) }; })
-    .filter(l => (Date.parse(l.만기) - Date.parse(t)) / 864e5 <= 14).sort((a, b) => a.만기.localeCompare(b.만기));
+  // 금융사 조건(기본만기·연장 가능 여부)으로 2주 안에 연장하거나 갚아야 할 것
+  const 챙길 = act.map(l => ({ l, h: 할일(l, d.lenders.find(x => x.id === l.lender_id), t) })).filter(x => ["red", "amber"].includes(x.h.tone));
   const 미납합 = act.reduce((a, l) => a + 미납이자({ 대출금액: l.amount, 딜러이율: l.dealer_rate, 개월: l.months, 실행일: l.start_date, 납입이자누계: pay(l.id) }, t), 0);
   const 장기 = live.filter(c => c.status === "재고" && (Date.parse(t) - Date.parse(c.purchase_date)) / 864e5 >= 90);
   // 성능점검: 재고 차마다 가장 최근 점검이 90일 지났거나 만료된 것
@@ -64,7 +65,8 @@ export function Dashboard({ app }) {
     미정산.length && { href: "#/sales", tone: "warn", text: `매도했지만 정산(손익)확정 안 된 차량 ${미정산.length}대` },
     d.docs.length && { href: "#/issue/wait", tone: 실패 ? "bad" : "warn", text: `발행대기 ${d.docs.length}건 (${won(d.docs.reduce((a, x) => a + Number(x.amount), 0))}원)${실패 ? ` · 실패 ${실패}건` : ""}` },
     d.unmatched.length && { href: "#/bank", tone: "warn", text: `통장 입출금 중 장부와 연결 안 된 거래 ${d.unmatched.length}건` },
-    만기임박.length && { href: "#/loans", tone: "bad", text: `재고금융 만기 2주 이내·지난 것 ${만기임박.length}건 (${만기임박.map(l => car[l.car_id].plate).slice(0, 4).join(", ")}${만기임박.length > 4 ? " 외" : ""})` },
+    챙길.length && { href: "#/loans/lenders", tone: 챙길.some(x => x.h.tone === "red") ? "bad" : "warn",
+      text: `재고금융 연장·상환 챙길 것 ${챙길.length}건 (${챙길.map(x => `${car[x.l.car_id].plate} ${x.h.text.split(" — ")[0]}`).slice(0, 3).join(", ")}${챙길.length > 3 ? " 외" : ""})` },
     성능.length && { href: `#/car/${성능[0].c.id}/info`, tone: 성능만료.length ? "bad" : "warn",
       text: `성능점검 ${ALERT_DAYS}일 지난 재고 ${성능.length}대${성능만료.length ? ` (만료 ${성능만료.length}대)` : ""} — 재점검 확인 (${성능.map(x => `${x.c.plate} ${x.s.남은 !== null && x.s.남은 >= 0 ? "D-" + x.s.남은 : "만료"}`).slice(0, 4).join(", ")}${성능.length > 4 ? " 외" : ""})` },
     장기.length && { href: "#/reports/summary", tone: "warn", text: `90일 넘은 재고 ${장기.length}대 (${장기.map(c => c.plate).slice(0, 4).join(", ")}${장기.length > 4 ? " 외" : ""})` },

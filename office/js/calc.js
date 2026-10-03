@@ -169,9 +169,11 @@ export function 기간이자(대출금액, 연이율, 실행일, 종료일, from
 
 /**
  * 대표 차량 손익 (공동대표 차는 딜러 정산 대신 이걸로 실적을 본다).
- *   매출 = 매도금액 + 기타매출 + 상사매도비(과세) + 성능보험료 수입(비과세) + 할부금융 수익(원천징수 뺀)
+ *   매출 = 매도금액 + 기타매출 + 상사매도비(과세) + 할부금융 수익(원천징수 뺀)
+ *   성능보험료는 손님이 내는 돈이라 매출에도 비용에도 넣지 않는다 (KAIWA 연동도 비용으로 안 넣음)
  *   부가세 = 매출VAT − 제시VAT(의제·세금계산서 공제, 계산서는 0) − 비용VAT   (음수면 환급)
- *   손익 = 매출 − 제시금액 − 상품화비 − 캐피탈이자 − 부가세        ← 실적은 부가세 뺀 이 값
+ *   손익 = 매출 − 제시금액 − 상품화비 − 캐피탈이자                  ← 부가세는 빼지 않는다 (사용자 결정, 대장과 같게)
+ *   부가세 = 참고용 (매출VAT − 제시VAT − 비용VAT)
  * 상사매입비·원천징수·딜러이자는 없다.
  */
 export function 대표손익(p) {
@@ -179,7 +181,6 @@ export function 대표손익(p) {
     { 금액: p.매도금액, 과세: true },
     ...(p.기타매출 || []).map(r => ({ 금액: r.금액, 과세: r.과세 !== false })),
     { 금액: p.상사매도비 || 0, 과세: true },
-    { 금액: p.성능보험료 || 0, 과세: false },
     { 금액: p.할부수익 || 0, 과세: false },          // 할부금융 수수료 − 원천징수
   ];
   const 매출 = 합(매출행.map(r => 부가세분리(r.금액, r.과세)));
@@ -188,15 +189,61 @@ export function 대표손익(p) {
   const 이자 = Math.round(Number(p.캐피탈이자) || 0);
   const 부가세 = 매출.부가세 - 제시.부가세 - C.부가세;
   const 세전 = 매출.금액 - 제시.금액 - C.금액 - 이자;
-  return { 매출, 제시, C, 이자, 부가세, 세전손익: 세전, 손익: 세전 - 부가세 };
+  return { 매출, 제시, C, 이자, 부가세, 세전손익: 세전, 손익: 세전 };
 }
 
 /** 차 한 대의 캐피탈 이자 합 (대출 실행일 ~ 상환일, 상환 전이면 기준일까지) */
 export function 차량캐피탈이자(loans, 기준일) {
-  return (loans || []).reduce((t, l) => {
-    const end = l.repaid_date || 기준일;
-    return t + 기간이자(l.amount, l.lender_rate, l.start_date, end, l.start_date, end);
-  }, 0);
+  return (loans || []).reduce((t, l) => t + 재고금융이자(l, l.start_date, 기준일), 0);
+}
+
+// ───────────────────────── 재고금융 (금융사별 조건) ─────────────────────────
+const 더하기월 = (d, m) => { const x = new Date(d + "T00:00:00Z"); x.setUTCMonth(x.getUTCMonth() + Number(m || 0)); return x.toISOString().slice(0, 10); };
+const 전날 = d => new Date(Date.parse(d + "T00:00:00Z") - 86_400_000).toISOString().slice(0, 10);
+const 일수 = (a, b) => Math.round((Date.parse(b + "T00:00:00Z") - Date.parse(a + "T00:00:00Z")) / 86_400_000);
+
+/** 대출 구간: 기본(실행일 ~ 연장 전날, 원금 전액·기본 이율) + 연장(연장 시작 ~, 먼저 갚은 원금 뺀 잔액·연장 이율) */
+export function 대출구간(l) {
+  const 끝 = l.repaid_date || null;
+  if (!l.ext_start) return [{ from: l.start_date, to: 끝, 원금: Number(l.amount) || 0, 이율: l.lender_rate }];
+  const segs = [{ from: l.start_date, to: 끝 && 끝 < l.ext_start ? 끝 : 전날(l.ext_start), 원금: Number(l.amount) || 0, 이율: l.lender_rate }];
+  if (!끝 || 끝 >= l.ext_start)
+    segs.push({ from: l.ext_start, to: 끝, 원금: (Number(l.amount) || 0) - (Number(l.principal_repaid) || 0), 이율: l.ext_rate ?? l.lender_rate });
+  return segs;
+}
+
+/** [from, to] 기간에 걸친 재고금융 이자 (구간별 원금·이율, 양끝 포함 일할) */
+export function 재고금융이자(l, from, to) {
+  return 대출구간(l).reduce((t, g) => t + 기간이자(g.원금, g.이율, g.from, g.to, from, to), 0);
+}
+
+/** 대출 진행 상태 — 기본만기·최종만기·단계·남은 날 */
+export function 대출상태(l, 오늘) {
+  const 기본 = Number(l.base_months ?? l.months) || 0;
+  const 기본만기 = 더하기월(l.start_date, 기본), 최종만기 = 더하기월(l.start_date, l.months);
+  const 연장됨 = !!l.ext_start || Number(l.months) > 기본;
+  const 만기 = 연장됨 ? 최종만기 : 기본만기;
+  return { 기본만기, 최종만기, 연장됨, 단계: 연장됨 ? "연장" : "기본", 만기, 남은일: 일수(오늘, 만기),
+    원금잔액: (Number(l.amount) || 0) - (Number(l.principal_repaid) || 0) };
+}
+
+/** 연장 가능 여부와 조건 (금융사 설정 기준) */
+export function 연장조건(l, lender) {
+  const s = 대출상태(l, l.start_date);
+  const 가능 = !s.연장됨 && Number(lender?.ext_months) > 0;
+  return { 가능, 개월: Number(lender?.ext_months) || 0, 시작일: s.기본만기,
+    상환필요: Math.round((Number(l.amount) || 0) * (Number(lender?.ext_repay_pct) || 0) / 100),
+    이율: lender?.ext_rate ?? l.lender_rate };
+}
+
+/** 상환해지수수료 — 정률: 잔액 × 율 / 일할: 잔액 × 율 × 남은일수 ÷ 전체일수 (만기 이후 상환이면 0) */
+export function 해지수수료(l, lender, 상환일) {
+  const 방식 = lender?.repay_fee_method || "없음", 율 = Number(lender?.repay_fee_pct) || 0;
+  if (방식 === "없음" || !율) return 0;
+  const s = 대출상태(l, 상환일), 잔액 = s.원금잔액;
+  if (방식 === "정률") return Math.round(잔액 * 율 / 100);
+  const 전체 = 일수(l.start_date, s.만기), 남은 = Math.max(0, 일수(상환일, s.만기));
+  return 전체 > 0 ? Math.round(잔액 * 율 / 100 * 남은 / 전체) : 0;
 }
 
 /** 할부금융 수수료: 할부금액 × 할부피% − 원천징수(소득세 3%·지방세 0.3%, 각 10원 미만 절사). DB 트리거와 같은 계산 */

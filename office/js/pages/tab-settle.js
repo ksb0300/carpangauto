@@ -33,12 +33,12 @@ function PartnerSettle({ app, car, costs, loans, sale, settlement, reload, offic
   const set = k => v => setF(p => ({ ...p, [k]: v }));
   const r = useMemo(() => 대표손익({
     매도금액: Number(sale.sale_amount), 기타매출: f.other_revenue.map(x => ({ 금액: Number(x.금액) || 0, 과세: x.과세 !== false })),
-    상사매도비: Number(sale.sale_fee), 성능보험료: Number(sale.perf_insurance), 할부수익: Number(sale.installment_income) || 0, 제시금액: Number(car.purchase_amount), 제시증빙: car.evidence,
+    상사매도비: Number(sale.sale_fee), 할부수익: Number(sale.installment_income) || 0, 제시금액: Number(car.purchase_amount), 제시증빙: car.evidence,
     비용: costs.map(c => ({ 금액: Number(c.amount), 과세: c.taxable, 정산반영: c.include_in_settlement })),
     캐피탈이자: 차량캐피탈이자(loans, sale.sale_date),
   }), [f, costs, sale, car, loans]);
   const save = async finalize => {
-    if (finalize && !confirm(`${owner?.name || ""} 대표 실적으로 손익을 확정할까요?\n손익 ${won(r.손익)}원 (부가세 뺀 기준)${f.loan_repay && loans.some(l => l.status === "진행중") ? "\n진행중인 재고금융은 상환완료 처리됩니다." : ""}`)) return;
+    if (finalize && !confirm(`${owner?.name || ""} 대표 실적으로 손익을 확정할까요?\n손익 ${won(r.손익)}원${f.loan_repay && loans.some(l => l.status === "진행중") ? "\n진행중인 재고금융은 상환완료 처리됩니다." : ""}`)) return;
     setBusy(true);
     const row = { car_id: car.id, mode: "대표", settle_date: f.settle_date, withholding: false, method: app.settings.settle_method, allow_negative: true,
       other_revenue: f.other_revenue, offsets: [], loan_repay: f.loan_repay, memo: f.memo || null,
@@ -82,16 +82,15 @@ function PartnerSettle({ app, car, costs, loans, sale, settlement, reload, offic
       <table class="st"><tbody>
         ${L("매도금액", sale.sale_amount)}
         ${Number(sale.sale_fee) ? L("상사매도비", sale.sale_fee, "대표 본인 수익") : ""}
-        ${Number(sale.perf_insurance) ? L("성능보험료 수입", sale.perf_insurance) : ""}
         ${Number(sale.installment_income) ? L("할부금융 수익", sale.installment_income, `할부 ${won(sale.installment_amount)} × ${Number(sale.installment_rate)}% − 원천징수 ${won(sale.installment_tax)}`) : ""}
         ${f.other_revenue.filter(x => Number(x.금액)).map(x => L(x.항목 || "기타매출", x.금액))}
         ${L("매출 합계", r.매출.금액, `공급가 ${won(r.매출.공급가)} / 부가세 ${won(r.매출.부가세)}`, "em")}
         ${L("제시금액", -r.제시.금액, car.evidence === "계산서" ? "계산서 — 매입세액 공제 없음" : `${car.evidence} — 매입세액 ${won(r.제시.부가세)} 공제`)}
-        ${L("상품화비용", -r.C.금액, `${costs.length}건 · 부가세 ${won(r.C.부가세)}`)}
+        ${L("상품화비용", -r.C.금액, `${costs.length}건`)}
         ${r.이자 ? L("재고금융 이자(캐피탈)", -r.이자, "실행일 ~ 매도일") : ""}
-        ${L("세전 손익", r.세전손익, "", "em")}
-        ${L("부가세 납부분", -r.부가세, "매출세액 − 제시·비용 매입세액")}
-        ${L("차량 손익 (실적)", r.손익, "부가세 뺀 기준", "em")}
+        ${L("차량 손익 (실적)", r.손익, "부가세는 빼지 않음", "em")}
+        <tr><th class="muted">참고: 예상 부가세</th><td class="r muted">${won(r.부가세)}</td><td class="note">매출세액 − 제시·비용 매입세액 (손익에 안 뺌)</td></tr>
+        ${Number(sale.perf_insurance) ? html`<tr><th class="muted">성능보험료</th><td class="r muted">${won(sale.perf_insurance)}</td><td class="note">손님 부담 — 손익 제외</td></tr>` : ""}
       </tbody></table>
     </div>
   </div>`;

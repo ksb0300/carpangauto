@@ -5,6 +5,8 @@ import { q } from "../db.js";
 import { loadAll } from "./report-data.js";
 import { 부가세분리, 대출이자, 미납이자 } from "../calc.js";
 import { settleBadge } from "./cars.js";
+import { LenderOverview, 할일 } from "./lenders.js";
+import { 대출상태 } from "../calc.js";
 
 const n = v => Math.round(Number(v) || 0);
 const days = (a, b = today()) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5);
@@ -179,7 +181,15 @@ function LenderLimits({ d }) {
         <td class="r">${mine.length}</td><td class="small">${lc ? `${lc.plate} ${lc.car_name}` : ""}</td></tr>`; })}</tbody></table></div></div>`;
 }
 
-export function LoansPage({ app, tab = "list" }) {
+export function LoansPage({ app, tab = "lenders" }) {
+  if (tab === "lenders") return html`<div class="bar"><h2>재고금융관리</h2></div>
+    <${SubTabs} base="/loans" tabs=${LOAN_TABS} cur=${tab} />
+    <${LenderOverview} app=${app} />`;
+  return html`<${LoansList} app=${app} tab=${tab} />`;
+}
+const LOAN_TABS = [["lenders", "금융사별 현황"], ["list", "재고금융 리스트"], ["interest", "이자납입 리스트"]];
+
+function LoansList({ app, tab }) {
   const [d] = useBook(app);
   const [f, setF] = useState(initF("실행일", "실행일"));
   const [state, setState] = useState("전체");
@@ -191,13 +201,14 @@ export function LoansPage({ app, tab = "list" }) {
   const loans = d.cars.flatMap(c => c.loans.map(l => {
     const ps = d.payments.filter(p => p.loan_id === l.id).sort((a, b) => a.paid_date.localeCompare(b.paid_date));
     const paid = ps.reduce((t, p) => t + n(p.amount), 0), di = 대출이자(l.amount, l.dealer_rate, l.months);
-    return { ...l, car: c, ps, paid, 만기: addMonths(l.start_date, l.months), 최근납입: ps.at(-1)?.paid_date || "", ...di,
+    const st = 대출상태(l, today());
+    return { ...l, car: c, ps, paid, 만기: st.만기, 단계: st.단계, 할일: 할일(l, d.lenders.find(x => x.id === l.lender_id), today()), 최근납입: ps.at(-1)?.paid_date || "", ...di,
       미납: l.status === "진행중" ? 미납이자({ 대출금액: l.amount, 딜러이율: l.dealer_rate, 개월: l.months, 실행일: l.start_date, 납입이자누계: paid }, today()) : 0 };
   })).filter(l => match(f, l.car, l.start_date) && (state === "전체" || l.status === state)).sort(sorter(f, (l, s) => ({ 실행일: l.start_date, 대출금액: n(l.amount), 만기일: l.만기 }[s])));
   const head = html`<div class="bar"><h2>재고금융관리</h2><span class="grow"></span>
       ${office && html`<button class="btn primary" onClick=${() => setPick(true)}>재고금융 등록</button>`}</div>
     ${pick && html`<${CarPick} cars=${d.cars.filter(c => c.status === "재고")} label="재고금융 등록" tab="loans" onClose=${() => setPick(false)} />`}
-    <${SubTabs} base="/loans" tabs=${[["list", "재고금융 리스트"], ["interest", "이자납입 리스트"]]} cur=${tab} />
+    <${SubTabs} base="/loans" tabs=${LOAN_TABS} cur=${tab} />
     <${Filters} app=${app} f=${f} setF=${setF} dateKeys=${["실행일"]} sortKeys=${["실행일", "대출금액", "만기일"]}
       extra=${html`<${Seg} value=${state} onChange=${setState} options=${["전체", "진행중", "상환완료"]} />`} />`;
   if (tab === "interest") {
@@ -218,13 +229,13 @@ export function LoansPage({ app, tab = "list" }) {
     <div class="bar"><span class="grow"></span><button class="btn" onClick=${() => downloadCsv("재고금융", [["차량번호", "담당딜러", "차량명", "재고금융사", "유형", "대출금액", "실행일", "대출기간", "만기일", "캐피탈이율", "딜러이율", "일이자", "총납입이자", "최근이자납일", "미납이자", "등록일", "상태"],
       ...loans.map(l => [l.car.plate, dealer[l.car.dealer_id], l.car.car_name, lender[l.lender_id], l.kind, l.amount, l.start_date, l.months, l.만기, l.lender_rate, l.dealer_rate, l.일이자, l.paid, l.최근납입, l.미납, l.created_at?.slice(0, 10), l.status])])}>다운로드</button></div>
     ${!loans.length ? html`<${Empty}>조건에 맞는 재고금융이 없습니다.<//>` : html`<div class="table-wrap"><table class="grid click">
-      <thead><tr><th>차량번호</th><th>담당딜러</th><th>재고금융사</th><th>유형</th><th class="r">대출금액</th><th>실행일</th><th class="r">기간</th><th>만기일</th>
+      <thead><tr><th>차량번호</th><th>담당딜러</th><th>재고금융사</th><th>유형</th><th class="r">대출금액</th><th>실행일</th><th class="r">기간</th><th>만기일</th><th>상태·할 일</th>
         <th class="r">일이자</th><th class="r">총납입이자</th><th>최근이자납일</th><th class="r">미납이자</th><th>등록일</th><th>상태</th></tr></thead>
       <tbody>${loans.map(l => html`<tr onClick=${() => go(`/car/${l.car.id}/loans`)}><td><b>${l.car.plate}</b></td><td>${dealer[l.car.dealer_id] || "-"}</td>
         <td>${lender[l.lender_id]}</td><td>${l.kind}</td>${W(l.amount)}<td>${l.start_date}</td><td class="r">${l.months}개월</td>
-        <td class=${l.status === "진행중" && l.만기 < today() ? "red" : ""}>${l.만기}</td>${W(l.일이자)}${W(l.paid)}<td>${l.최근납입}</td>${W(l.미납, "red")}
+        <td class=${l.status === "진행중" && l.만기 < today() ? "red" : ""}>${l.만기}</td><td><span class=${"badge " + l.할일.tone}>${l.할일.text}</span></td>${W(l.일이자)}${W(l.paid)}<td>${l.최근납입}</td>${W(l.미납, "red")}
         <td>${l.created_at?.slice(0, 10)}</td><td>${l.status}</td></tr>`)}</tbody>
-      <tfoot><tr><td colspan="4">${loans.length}건</td><td class="r">${won(sum("amount"))}</td><td colspan="4"></td><td class="r">${won(sum("paid"))}</td><td></td>
+      <tfoot><tr><td colspan="4">${loans.length}건</td><td class="r">${won(sum("amount"))}</td><td colspan="5"></td><td class="r">${won(sum("paid"))}</td><td></td>
         <td class="r">${won(sum("미납"))}</td><td colspan="2"></td></tr></tfoot></table></div>`}
     <${LenderLimits} d=${d} />`;
 }

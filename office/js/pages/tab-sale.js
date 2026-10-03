@@ -1,4 +1,4 @@
-import { html, useState, Money, Field, Select, run, won, today, toast, go } from "../ui.js";
+import { html, useState, useEffect, Money, Field, Select, run, won, today, toast, go } from "../ui.js";
 import { q } from "../db.js";
 import { 부가세분리, 할부수수료 } from "../calc.js";
 
@@ -48,6 +48,11 @@ function SaleForm({ app, car, sale, buyers, onDone }) {
     plate_out: car.plate, sale_fee: app.settings.sale_fee, perf_insurance: 0, memo: "", broker_dealer_id: null,
     installment_amount: 0, installment_rate: 0 });
   const [bs, setBs] = useState(buyers.length ? buyers.map(b => ({ ...b, ssn: "" })) : [newBuyer(100)]);
+  // 새 매도: 성능보험료는 최근 성능점검(KAIWA)의 보험료를 기본값으로 (손님이 내는 돈 — 현금영수증용)
+  useEffect(() => { if (!sale) run(async () => {
+    const r = await q(app.db.from("car_inspections").select("insur_price").eq("car_id", car.id).order("recept_date", { ascending: false }).limit(1));
+    if (r[0]?.insur_price) setF(p => p.perf_insurance ? p : { ...p, perf_insurance: Number(r[0].insur_price) });
+  }); }, []);
   const [busy, setBusy] = useState(false);
   const set = k => v => setF(p => ({ ...p, [k]: v }));
   const upd = (i, k, v) => setBs(x => x.map((b, j) => j === i ? { ...b, [k]: v } : b));
@@ -104,7 +109,7 @@ function SaleForm({ app, car, sale, buyers, onDone }) {
         <${Select} value=${f.sale_type} onChange=${pickType} options=${SALE_TYPES} /><//>
       <${Field} label="매도금액" req hint=${f.sale_amount ? `공급가 ${won(vat.공급가)} / 부가세 ${won(vat.부가세)}` : "부가세 포함"}><${Money} value=${f.sale_amount} onInput=${set("sale_amount")} /><//>
       <${Field} label="상사매도비" hint="상사 매출로 잡힙니다"><${Money} value=${f.sale_fee} onInput=${set("sale_fee")} /><//>
-      <${Field} label="성능보험료" hint="상사 매출로 잡힙니다"><${Money} value=${f.perf_insurance} onInput=${set("perf_insurance")} /><//>
+      <${Field} label="성능보험료" hint="손님이 내는 돈 — 현금영수증용, 손익에는 안 들어감"><${Money} value=${f.perf_insurance} onInput=${set("perf_insurance")} /><//>
       <${Field} label="할부금액" hint="할부(금융)로 판 경우"><${Money} value=${f.installment_amount} onInput=${set("installment_amount")} /><//>
       <${Field} label="할부피(%)" hint=${할부.수수료 ? `수수료 ${won(할부.수수료)} − 원천징수 ${won(할부.원천징수)} = 수익 ${won(할부.수익)}` : "수익 = 할부금액 × 할부피 − 원천징수 3.3%"}>
         <input inputmode="decimal" value=${f.installment_rate || ""} onInput=${e => set("installment_rate")(e.target.value)} /><//>

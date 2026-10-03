@@ -4,7 +4,7 @@
 // data = { cars, costs, loans, payments, sales, settlements, brokerages, ledger, lenders, dealers }
 // 날짜는 모두 'YYYY-MM-DD' 문자열, 기간은 [from, to] 양끝 포함.
 
-import { 부가세분리, 기간이자, 원천징수분해, 대표손익, 차량캐피탈이자 } from "./calc.js";
+import { 부가세분리, 기간이자, 원천징수분해, 대표손익, 차량캐피탈이자, 재고금융이자 } from "./calc.js";
 
 const n = v => Math.round(Number(v) || 0);
 const inP = (d, from, to) => !!d && d >= from && d <= to;
@@ -34,8 +34,8 @@ function 딜러이자행(data, from, to) {
 
 /** 상사가 재고금융사에 내는 이자(캐피탈이율) — 기간에 걸친 날수만큼 */
 function 캐피탈이자(data, from, to) {
-  return (data.loans || []).filter(l => l.lender_rate).map(l => ({
-    loan: l, 금액: 기간이자(l.amount, l.lender_rate, l.start_date, l.repaid_date, from, to),
+  return (data.loans || []).filter(l => l.lender_rate || l.ext_rate).map(l => ({
+    loan: l, 금액: 재고금융이자(l, from, to),
   })).filter(x => x.금액 > 0);
 }
 
@@ -213,7 +213,7 @@ export function 종합현황(data, from, to, 오늘 = to) {
   const 대표 = 대표차량손익(data, from, to);
   const 상사수익 = {
     대표차량손익: 대표.reduce((t, r) => t + r.손익, 0),
-    상사매도비: pick(딜러차(매출), "상사매도비"), 성능보험료: pick(딜러차(매출), "성능보험료"), 상사매입비: pick(딜러차(매출), "상사매입비"),
+    상사매도비: pick(딜러차(매출), "상사매도비"), 상사매입비: pick(딜러차(매출), "상사매입비"),
     할부금융수익: pick(딜러차(매출), "할부금융수익"),
     딜러이자: pick(딜러차(매출), "재고금융이자(딜러)"), 캐피탈이자: 0 - pick(딜러차(매입), "재고금융이자(캐피탈)"),
     알선몫: 알선수수료 - 알선지급,
@@ -251,7 +251,7 @@ export function 대표차량계산(data, c, s) {
   const st = (data.settlements || []).find(x => x.car_id === c.id);
   return 대표손익({
     매도금액: n(s.sale_amount), 기타매출: (st?.other_revenue || []).map(x => ({ 금액: n(x.금액), 과세: x.과세 !== false })),
-    상사매도비: n(s.sale_fee), 성능보험료: n(s.perf_insurance), 할부수익: n(s.installment_income), 제시금액: n(c.purchase_amount), 제시증빙: c.evidence,
+    상사매도비: n(s.sale_fee), 할부수익: n(s.installment_income), 제시금액: n(c.purchase_amount), 제시증빙: c.evidence,
     비용: (data.costs || []).filter(k => k.car_id === c.id).map(k => ({ 금액: n(k.amount), 과세: k.taxable, 정산반영: k.include_in_settlement })),
     캐피탈이자: 차량캐피탈이자((data.loans || []).filter(l => l.car_id === c.id), s.sale_date),
   });
@@ -277,7 +277,7 @@ export function 대표별실적(data, from, to, 오늘 = to) {
     const 재고 = mine.filter(c => c.status === "재고" && c.purchase_date <= 오늘);
     const 재고일 = 재고.map(c => dayDiff(c.purchase_date, 오늘));
     const 알선 = (data.brokerages || []).filter(b => b.dealer_id === d.id && inP(b.sale_date, from, to));
-    const 알선수익 = 알선.reduce((t, b) => t + n(b.supply) - n(b.payout), 0);   // 대표 알선은 지급 0 → 공급가(부가세 뺀) 전액
+    const 알선수익 = 알선.reduce((t, b) => t + n(b.base_amount) - n(b.payout), 0);   // 대표 알선은 지급 0 → 수수료(공제 후) 전액
     const 차량손익 = 매도.reduce((t, r) => t + r.손익, 0);
     const 손익 = 차량손익 + 알선수익;
     return { dealer_id: d.id, 이름: d.name, 차량손익, 알선건수: 알선.length, 알선수익,

@@ -112,7 +112,7 @@ function Lenders({ app }) {
     <div class="bar"><h3>재고금융사</h3><span class="grow"></span>
       <button class="btn" onClick=${() => setRows(r => [...r, { name: "", credit_limit: 0, existing_amount: 0, active: true, sort: 50 }])}>+ 추가</button>
       <button class="btn primary" onClick=${save}>저장</button></div>
-    <div class="table-wrap"><table class="grid"><thead><tr><th>금융사</th><th class="r">총 한도</th><th class="r">외부 기존대출</th><th class="r">사용중(여기)</th><th class="r">잔여</th><th>이자지급일</th><th>사용</th></tr></thead>
+    <div class="table-wrap"><table class="grid"><thead><tr><th>금융사</th><th class="r">총 한도</th><th class="r">외부 기존대출</th><th class="r">사용중(여기)</th><th class="r">잔여</th><th>이자지급일</th><th>사용</th><th>조건</th></tr></thead>
       <tbody>${rows.map((r, i) => {
         const u = (used[r.id] || 0) + Number(r.existing_amount || 0), left = Number(r.credit_limit || 0) - u;
         return html`<tr><td><input value=${r.name} onInput=${e => upd(i, "name", e.target.value)} /></td>
@@ -120,7 +120,8 @@ function Lenders({ app }) {
           <td class="r"><${Money} value=${r.existing_amount} onInput=${v => upd(i, "existing_amount", v)} /></td>
           <td class="r">${won(used[r.id] || 0)}</td><td class=${"r" + (left < 0 ? " red" : "")}>${r.credit_limit ? won(left) : "-"}</td>
           <td><input class="w80" inputmode="numeric" placeholder="일" value=${r.interest_day || ""} onInput=${e => upd(i, "interest_day", e.target.value)} /></td>
-          <td><input type="checkbox" checked=${r.active} onChange=${e => upd(i, "active", e.target.checked)} /></td></tr>`;
+          <td><input type="checkbox" checked=${r.active} onChange=${e => upd(i, "active", e.target.checked)} /></td>
+          <td>${r.id ? html`<a class="btn sm" href=${`#/loans/lender/${r.id}`}>조건 설정</a>` : ""}</td></tr>`;
       })}</tbody></table></div>
   </div>`;
 }

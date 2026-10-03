@@ -13,6 +13,7 @@ import { BrokeragePage } from "./pages/brokerage.js";
 import { LedgerPage } from "./pages/ledger.js";
 import { ReportsPage } from "./pages/reports.js";
 import { PurchasesPage, CostsPage, LoansPage, SalesPage } from "./pages/lists.js";
+import { LenderEdit } from "./pages/lenders.js";
 
 function useHash() {
   const [h, setH] = useState(location.hash.slice(1) || "/");
@@ -105,7 +106,8 @@ function Router({ app }) {
   else if (a === "car") page = html`<${CarDetail} app=${app} id=${b} tab=${c || "info"} />`;
   else if (a === "purchases") page = html`<${PurchasesPage} app=${app} />`;
   else if (a === "costs") page = html`<${CostsPage} app=${app} tab=${b || "car"} />`;
-  else if (a === "loans") page = html`<${LoansPage} app=${app} tab=${b || "list"} />`;
+  else if (a === "loans" && b === "lender") page = html`<${LenderEdit} app=${app} id=${c} />`;
+  else if (a === "loans") page = html`<${LoansPage} app=${app} tab=${b || "lenders"} />`;
   else if (a === "sales") page = html`<${SalesPage} app=${app} />`;
   else if (a === "settlements") page = html`<${Settlements} app=${app} />`;
   else if (a === "settings") page = html`<${Settings} app=${app} tab=${b || "company"} />`;
