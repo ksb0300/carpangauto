@@ -64,6 +64,13 @@ async function install() {
   const d3 = (await pg.query(`insert into dealers (name, kind, partner) values ('이동관', '사업자', true) returning id`)).rows[0].id;
   await pg.query(`insert into dealers (name, kind, partner) values ('김기택', '사업자', true)`);
   const d2 = (await pg.query(`insert into dealers (name, kind) values ('김딜러', '개인') returning id`)).rows[0].id;
+  // 통합키 어휘표 몇 개 (운영은 carrot/pricelab keys 9천여 개를 kaiwa_sync 가 올린다)
+  for (const [ct, brand, model, fuel, grade, trim, stock] of [
+    ["import", "BMW", "5시리즈 (G30)", "가솔린+전기", "530e M 스포츠", null, 120], ["import", "BMW", "X3 (G01)", "가솔린+전기", "xDrive 30e M 스포츠", null, 80],
+    ["domestic", "기아", "더 뉴 쏘렌토 4세대", "가솔린", "2.5T 4WD", "노블레스", 300], ["domestic", "현대", "디 올 뉴 그랜저", "가솔린+전기", "1.6 HEV", "캘리그래피", 410],
+    ["domestic", "기아", "EV6", "전기", "롱레인지 2WD", "어스", 150]])
+    await pg.query(`insert into car_keys (car_type, key, brand, model, fuel, grade, trim, level, stock_now) values ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+      [ct, [model, fuel, grade, trim].filter(Boolean).join(" | "), brand, model, fuel, grade, trim, trim ? "trim" : "grade", stock]);
   // 계정 트리거가 만든 행에 역할·딜러를 지정 (운영에서 대표가 계정 화면에서 하는 일)
   for (const [u, dealer] of [[U.admin, d1], [U.staff, null], [U.dealer, d2]])
     await pg.query(`update profiles set name = $2, role = $3, dealer_id = $4 where user_id = $1`, [u.id, u.name, u.role, dealer]);

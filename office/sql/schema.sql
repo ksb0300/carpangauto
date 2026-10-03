@@ -1013,3 +1013,31 @@ update lenders set rule_memo = '조건 확인 필요' where name in ('신한은�
 -- 기존 대출에 실행 당시 조건 채우기
 update car_loans l set base_months = coalesce(l.base_months, x.base_months), ext_rate = coalesce(l.ext_rate, x.ext_rate)
   from lenders x where x.id = l.lender_id;
+
+
+-- 20261003000006_car_keys.sql
+-- 통합키(fskey) = "모델 | 연료 | 등급 [| 트림]" — carrot/pricelab market_stats.db 의 keys 어휘표를 그대로 올린다.
+-- 차명은 여기서 고른다 (같은 이름 체계로 판매율·시세와 바로 이어지게). 올리는 건 kaiwa_sync.py (하루 두 번).
+
+create table car_keys (
+  car_type        text not null,          -- domestic / import
+  key             text not null,          -- 통합키
+  brand           text,                   -- 제조사 (엔카 제조사 코드 → 이름)
+  model           text not null,
+  fuel            text,
+  grade           text,
+  trim            text,
+  level           text,                   -- grade / trim
+  manufacturer_cd text, model_cd text, grade_cd text, grade_detail_cd text,
+  stock_now       int,                    -- 엔카 현재 재고 (많이 쓰는 키를 위로)
+  sold_90d        int,
+  updated_at      text,
+  primary key (car_type, key)
+);
+create index car_keys_codes on car_keys (manufacturer_cd, model_cd, grade_cd);
+alter table car_keys enable row level security;
+create policy office_read on car_keys for select to authenticated using (is_office());
+
+alter table cars
+  add column fskey    text,      -- 통합키
+  add column car_type text;      -- domestic / import

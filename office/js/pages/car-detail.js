@@ -78,7 +78,7 @@ function InfoTab({ app, car, sale, office }) {
     ["제시금액", `${won(car.purchase_amount)} (공급가 ${won(car.purchase_supply)} / 부가세 ${won(car.purchase_vat)})`],
     ["상사매입비", won(car.purchase_fee)], ["(예상)취득세", won(car.acq_tax)],
     ["차종", car.car_kind], ["차량번호(제시전)", car.plate_before], ["제시증빙", car.evidence],
-    ["매입처", car.purchase_channel], ["브랜드 · 모델", [car.brand, car.model, car.grade].filter(Boolean).join(" · ")],
+    ["매입처", car.purchase_channel], ["브랜드 · 모델", [car.brand, car.model, car.grade].filter(Boolean).join(" · ")], ["통합키", car.fskey],
     ["차대번호", car.vin], ["연식", car.model_year], ["최초등록일", car.first_reg_date],
     ["주행거리", car.mileage != null ? `${won(car.mileage)} km` : null], ["연료 · 변속기", [car.fuel, car.transmission].filter(Boolean).join(" · ")], ["원동기형식", car.motor_type],
     ["매도자", car.seller_name ? `${car.seller_name} (${car.seller_type})` : null],

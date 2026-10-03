@@ -189,3 +189,8 @@ a.stat { color: inherit; } a.stat:hover { border-color: var(--pri); }
 .insp-row.old { opacity: .7; } .insp-line { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
 .insp-flags { margin-top: 6px; } .note.red { color: #b91c1c; }
 .stat.on { outline: 2px solid var(--pri); } a.stat { cursor: pointer; }
+.keypick { position: relative; flex: 1; } .keypick input { width: 100%; }
+.keylist { position: absolute; z-index: 20; left: 0; right: 0; top: 100%; background: var(--card, #fff); border: 1px solid var(--line, #ddd); border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0,0,0,.12); max-height: 320px; overflow: auto; padding: 4px; }
+.keylist button { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 7px 8px; border-radius: 6px; cursor: pointer; }
+.keylist button:hover { background: var(--line2, #f3f4f6); } .keylist button span { margin-left: 4px; } .keylist button small { display: block; }
