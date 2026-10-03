@@ -59,7 +59,10 @@ async function install() {
   await pg.exec(`create table _demo_files (path text primary key, mime text, data bytea not null)`);   // 첨부 저장소 대용
   const U = DEMO_USERS;
   for (const u of [U.admin, U.staff, U.dealer]) await pg.query(`insert into auth.users (id, email) values ($1, $2)`, [u.id, u.email]);
-  const d1 = (await pg.query(`insert into dealers (name, kind, phone) values ('김상혁', '사업자', '010-0000-0000') returning id`)).rows[0].id;
+  // 공동대표 3명 + (나중에 뽑을) 딜러 1명
+  const d1 = (await pg.query(`insert into dealers (name, kind, phone, partner) values ('김상혁', '사업자', '010-0000-0000', true) returning id`)).rows[0].id;
+  const d3 = (await pg.query(`insert into dealers (name, kind, partner) values ('이동관', '사업자', true) returning id`)).rows[0].id;
+  await pg.query(`insert into dealers (name, kind, partner) values ('김기택', '사업자', true)`);
   const d2 = (await pg.query(`insert into dealers (name, kind) values ('김딜러', '개인') returning id`)).rows[0].id;
   // 계정 트리거가 만든 행에 역할·딜러를 지정 (운영에서 대표가 계정 화면에서 하는 일)
   for (const [u, dealer] of [[U.admin, d1], [U.staff, null], [U.dealer, d2]])
@@ -69,7 +72,7 @@ async function install() {
     const today = new Date().toISOString().slice(0, 10);
     const cars = [
       ["BMW 530e M 스포츠", "121라9496", 37_400_000, d1, 392_700],
-      ["기아 EV6 롱레인지", "33머7081", 28_900_000, d1, 303_450],
+      ["기아 EV6 롱레인지", "33머7081", 28_900_000, d3, 303_450],
       ["벤츠 C200d", "19조0174", 23_000_000, d2, 0],
     ];
     const ids = [];

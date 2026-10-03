@@ -21,6 +21,7 @@ export async function loadCarRows(db) {
 export function settleBadge(r) {
   if (!r.sale) return html`<span class="muted">—</span>`;
   if (!r.settle) return html`<${Badge} tone="red">미정산<//>`;
+  if (r.settle.mode === "대표") return r.settle.finalized ? html`<${Badge} tone="green">손익확정<//>` : html`<${Badge} tone="amber">임시<//>`;
   return r.settle.finalized ? html`<${Badge} tone="green">정산완료<//>` : html`<${Badge} tone="amber">임시<//>`;
 }
 

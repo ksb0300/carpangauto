@@ -20,11 +20,18 @@ export function CarForm({ app, id }) {
   const setT = k => e => setF(p => ({ ...p, [k]: e.target.value }));
 
   useEffect(() => { run(async () => {
-    if (!id) return setF({ ...EMPTY, purchase_fee: app.settings.purchase_fee, dealer_id: app.profile.dealer_id || app.dealers[0]?.id || null });
+    if (!id) {
+      const dealer_id = app.profile.dealer_id || app.dealers.find(d => d.active)?.id || null;
+      return setF({ ...EMPTY, dealer_id, purchase_fee: app.dealers.find(d => d.id === dealer_id)?.partner ? 0 : app.settings.purchase_fee });
+    }
     setF(await q(app.db.from("cars").select("*").eq("id", id).single()));
   }); }, [id]);
 
   if (!f) return html`<${Loading} />`;
+  const isPartner = id => !!app.dealers.find(d => d.id === id)?.partner;
+  const partner = isPartner(f.dealer_id);
+  // 담당을 바꾸면 상사매입비도 따라간다 (대표 0 · 딜러 설정값)
+  const pickDealer = v => setF(p => ({ ...p, dealer_id: v, purchase_fee: isPartner(v) ? 0 : (isPartner(p.dealer_id) ? app.settings.purchase_fee : p.purchase_fee) }));
   const vat = 부가세분리(f.purchase_amount);
   const autoTax = 예상취득세(f.purchase_amount, f.car_kind);
 
@@ -53,11 +60,12 @@ export function CarForm({ app, id }) {
     <h3>필수 정보</h3>
     <div class="fgrid">
       <${Field} label="제시구분" req><${Seg} value=${f.consign} onChange=${set("consign")} options=${["상사매입", "고객위탁"]} /><//>
-      <${Field} label="제시딜러"><${Select} value=${f.dealer_id} onChange=${set("dealer_id")} empty="선택" options=${app.dealers.filter(d => d.active).map(d => [d.id, d.name])} /><//>
+      <${Field} label="매입담당" hint=${partner ? "대표 차 — 상사매입비 없음, 손익이 본인 실적" : "딜러 차 — 상사매입비·딜러 정산 적용"}>
+        <${Select} value=${f.dealer_id} onChange=${pickDealer} empty="선택" options=${app.dealers.filter(d => d.active || d.id === f.dealer_id).map(d => [d.id, d.name + (d.partner ? " (대표)" : "")])} /><//>
       <${Field} label="제시일" req hint="조합전산 제시일"><input type="date" value=${f.purchase_date} onInput=${setT("purchase_date")} required /><//>
       <${Field} label="제시금액" req hint=${f.purchase_amount ? `공급가 ${won(vat.공급가)} / 부가세 ${won(vat.부가세)}` : "부가세 포함 금액"}>
         <${Money} value=${f.purchase_amount} onInput=${set("purchase_amount")} /><//>
-      <${Field} label="상사매입비" hint="설정값 자동 · 상품화비용으로 자동 반영"><${Money} value=${f.purchase_fee} onInput=${set("purchase_fee")} /><//>
+      ${!partner && html`<${Field} label="상사매입비" hint="설정값 자동 · 상품화비용으로 자동 반영"><${Money} value=${f.purchase_fee} onInput=${set("purchase_fee")} /><//>`}
       <${Field} label="(예상)취득세" hint=${`자동계산 ${won(autoTax)}원 · 감면+최소납부(200만 초과분만 15%)`}>
         <div class="row"><${Money} value=${f.acq_tax} onInput=${set("acq_tax")} />
         <button type="button" class="btn sm" onClick=${() => set("acq_tax")(autoTax)}>자동계산</button></div><//>

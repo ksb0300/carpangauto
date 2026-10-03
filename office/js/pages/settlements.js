@@ -18,7 +18,8 @@ export function Settlements({ app }) {
       q(app.db.from("car_sales").select("car_id,sale_date,sale_amount,dealer_id,broker_dealer_id")),
     ]);
     const car = Object.fromEntries(cars.map(c => [c.id, c])), sale = Object.fromEntries(sales.map(s => [s.car_id, s]));
-    setData(st.map(s => ({ ...s, car: car[s.car_id], sale: sale[s.car_id] })).filter(s => s.car));
+    // 딜러 정산만 (공동대표 차의 손익확정은 종합업무현황 → 대표별 실적)
+    setData(st.filter(s => s.mode !== "대표").map(s => ({ ...s, car: car[s.car_id], sale: sale[s.car_id] })).filter(s => s.car));
   }); }, []);
 
   const dateOf = r => ({ 정산일: r.settle_date, 매도일: r.sale?.sale_date, 제시일: r.car.purchase_date }[key]);
@@ -38,7 +39,7 @@ export function Settlements({ app }) {
   ]);
 
   return html`
-    <div class="bar"><h2>정산내역</h2><span class="muted small">차량 매도에 따른 정산 자료입니다</span><span class="grow"></span>
+    <div class="bar"><h2>정산내역</h2><span class="muted small">딜러 차량 정산 자료입니다 · 공동대표 차 손익은 <a href="#/reports/partners">대표별 실적</a></span><span class="grow"></span>
       <button class="btn" disabled=${!rows.length} onClick=${download}>엑셀다운로드</button></div>
     <div class="bar">
       <input class="search" placeholder="차량번호·차명" value=${text} onInput=${e => setText(e.target.value)} />

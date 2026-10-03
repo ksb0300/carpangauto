@@ -24,7 +24,7 @@ export function SaleTab({ app, car, sale, buyers, settlement, reload, locked, of
       ${office && html`<button class="btn primary" onClick=${() => go(`/car/${car.id}/settle`)}>정산하기 →</button>`}</div>
     <div class="kvgrid">
       <div><span>매도일</span><b>${sale.sale_date}</b></div>
-      <div><span>매도딜러</span><b>${dealer?.name || "-"}${sale.other_dealer ? " (타상사딜러)" : ""}</b></div>
+      <div><span>매도담당</span><b>${dealer?.name || "-"}${sale.other_dealer ? " (타상사딜러)" : ""}</b></div>
       <div><span>매도유형</span><b>${sale.sale_type}</b></div>
       <div><span>알선딜러</span><b>${app.dealers.find(d => d.id === sale.broker_dealer_id)?.name || "-"}</b></div>
       <div><span>매도금액</span><b>${won(sale.sale_amount)} <small class="muted">(공급가 ${won(sale.sale_supply)} / 부가세 ${won(sale.sale_vat)})</small></b></div>
@@ -87,7 +87,7 @@ function SaleForm({ app, car, sale, buyers, onDone }) {
       <button class="btn primary" disabled=${busy}>${busy ? "저장 중…" : "저장"}</button></div>
     <div class="fgrid">
       <${Field} label="매도일" req><input type="date" value=${f.sale_date} onInput=${e => set("sale_date")(e.target.value)} required /><//>
-      <${Field} label="매도딜러"><div class="row"><${Select} value=${f.dealer_id} onChange=${set("dealer_id")} options=${app.dealers.map(d => [d.id, d.name])} />
+      <${Field} label="매도담당"><div class="row"><${Select} value=${f.dealer_id} onChange=${set("dealer_id")} options=${app.dealers.map(d => [d.id, d.name + (d.partner ? " (대표)" : "")])} />
         <label class="check"><input type="checkbox" checked=${f.other_dealer} onChange=${e => set("other_dealer")(e.target.checked)} /> 타상사딜러</label></div><//>
       <${Field} label="알선딜러" hint="다른 딜러가 손님을 데려와 판 경우 — 정산 때 정산금을 나눕니다">
         <${Select} value=${f.broker_dealer_id} onChange=${set("broker_dealer_id")} empty="없음" options=${app.dealers.filter(d => d.id !== f.dealer_id).map(d => [d.id, d.name])} /><//>

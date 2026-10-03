@@ -3,7 +3,7 @@ import { q } from "../db.js";
 import { DEMO } from "../config.js";
 import { popbill, accounts } from "../pb.js";
 
-const TABS = [["company", "상사정보"], ["ops", "운영설정"], ["dealers", "딜러"], ["lenders", "재고금융사"], ["parking", "주차구역"],
+const TABS = [["company", "상사정보"], ["ops", "운영설정"], ["dealers", "대표·딜러"], ["lenders", "재고금융사"], ["parking", "주차구역"],
   ["items", "항목"], ["popbill", "팝빌 연동"], ["accounts", "계정·권한"]];
 
 export function Settings({ app, tab }) {
@@ -40,13 +40,14 @@ function Ops({ app }) {
 function Dealers({ app }) {
   const [edit, setEdit] = useState(null);
   return html`<div class="card">
-    <div class="bar"><h3>딜러</h3><span class="grow"></span><button class="btn primary" onClick=${() => setEdit({ name: "", kind: "사업자", active: true })}>+ 딜러 추가</button></div>
+    <div class="bar"><h3>대표·딜러 (매입담당)</h3><span class="grow"></span><button class="btn primary" onClick=${() => setEdit({ name: "", kind: "사업자", active: true, partner: false })}>+ 추가</button></div>
     ${edit && html`<${DealerForm} app=${app} d=${edit} onDone=${() => setEdit(null)} />`}
-    <div class="table-wrap"><table class="grid click"><thead><tr><th>이름</th><th>구분</th><th>주민번호</th><th>사업자번호</th><th>연락처</th><th>계좌</th><th>상태</th></tr></thead>
-      <tbody>${app.dealers.map(d => html`<tr onClick=${() => setEdit(d)}><td><b>${d.name}</b></td><td>${d.kind}</td><td>${d.ssn_masked || "-"}</td>
+    <div class="table-wrap"><table class="grid click"><thead><tr><th>이름</th><th>역할</th><th>구분</th><th>주민번호</th><th>사업자번호</th><th>연락처</th><th>계좌</th><th>상태</th></tr></thead>
+      <tbody>${app.dealers.map(d => html`<tr onClick=${() => setEdit(d)}><td><b>${d.name}</b></td><td>${d.partner ? html`<span class="badge blue">공동대표</span>` : "딜러"}</td><td>${d.kind}</td><td>${d.ssn_masked || "-"}</td>
         <td>${d.biz_no || "-"}</td><td>${d.phone || "-"}</td><td>${d.bank ? `${d.bank} ${d.account_no || ""}` : "-"}</td>
         <td>${d.active ? "사용" : html`<span class="muted">중지</span>`}</td></tr>`)}</tbody></table></div>
-    <p class="note">딜러 구분이 <b>개인</b>이면 정산 때 원천징수(13.3%)가 기본으로 켜지고, <b>사업자</b>면 꺼집니다.</p>
+    <p class="note"><b>공동대표</b> 차는 상사매입비·원천징수·딜러 정산 없이 차량 손익이 본인 실적이 됩니다(회사 수익은 대표 수로 똑같이 나눔).
+      <b>딜러</b> 차는 상사매입비와 딜러 정산이 적용되고, 구분이 <b>개인</b>이면 원천징수(13.3%)가 기본으로 켜집니다.</p>
   </div>`;
 }
 
@@ -59,7 +60,7 @@ function DealerForm({ app, d, onDone }) {
     if (!f.name.trim()) return toast("이름을 입력하세요.", "err");
     const ok = await run(async () => {
       const row = { name: f.name.trim(), kind: f.kind, biz_no: f.biz_no || null, phone: f.phone || null, email: f.email || null,
-        bank: f.bank || null, account_no: f.account_no || null, address: f.address || null, active: f.active };
+        bank: f.bank || null, account_no: f.account_no || null, address: f.address || null, active: f.active, partner: !!f.partner };
       const id = f.id ? (await q(app.db.from("dealers").update(row).eq("id", f.id).select("id").single())).id
                       : (await q(app.db.from("dealers").insert(row).select("id").single())).id;
       if (ssn.trim()) await q(app.db.rpc("set_ssn", { p_target: "dealer", p_id: id, p_ssn: ssn.trim() }));
@@ -69,6 +70,7 @@ function DealerForm({ app, d, onDone }) {
   };
   return html`<form class="subform" onSubmit=${save}><div class="fgrid">
     <${Field} label="이름" req><input value=${f.name} onInput=${set("name")} /><//>
+    <${Field} label="역할" hint="공동대표: 상사매입비·원천징수 없음, 손익이 본인 실적"><${Seg} value=${f.partner ? "공동대표" : "딜러"} onChange=${v => setF(p => ({ ...p, partner: v === "공동대표" }))} options=${["공동대표", "딜러"]} /><//>
     <${Field} label="구분"><${Seg} value=${f.kind} onChange=${v => setF(p => ({ ...p, kind: v }))} options=${["사업자", "개인"]} /><//>
     <${Field} label="주민등록번호" hint=${f.ssn_masked ? `저장됨 ${f.ssn_masked}` : "암호화 저장"}><input autocomplete="off" value=${ssn} placeholder=${f.ssn_masked || ""} onInput=${e => setSsn(e.target.value)} /><//>
     <${Field} label="사업자등록번호"><input value=${f.biz_no || ""} onInput=${set("biz_no")} /><//>
@@ -131,7 +133,7 @@ function Parking({ app }) {
   </div>`;
 }
 
-const ROLES = [["admin", "대표(전체+주민번호 열람)"], ["staff", "직원(전체)"], ["dealer", "딜러(본인 차량 보기)"]];
+const ROLES = [["admin", "공동대표(전체·주민번호·계정관리)"], ["staff", "사무장(전체, 계정관리 제외)"], ["dealer", "권한 없음(접근 금지)"]];
 const tempPw = () => "Cp" + Math.random().toString(36).slice(2, 8) + Math.floor(10 + Math.random() * 89) + "!";
 
 function Accounts({ app }) {
@@ -146,7 +148,7 @@ function Accounts({ app }) {
   });
   useEffect(() => { load(); }, []);
   const save = r => run(async () => {
-    await q(app.db.from("profiles").update({ name: r.name, role: r.role, dealer_id: r.role === "dealer" ? r.dealer_id : null }).eq("user_id", r.user_id));
+    await q(app.db.from("profiles").update({ name: r.name, role: r.role, dealer_id: r.role === "admin" ? r.dealer_id : null }).eq("user_id", r.user_id));
     load();
   }, "권한을 바꿨습니다");
   const reset = async r => {
@@ -170,13 +172,13 @@ function Accounts({ app }) {
     ${shown && html`<div class="demo-note">${shown.name} (${shown.email}) 임시 비밀번호: <b style="font-size:16px;letter-spacing:.5px">${shown.pw}</b>
       — 지금 전달하세요. 이 화면을 벗어나면 다시 볼 수 없습니다. <button class="btn sm" onClick=${() => setShown(null)}>전달했어요</button></div>`}
     ${adding && html`<${NewAccount} app=${app} init=${adding} onDone=${made => { setAdding(null); if (made) setShown(made); load(); }} />`}
-    <div class="table-wrap"><table class="grid"><thead><tr><th>이름</th><th>이메일</th><th>역할</th><th>연결 딜러</th><th>상태</th><th></th></tr></thead>
+    <div class="table-wrap"><table class="grid"><thead><tr><th>이름</th><th>이메일</th><th>역할</th><th>본인(대표)</th><th>상태</th><th></th></tr></thead>
       <tbody>${rows.map((r, i) => { const u = users[r.user_id] || {}; const me = r.user_id === app.user.id;
         return html`<tr>
         <td><input value=${r.name} onInput=${e => upd(i, "name", e.target.value)} /></td>
         <td class="small">${u.email || "-"}</td>
         <td><${Select} value=${r.role} onChange=${v => upd(i, "role", v)} options=${ROLES} /></td>
-        <td>${r.role === "dealer" ? html`<${Select} value=${r.dealer_id} onChange=${v => upd(i, "dealer_id", v)} empty="선택" options=${app.dealers.map(d => [d.id, d.name])} />` : "-"}</td>
+        <td>${r.role === "admin" ? html`<${Select} value=${r.dealer_id} onChange=${v => upd(i, "dealer_id", v)} empty="선택" options=${app.dealers.filter(d => d.partner).map(d => [d.id, d.name])} />` : "-"}</td>
         <td class="small">${u.disabled ? html`<span class="badge red">중지</span>` : u.must_change ? html`<span class="badge amber">임시 비밀번호</span>` : html`<span class="badge green">사용</span>`}
           ${u.last_sign_in_at && html`<br /><span class="muted">${u.last_sign_in_at.slice(0, 16).replace("T", " ")}</span>`}</td>
         <td class="nowrap"><button class="btn sm" disabled=${me && r.role !== "admin"} onClick=${() => save(r)}>저장</button>
@@ -196,8 +198,9 @@ function NewAccount({ app, init, onDone }) {
   return html`<form class="subform" onSubmit=${save}><div class="fgrid">
     <${Field} label="이메일 (로그인 아이디)" req><input type="email" autocomplete="off" value=${f.email} onInput=${set("email")} /><//>
     <${Field} label="이름" req><input value=${f.name} onInput=${set("name")} /><//>
+    <${Field} label="역할" hint="공동대표: 상사매입비·원천징수 없음, 손익이 본인 실적"><${Seg} value=${f.partner ? "공동대표" : "딜러"} onChange=${v => setF(p => ({ ...p, partner: v === "공동대표" }))} options=${["공동대표", "딜러"]} /><//>
     <${Field} label="역할"><${Select} value=${f.role} onChange=${set("role")} options=${ROLES} /><//>
-    ${f.role === "dealer" && html`<${Field} label="연결 딜러" req><${Select} value=${f.dealer_id} onChange=${set("dealer_id")} empty="선택" options=${app.dealers.map(d => [d.id, d.name])} /><//>`}
+    ${f.role === "admin" && html`<${Field} label="본인(대표)" hint="대시보드 '내 실적'에 쓰입니다"><${Select} value=${f.dealer_id} onChange=${set("dealer_id")} empty="선택" options=${app.dealers.filter(d => d.partner).map(d => [d.id, d.name])} /><//>`}
     <${Field} label="임시 비밀번호" hint="첫 로그인 때 본인이 바꿉니다"><input autocomplete="off" value=${f.password} onInput=${set("password")} /><//>
   </div><div class="actions"><button type="button" class="btn ghost" onClick=${() => onDone(null)}>닫기</button><button class="btn primary">만들기</button></div></form>`;
 }

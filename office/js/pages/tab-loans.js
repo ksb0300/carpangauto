@@ -79,7 +79,8 @@ export function LoansTab({ app, car, loans, reload, locked, office }) {
 
 function LoanForm({ app, car, onDone }) {
   const active = app.lenders.filter(l => l.active);
-  const [f, setF] = useState({ lender_id: active[0]?.id, kind: "신규", amount: 0, start_date: today(), months: 3, lender_rate: "", dealer_rate: "", memo: "" });
+  const partner = !!app.dealers.find(d => d.id === car.dealer_id)?.partner;     // 대표 차는 딜러 이자가 없다
+  const [f, setF] = useState({ lender_id: active[0]?.id, kind: "신규", amount: 0, start_date: today(), months: 3, lender_rate: "", dealer_rate: partner ? "0" : "", memo: "" });
   const [used, setUsed] = useState({});
   const set = k => v => setF(p => ({ ...p, [k]: v }));
   useEffect(() => { run(async () => {
@@ -109,8 +110,8 @@ function LoanForm({ app, car, onDone }) {
       <${Field} label="대출기간(개월)" req><${Select} value=${f.months} onChange=${v => set("months")(Number(v))} options=${MONTHS.map(m => [m, m + "개월"])} /><//>
       <${Field} label="캐피탈이율(연 %)" hint=${f.lender_rate ? `월 ${won(cp.월이자)} · 총 ${won(cp.총이자)}` : "재고금융사가 상사에 받는 이율"}>
         <input inputmode="decimal" value=${f.lender_rate} onInput=${e => set("lender_rate")(e.target.value)} /><//>
-      <${Field} label="딜러이율(연 %)" req hint=${f.dealer_rate ? `일 ${won(dl.일이자)} · 월 ${won(dl.월이자)} · 총 ${won(dl.총이자)}` : "딜러에게 적용하는 이율"}>
-        <input inputmode="decimal" value=${f.dealer_rate} onInput=${e => set("dealer_rate")(e.target.value)} /><//>
+      ${!partner && html`<${Field} label="딜러이율(연 %)" req hint=${f.dealer_rate ? `일 ${won(dl.일이자)} · 월 ${won(dl.월이자)} · 총 ${won(dl.총이자)}` : "딜러에게 적용하는 이율"}>
+        <input inputmode="decimal" value=${f.dealer_rate} onInput=${e => set("dealer_rate")(e.target.value)} /><//>`}
       <${Field} label="메모" wide><input value=${f.memo} onInput=${e => set("memo")(e.target.value)} /><//>
     </div>
     <div class="actions"><button type="button" class="btn ghost" onClick=${onDone}>취소</button><button class="btn primary">등록</button></div>

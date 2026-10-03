@@ -1,6 +1,7 @@
 // 똑순이와 같은 목록 화면: 제시차량 / 상품화비용(차량별·비용별) / 재고금융(리스트·이자납입) / 매도차량.
 // 공통: 차량번호 검색, 담당딜러, 검색기간(기준일 선택), 정렬, 엑셀(CSV) 다운로드, 합계표, 등록 버튼.
-import { html, useState, useEffect, useMemo, Select, Seg, Loading, Empty, run, won, go, today, Period, initPeriod, SubTabs, downloadCsv, W } from "../ui.js";
+import { html, useState, useEffect, useMemo, Select, Seg, Loading, Empty, run, won, go, today, Period, initPeriod, SubTabs, downloadCsv, W, toast } from "../ui.js";
+import { q } from "../db.js";
 import { loadAll } from "./report-data.js";
 import { 부가세분리, 대출이자, 미납이자 } from "../calc.js";
 import { settleBadge } from "./cars.js";
@@ -68,9 +69,22 @@ function CarPick({ cars, label, tab, onClose }) {
 const Sum = ({ rows }) => html`<div class="table-wrap"><table class="grid sumtable"><tbody>
   ${rows.map(r => html`<tr class=${r.em ? "em" : ""}>${r.cells.map((c, i) => i === 0 ? html`<th>${c}</th>` : typeof c === "number" ? W(c) : html`<td>${c}</td>`)}</tr>`)}</tbody></table></div>`;
 
+/** 목록에서 바로 매입담당 바꾸기 — 대표↔딜러로 바뀌면 상사매입비도 따라간다(DB 트리거) */
+function OwnerPick({ app, car, onDone }) {
+  const pick = async v => {
+    if (!v || v === car.dealer_id) return;
+    if (car.settle?.finalized) return toast("정산(손익) 확정된 차는 담당을 바꿀 수 없습니다. 확정을 먼저 해제하세요.", "err");
+    const to = app.dealers.find(x => x.id === v);
+    const fee = to?.partner ? 0 : app.settings.purchase_fee;
+    await run(() => q(app.db.from("cars").update({ dealer_id: v, purchase_fee: fee }).eq("id", car.id)), `${car.plate} → ${to?.name}`);
+    onDone();
+  };
+  return html`<${Select} value=${car.dealer_id} onChange=${pick} empty="선택" options=${app.dealers.filter(x => x.active || x.id === car.dealer_id).map(x => [x.id, x.name + (x.partner ? "" : " (딜러)")])} />`;
+}
+
 // ───────────────────────── 제시차량 리스트 ─────────────────────────
 export function PurchasesPage({ app }) {
-  const [d] = useBook(app);
+  const [d, reload] = useBook(app);
   const [f, setF] = useState({ ...initF("제시일", "제시일"), consign: "전체", status: "재고" });
   const office = app.profile.role !== "dealer";
   const dealer = Object.fromEntries(app.dealers.map(x => [x.id, x.name]));
@@ -91,10 +105,10 @@ export function PurchasesPage({ app }) {
         <${Select} value=${f.consign} onChange=${v => setF(p => ({ ...p, consign: v }))} options=${[["전체", "제시구분 전체"], "상사매입", "고객위탁"]} />`} />
     <${Sum} rows=${[{ cells: ["구분", "건수", "공급가", "부가세", "제시금액(합계)", "재고금융", "총납입이자", "상사매입비", "상품화비용"], em: true }, grp("상사매입"), grp("고객위탁"), grp("합계")]} />
     ${!rows.length ? html`<${Empty}>조건에 맞는 차량이 없습니다.<//>` : html`<div class="table-wrap"><table class="grid click">
-      <thead><tr><th>제시일</th><th>제시구분</th><th>차량번호</th><th>담당딜러</th><th>차량명</th><th class="r">제시금액</th><th class="r">재고금융</th>
+      <thead><tr><th>제시일</th><th>제시구분</th><th>차량번호</th><th>매입담당</th><th>차량명</th><th class="r">제시금액</th><th class="r">재고금융</th>
         <th class="r">총납입이자</th><th class="r">상사매입비</th><th class="r">상품화비용</th><th class="r">재고일</th><th>정산</th></tr></thead>
       <tbody>${rows.map(c => html`<tr onClick=${() => go("/car/" + c.id)}><td>${c.purchase_date}</td><td>${c.consign === "고객위탁" ? "위탁" : "상사"}</td>
-        <td><b>${c.plate}</b></td><td>${dealer[c.dealer_id] || "-"}</td><td class="ellipsis">${c.car_name}</td>${W(c.purchase_amount)}${W(c.재고금융)}${W(c.총납입이자)}
+        <td><b>${c.plate}</b></td><td onClick=${e => office && e.stopPropagation()}>${office ? html`<${OwnerPick} app=${app} car=${c} onDone=${reload} />` : dealer[c.dealer_id] || "-"}</td><td class="ellipsis">${c.car_name}</td>${W(c.purchase_amount)}${W(c.재고금융)}${W(c.총납입이자)}
         ${W(c.purchase_fee)}${W(c.상품화)}<td class="r">${c.status === "재고" ? days(c.purchase_date) : ""}</td><td>${settleBadge(c)}</td></tr>`)}</tbody></table></div>`}`;
 }
 

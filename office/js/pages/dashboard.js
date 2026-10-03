@@ -2,7 +2,7 @@
 import { html, useState, useEffect, Loading, run, won, today } from "../ui.js";
 import { q } from "../db.js";
 import { loadAll } from "./report-data.js";
-import { 종합현황, 이자납부예정, 월별추이 } from "../report-calc.js";
+import { 종합현황, 이자납부예정, 월별추이, 대표별실적, 수익배분 } from "../report-calc.js";
 import { planLines } from "./tab-docs.js";
 import { TrendChart } from "./reports.js";
 import { 미납이자 } from "../calc.js";
@@ -61,7 +61,7 @@ export function Dashboard({ app }) {
 
   const todo = [
     정보없음 && { href: "#/settings/company", tone: "bad", text: "상사정보(사업자번호·대표자·주소)를 먼저 입력하세요 — 발행·보고서에 필요합니다." },
-    미정산.length && { href: "#/sales", tone: "warn", text: `매도했지만 정산완료 안 된 차량 ${미정산.length}대` },
+    미정산.length && { href: "#/sales", tone: "warn", text: `매도했지만 정산(손익)확정 안 된 차량 ${미정산.length}대` },
     d.docs.length && { href: "#/issue/wait", tone: 실패 ? "bad" : "warn", text: `발행대기 ${d.docs.length}건 (${won(d.docs.reduce((a, x) => a + Number(x.amount), 0))}원)${실패 ? ` · 실패 ${실패}건` : ""}` },
     d.unmatched.length && { href: "#/bank", tone: "warn", text: `통장 입출금 중 장부와 연결 안 된 거래 ${d.unmatched.length}건` },
     만기임박.length && { href: "#/loans", tone: "bad", text: `재고금융 만기 2주 이내·지난 것 ${만기임박.length}건 (${만기임박.map(l => car[l.car_id].plate).slice(0, 4).join(", ")}${만기임박.length > 4 ? " 외" : ""})` },
@@ -70,7 +70,18 @@ export function Dashboard({ app }) {
     장기.length && { href: "#/reports/summary", tone: "warn", text: `90일 넘은 재고 ${장기.length}대 (${장기.map(c => c.plate).slice(0, 4).join(", ")}${장기.length > 4 ? " 외" : ""})` },
   ].filter(Boolean);
 
+  // 공동대표: 이번 달 내 실적과 배분 예상
+  const 대표들 = 대표별실적(d, m.from, m.to, t);
+  const 나 = 대표들.find(r => r.dealer_id === app.profile.dealer_id);
+  const 배분 = 대표들.length ? 수익배분(d, m.from, m.to, t) : null;
+
   return html`<div class="bar"><h2>대시보드</h2><span class="muted">${t} · ${app.settings.company_name}</span></div>
+    ${배분 && html`<div class="card"><div class="bar"><h3>이번 달 공동대표 실적</h3><span class="grow"></span><a class="btn sm" href="#/reports/partners">대표별 실적</a><a class="btn sm" href="#/reports/share">수익 배분</a></div>
+      <div class="stat-grid">
+        ${대표들.map(r => html`<a class=${"stat" + (r === 나 ? " on" : "")} href="#/reports/partners"><span>${r.이름}${r === 나 ? " (나)" : ""}</span>
+          <b class=${r.손익 < 0 ? "red" : ""}>${won(r.손익)}</b><small>매입 ${r.매입대수} · 매도 ${r.매도대수} · 재고 ${r.재고대수}대${r.장기재고 ? ` (90일+ ${r.장기재고})` : ""}</small></a>`)}
+        <a class="stat" href="#/reports/share"><span>회사 순이익 → 1인 배분</span><b class=${배분.순이익 < 0 ? "red" : "blue"}>${won(배분.인당)}</b><small>순이익 ${won(배분.순이익)} ÷ ${배분.대표수}명</small></a>
+      </div></div>`}
     <div class="card"><h3>확인할 것</h3>
       ${!todo.length ? html`<p class="muted">밀린 일이 없습니다.</p>` : html`<ul class="todo">${todo.map(x => html`<li>
         <span class=${"badge " + (x.tone === "bad" ? "red" : "amber")}>${x.tone === "bad" ? "급함" : "확인"}</span><a href=${x.href}>${x.text}</a></li>`)}</ul>`}</div>

@@ -166,3 +166,34 @@ export function 기간이자(대출금액, 연이율, 실행일, 종료일, from
   const days = Math.round((Date.parse(e + "T00:00:00Z") - Date.parse(s + "T00:00:00Z")) / 86_400_000) + 1;
   return Math.round((Number(대출금액) || 0) * ((Number(연이율) || 0) / 100) / 365 * days);
 }
+
+/**
+ * 대표 차량 손익 (공동대표 차는 딜러 정산 대신 이걸로 실적을 본다).
+ *   매출 = 매도금액 + 기타매출 + 상사매도비(과세) + 성능보험료 수입(비과세)
+ *   부가세 = 매출VAT − 제시VAT(의제·세금계산서 공제, 계산서는 0) − 비용VAT   (음수면 환급)
+ *   손익 = 매출 − 제시금액 − 상품화비 − 캐피탈이자 − 부가세        ← 실적은 부가세 뺀 이 값
+ * 상사매입비·원천징수·딜러이자는 없다.
+ */
+export function 대표손익(p) {
+  const 매출행 = [
+    { 금액: p.매도금액, 과세: true },
+    ...(p.기타매출 || []).map(r => ({ 금액: r.금액, 과세: r.과세 !== false })),
+    { 금액: p.상사매도비 || 0, 과세: true },
+    { 금액: p.성능보험료 || 0, 과세: false },
+  ];
+  const 매출 = 합(매출행.map(r => 부가세분리(r.금액, r.과세)));
+  const 제시 = 부가세분리(p.제시금액, p.제시증빙 !== "계산서");
+  const C = 합((p.비용 || []).filter(r => r.정산반영 !== false).map(r => 부가세분리(r.금액, r.과세)));
+  const 이자 = Math.round(Number(p.캐피탈이자) || 0);
+  const 부가세 = 매출.부가세 - 제시.부가세 - C.부가세;
+  const 세전 = 매출.금액 - 제시.금액 - C.금액 - 이자;
+  return { 매출, 제시, C, 이자, 부가세, 세전손익: 세전, 손익: 세전 - 부가세 };
+}
+
+/** 차 한 대의 캐피탈 이자 합 (대출 실행일 ~ 상환일, 상환 전이면 기준일까지) */
+export function 차량캐피탈이자(loans, 기준일) {
+  return (loans || []).reduce((t, l) => {
+    const end = l.repaid_date || 기준일;
+    return t + 기간이자(l.amount, l.lender_rate, l.start_date, end, l.start_date, end);
+  }, 0);
+}

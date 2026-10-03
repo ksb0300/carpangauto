@@ -4,7 +4,7 @@
 // data = { cars, costs, loans, payments, sales, settlements, brokerages, ledger, lenders, dealers }
 // 날짜는 모두 'YYYY-MM-DD' 문자열, 기간은 [from, to] 양끝 포함.
 
-import { 부가세분리, 기간이자, 원천징수분해 } from "./calc.js";
+import { 부가세분리, 기간이자, 원천징수분해, 대표손익, 차량캐피탈이자 } from "./calc.js";
 
 const n = v => Math.round(Number(v) || 0);
 const inP = (d, from, to) => !!d && d >= from && d <= to;
@@ -81,7 +81,7 @@ export function 상사매입자료(data, from, to) {
       { car_id: k.car_id, dealer_id: car[k.car_id].dealer_id, 출처: "자동", 증빙: k.evidence, 지출: k.paid_by, 비고: k.memo }));
   }
   for (const s of data.settlements || []) {
-    if (!s.finalized || !inP(s.settle_date, from, to)) continue;
+    if (!s.finalized || s.mode === "대표" || !inP(s.settle_date, from, to)) continue;
     const ex = { car_id: s.car_id, dealer_id: car[s.car_id]?.dealer_id, 출처: "자동" };
     if (n(s.tax_total)) out.push(row(s.settle_date, "원천징수(딜러정산)", s.tax_total, false, ex));
     out.push(row(s.settle_date, "딜러정산 실지급", s.payout, false, ex));
@@ -206,9 +206,14 @@ export function 종합현황(data, from, to, 오늘 = to) {
   const pick = (rs, 항목) => rs.filter(r => r.항목 === 항목).reduce((t, r) => t + r.금액, 0);
   const 알선수수료 = (data.brokerages || []).filter(b => inP(b.sale_date, from, to)).reduce((t, b) => t + n(b.fee), 0);
   const 알선지급 = pick(매입, "알선 딜러지급") + pick(매입, "원천징수(알선)");
+  // 대표 차는 매도비·보험료·캐피탈이자가 차량 손익 안에 들어가 있으니 여기선 딜러 차 몫만 센다
+  const 대표차 = 대표차량(data);
+  const 딜러차 = rs => rs.filter(r => !r.car_id || !대표차.has(r.car_id));
+  const 대표 = 대표차량손익(data, from, to);
   const 상사수익 = {
-    상사매도비: pick(매출, "상사매도비"), 성능보험료: pick(매출, "성능보험료"), 상사매입비: pick(매출, "상사매입비"),
-    딜러이자: pick(매출, "재고금융이자(딜러)"), 캐피탈이자: -pick(매입, "재고금융이자(캐피탈)"),
+    대표차량손익: 대표.reduce((t, r) => t + r.손익, 0),
+    상사매도비: pick(딜러차(매출), "상사매도비"), 성능보험료: pick(딜러차(매출), "성능보험료"), 상사매입비: pick(딜러차(매출), "상사매입비"),
+    딜러이자: pick(딜러차(매출), "재고금융이자(딜러)"), 캐피탈이자: 0 - pick(딜러차(매입), "재고금융이자(캐피탈)"),
     알선몫: 알선수수료 - 알선지급,
     기타매출: 매출.filter(r => r.출처 === "장부").reduce((t, r) => t + r.금액, 0),
   };
@@ -218,7 +223,7 @@ export function 종합현황(data, from, to, 오늘 = to) {
   const 재고일수 = 재고.map(c => Math.round((Date.parse(오늘) - Date.parse(c.purchase_date)) / 86_400_000));
   const sold = (data.sales || []).filter(s => inP(s.sale_date, from, to));
   const car = idx(live(data.cars));
-  const st = (data.settlements || []).filter(s => s.finalized && inP(s.settle_date, from, to));
+  const st = (data.settlements || []).filter(s => s.finalized && s.mode !== "대표" && inP(s.settle_date, from, to));
   return {
     매입: { 대수: live(data.cars).filter(c => inP(c.purchase_date, from, to)).length, 금액: live(data.cars).filter(c => inP(c.purchase_date, from, to)).reduce((t, c) => t + n(c.purchase_amount), 0) },
     매도: { 대수: sold.length, 금액: sold.reduce((t, s) => t + n(s.sale_amount), 0),
@@ -230,6 +235,67 @@ export function 종합현황(data, from, to, 오늘 = to) {
             장기90일: 재고일수.filter(d => d >= 90).length,
             재고금융: (data.loans || []).filter(l => l.status === "진행중").reduce((t, l) => t + n(l.amount), 0) },
   };
+}
+
+// ───────────────────────── 공동대표 실적 ─────────────────────────
+/** 매입담당이 대표인 차 id 집합 */
+export function 대표차량(data) {
+  const partner = new Set((data.dealers || []).filter(d => d.partner).map(d => d.id));
+  return new Set(live(data.cars).filter(c => partner.has(c.dealer_id)).map(c => c.id));
+}
+
+/** 차 한 대의 대표 손익 (매도된 차). 정산탭·보고서가 같은 값을 쓴다 */
+export function 대표차량계산(data, c, s) {
+  const st = (data.settlements || []).find(x => x.car_id === c.id);
+  return 대표손익({
+    매도금액: n(s.sale_amount), 기타매출: (st?.other_revenue || []).map(x => ({ 금액: n(x.금액), 과세: x.과세 !== false })),
+    상사매도비: n(s.sale_fee), 성능보험료: n(s.perf_insurance), 제시금액: n(c.purchase_amount), 제시증빙: c.evidence,
+    비용: (data.costs || []).filter(k => k.car_id === c.id).map(k => ({ 금액: n(k.amount), 과세: k.taxable, 정산반영: k.include_in_settlement })),
+    캐피탈이자: 차량캐피탈이자((data.loans || []).filter(l => l.car_id === c.id), s.sale_date),
+  });
+}
+
+/** 기간 안에 매도된 대표 차의 손익 (매도일 기준) */
+export function 대표차량손익(data, from, to) {
+  const ids = 대표차량(data), car = idx(live(data.cars));
+  return (data.sales || []).filter(s => ids.has(s.car_id) && inP(s.sale_date, from, to)).map(s => {
+    const c = car[s.car_id];
+    return { car: c, sale: s, dealer_id: c.dealer_id, 재고일: dayDiff(c.purchase_date, s.sale_date), ...대표차량계산(data, c, s) };
+  }).sort((a, b) => a.sale.sale_date.localeCompare(b.sale.sale_date));
+}
+
+/** 대표별 실적 — 매입은 제시일, 매도·손익은 매도일 기준. 재고는 기준일 현재 */
+export function 대표별실적(data, from, to, 오늘 = to) {
+  const partners = (data.dealers || []).filter(d => d.partner);
+  const cars = live(data.cars), sold = 대표차량손익(data, from, to);
+  const rows = partners.map(d => {
+    const mine = cars.filter(c => c.dealer_id === d.id);
+    const 매입 = mine.filter(c => inP(c.purchase_date, from, to));
+    const 매도 = sold.filter(r => r.dealer_id === d.id);
+    const 재고 = mine.filter(c => c.status === "재고" && c.purchase_date <= 오늘);
+    const 재고일 = 재고.map(c => dayDiff(c.purchase_date, 오늘));
+    const 알선 = (data.brokerages || []).filter(b => b.dealer_id === d.id && inP(b.sale_date, from, to));
+    const 알선수익 = 알선.reduce((t, b) => t + n(b.supply) - n(b.payout), 0);   // 대표 알선은 지급 0 → 공급가(부가세 뺀) 전액
+    const 차량손익 = 매도.reduce((t, r) => t + r.손익, 0);
+    const 손익 = 차량손익 + 알선수익;
+    return { dealer_id: d.id, 이름: d.name, 차량손익, 알선건수: 알선.length, 알선수익,
+      매입대수: 매입.length, 매입금액: 매입.reduce((t, c) => t + n(c.purchase_amount), 0),
+      매도대수: 매도.length, 매도금액: 매도.reduce((t, r) => t + n(r.sale.sale_amount), 0),
+      세전손익: 매도.reduce((t, r) => t + r.세전손익, 0), 손익, 대당손익: 매도.length ? Math.round(차량손익 / 매도.length) : 0,
+      손실대수: 매도.filter(r => r.손익 < 0).length, 평균판매일: avg(매도.map(r => r.재고일)),
+      재고대수: 재고.length, 재고금액: 재고.reduce((t, c) => t + n(c.purchase_amount), 0),
+      평균재고일: avg(재고일), 장기재고: 재고일.filter(x => x >= 90).length };
+  });
+  const 합계손익 = rows.reduce((t, r) => t + r.손익, 0);
+  return rows.map(r => ({ ...r, 비중: 합계손익 > 0 ? Math.round(r.손익 / 합계손익 * 1000) / 10 : null }));
+}
+
+/** 수익 배분: 회사 순이익(대표 손익 + 딜러 관련 상사 수익 + 기타 − 운영비)을 대표 수로 똑같이 나눈다 */
+export function 수익배분(data, from, to, 오늘 = to) {
+  const s = 종합현황(data, from, to, 오늘);
+  const 대표수 = (data.dealers || []).filter(d => d.partner && d.active !== false).length;
+  return { 상사수익: s.상사수익, 수익합계: s.수익합계, 운영비: s.운영비, 순이익: s.운영이익, 대표수,
+    인당: 대표수 ? Math.floor(s.운영이익 / 대표수) : 0 };
 }
 
 // ───────────────────────── 통장 입출금 ↔ 장부 매칭 ─────────────────────────

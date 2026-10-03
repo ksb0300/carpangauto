@@ -46,8 +46,8 @@ export function CarDetail({ app, id, tab }) {
         <div class="tags">
           <${Badge} tone=${car.status === "매도" ? "blue" : "gray"}>${car.status}<//>
           ${car.consign === "고객위탁" && html`<${Badge}>고객위탁<//>`}
-          ${settlement && html`<${Badge} tone=${settlement.finalized ? "green" : "amber"}>${settlement.finalized ? "정산완료" : "임시정산"}<//>`}
-          <span class="muted">${car.code} · ${dealer?.name || "딜러 미지정"} · 제시 ${car.purchase_date}</span>
+          ${settlement && html`<${Badge} tone=${settlement.finalized ? "green" : "amber"}>${settlement.mode === "대표" ? (settlement.finalized ? "손익확정" : "임시") : settlement.finalized ? "정산완료" : "임시정산"}<//>`}
+          <span class="muted">${car.code} · ${dealer ? dealer.name + (dealer.partner ? " (대표)" : "") : "담당 미지정"} · 제시 ${car.purchase_date}</span>
         </div>
       </div>
       <div class="nums">
@@ -55,7 +55,8 @@ export function CarDetail({ app, id, tab }) {
         <div><small>상품화비</small><b>${won(cost)}</b></div>
         <div><small>재고금융</small><b>${won(loan)}</b></div>
         <div><small>매도금액</small><b>${sale ? won(sale.sale_amount) : "-"}</b></div>
-        ${settlement && html`<div><small>딜러 실지급</small><b class="blue">${won(settlement.payout)}</b></div>`}
+        ${settlement && (settlement.mode === "대표" ? html`<div><small>차량 손익</small><b class=${Number(settlement.net_income) < 0 ? "red" : "blue"}>${won(settlement.net_income)}</b></div>`
+          : html`<div><small>딜러 실지급</small><b class="blue">${won(settlement.payout)}</b></div>`)}
       </div>
     </div>
     <nav class="tabs">${TABS.filter(([k]) => k !== "files" || ctx.office).map(([k, l]) => html`<a class=${tab === k ? "on" : ""} href=${`#/car/${id}/${k}`}>${l}</a>`)}</nav>
@@ -72,7 +73,7 @@ function InfoTab({ app, car, sale, office }) {
   const [ssn, setSsn] = useState(null);
   const zone = app.parking.find(p => p.id === car.parking_zone_id);
   const rows = [
-    ["제시구분", car.consign], ["제시딜러", app.dealers.find(x => x.id === car.dealer_id)?.name],
+    ["제시구분", car.consign], ["매입담당", (d => d ? d.name + (d.partner ? " (대표)" : "") : null)(app.dealers.find(x => x.id === car.dealer_id))],
     ["제시일", car.purchase_date], ["이전일", car.transfer_date],
     ["제시금액", `${won(car.purchase_amount)} (공급가 ${won(car.purchase_supply)} / 부가세 ${won(car.purchase_vat)})`],
     ["상사매입비", won(car.purchase_fee)], ["(예상)취득세", won(car.acq_tax)],

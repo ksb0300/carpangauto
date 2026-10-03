@@ -32,11 +32,11 @@ function Login({ db, onDone }) {
   return html`<div class="login">
     <form class="login-box" onSubmit=${submit}>
       <h1>TierONE 업무관리</h1>
-      <p class="sub">직원 전용 · 로그인이 필요합니다</p>
+      <p class="sub">공동대표·사무장 전용 · 로그인이 필요합니다</p>
       ${DEMO ? html`
         <div class="demo-note">데모 모드입니다. 데이터는 이 브라우저에만 저장됩니다.</div>
         <div class="demo-roles">
-          ${[["admin", "대표로 입장"], ["staff", "직원으로 입장"], ["dealer", "딜러로 입장"]].map(([r, l]) =>
+          ${[["admin", "공동대표로 입장"], ["staff", "사무장으로 입장"]].map(([r, l]) =>
             html`<button type="button" class="btn" onClick=${async () => { await db.auth.signInDemo(r); onDone(); }}>${l}</button>`)}
         </div>` : html`
         <input type="email" placeholder="이메일" autocomplete="username" required value=${email} onInput=${e => setEmail(e.target.value)} />
@@ -85,7 +85,7 @@ function Shell({ app, children, path }) {
       <div class="me">
         ${DEMO && html`<span class="badge amber">데모</span>`}
         <a class="me-name" href="/" title="홈페이지(매물)로">홈페이지</a>
-        <a class="me-name" href="#/password" title="비밀번호 변경">${profile.name} · ${{ admin: "대표", staff: "직원", dealer: "딜러" }[profile.role]}</a>
+        <a class="me-name" href="#/password" title="비밀번호 변경">${profile.name} · ${{ admin: "공동대표", staff: "사무장", dealer: "권한 없음" }[profile.role]}</a>
         <button class="btn ghost sm" onClick=${async () => { await db.auth.signOut(); location.reload(); }}>로그아웃</button>
       </div>
     </header>
@@ -137,6 +137,8 @@ function App() {
     setMustPw(false);
     const profile = await q(d.from("profiles").select("*").eq("user_id", session.user.id).maybeSingle());
     if (!profile) { setErr("이 계정은 아직 권한이 없습니다. 대표에게 역할 지정을 요청하세요."); return; }
+    // 업무관리는 공동대표·사무장만. 딜러(권한 없음) 계정은 들어올 수 없다
+    if (profile.role === "dealer") { setErr("업무관리 접근 권한이 없는 계정입니다. 공동대표에게 문의하세요."); return; }
     const [settings, dealers, lenders, parking] = await Promise.all([
       q(d.from("settings").select("*").eq("id", 1).single()),
       q(d.from("dealers").select("*").order("name")),

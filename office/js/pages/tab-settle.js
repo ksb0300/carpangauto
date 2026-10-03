@@ -1,7 +1,7 @@
 import { html, useState, useMemo, Money, Field, Seg, run, won, today, toast, go } from "../ui.js";
 import { popbill } from "../pb.js";
 import { q } from "../db.js";
-import { 정산, 미납이자 } from "../calc.js";
+import { 정산, 미납이자, 대표손익, 차량캐피탈이자 } from "../calc.js";
 
 const loanOf = l => ({ 대출금액: l.amount, 딜러이율: l.dealer_rate, 개월: l.months, 실행일: l.start_date,
   납입이자누계: l.payments.reduce((s, p) => s + Number(p.amount), 0) });
@@ -16,8 +16,87 @@ function autoOffsets(loans, date) {
   ];
 }
 
-export function SettleTab({ app, car, costs, loans, sale, settlement, reload, office }) {
+export function SettleTab(P) {
+  const { app, car, sale } = P;
   if (!sale) return html`<div class="card empty">매도 처리 후 정산할 수 있습니다. <a href=${`#/car/${car.id}/sale`}>매도 탭으로 →</a></div>`;
+  return app.dealers.find(d => d.id === car.dealer_id)?.partner ? html`<${PartnerSettle} ...${P} />` : html`<${DealerSettle} ...${P} />`;
+}
+
+/** 공동대표 차: 딜러 지급 없이 차량 손익만 확정한다 (원천징수·상사매입비·딜러이자 없음) */
+function PartnerSettle({ app, car, costs, loans, sale, settlement, reload, office }) {
+  const fin = !!settlement?.finalized;
+  const ro = fin || !office;
+  const owner = app.dealers.find(d => d.id === car.dealer_id);
+  const [f, setF] = useState({ settle_date: settlement?.settle_date || today(), other_revenue: settlement?.other_revenue || [],
+    loan_repay: settlement?.loan_repay ?? true, memo: settlement?.memo || "" });
+  const [busy, setBusy] = useState(false);
+  const set = k => v => setF(p => ({ ...p, [k]: v }));
+  const r = useMemo(() => 대표손익({
+    매도금액: Number(sale.sale_amount), 기타매출: f.other_revenue.map(x => ({ 금액: Number(x.금액) || 0, 과세: x.과세 !== false })),
+    상사매도비: Number(sale.sale_fee), 성능보험료: Number(sale.perf_insurance), 제시금액: Number(car.purchase_amount), 제시증빙: car.evidence,
+    비용: costs.map(c => ({ 금액: Number(c.amount), 과세: c.taxable, 정산반영: c.include_in_settlement })),
+    캐피탈이자: 차량캐피탈이자(loans, sale.sale_date),
+  }), [f, costs, sale, car, loans]);
+  const save = async finalize => {
+    if (finalize && !confirm(`${owner?.name || ""} 대표 실적으로 손익을 확정할까요?\n손익 ${won(r.손익)}원 (부가세 뺀 기준)${f.loan_repay && loans.some(l => l.status === "진행중") ? "\n진행중인 재고금융은 상환완료 처리됩니다." : ""}`)) return;
+    setBusy(true);
+    const row = { car_id: car.id, mode: "대표", settle_date: f.settle_date, withholding: false, method: app.settings.settle_method, allow_negative: true,
+      other_revenue: f.other_revenue, offsets: [], loan_repay: f.loan_repay, memo: f.memo || null,
+      sale_total: r.매출.금액, purchase_total: r.제시.금액, cost_total: r.C.금액, base_amount: r.손익, base_supply: r.손익, base_vat: r.부가세,
+      income_amount: 0, income_tax: 0, local_tax: 0, tax_total: 0, offset_total: 0, payout: 0, net_income: r.손익, detail: r, finalized: !!finalize };
+    await run(() => q(app.db.from("settlements").upsert(row, { onConflict: "car_id" })), finalize ? "손익을 확정했습니다" : "임시저장했습니다");
+    setBusy(false); reload();
+  };
+  const unfinalize = async () => {
+    if (!confirm("손익 확정을 해제할까요?")) return;
+    await run(() => q(app.db.from("settlements").update({ finalized: false }).eq("car_id", car.id)), "확정을 해제했습니다");
+    reload();
+  };
+  const rowUpd = (i, key, v) => setF(p => ({ ...p, other_revenue: p.other_revenue.map((x, j) => j === i ? { ...x, [key]: v } : x) }));
+  const L = (k, v, note, cls) => html`<tr class=${cls || ""}><th>${k}</th><td class=${"r" + (v < 0 && cls ? " red" : "")}>${won(v)}</td><td class="note">${note || ""}</td></tr>`;
+  return html`<div class="settle">
+    <div class="card no-print">
+      <div class="bar"><h3>차량 손익 <span class="muted small">대표 ${owner?.name || ""}</span></h3>
+        ${fin && html`<span class="badge green">손익확정 ${settlement.finalized_at?.slice(0, 10) || ""}</span>`}
+        <span class="grow"></span>
+        <button class="btn ghost" onClick=${() => print()}>인쇄</button>
+        ${office && (fin ? html`<button class="btn" onClick=${unfinalize}>확정 해제</button>` : html`
+          <button class="btn" disabled=${busy} onClick=${() => save(false)}>임시저장</button>
+          <button class="btn primary" disabled=${busy} onClick=${() => save(true)}>손익확정</button>`)}
+      </div>
+      <div class="fgrid">
+        <${Field} label="확정일"><input type="date" disabled=${ro} value=${f.settle_date} onInput=${e => set("settle_date")(e.target.value)} /><//>
+        <${Field} label="재고금융" hint="확정 시 진행중 대출을 상환완료 처리"><label class="check"><input type="checkbox" disabled=${ro} checked=${f.loan_repay} onChange=${e => set("loan_repay")(e.target.checked)} /> 상환완료 종결처리</label><//>
+        <${Field} label="메모" wide><input disabled=${ro} value=${f.memo} onInput=${e => set("memo")(e.target.value)} /><//>
+      </div>
+      <div class="bar"><h4>기타 매출</h4><span class="grow"></span>${!ro && html`<button class="btn sm" onClick=${() => set("other_revenue")([...f.other_revenue, { 항목: "", 금액: 0, 과세: true }])}>+ 추가</button>`}</div>
+      ${f.other_revenue.map((x, i) => html`<div class="row line"><input placeholder="항목" disabled=${ro} value=${x.항목} onInput=${e => rowUpd(i, "항목", e.target.value)} />
+        <${Money} value=${x.금액} readOnly=${ro} onInput=${v => rowUpd(i, "금액", v)} />
+        ${!ro && html`<button class="btn sm ghost" onClick=${() => set("other_revenue")(f.other_revenue.filter((_, j) => j !== i))}>✕</button>`}</div>`)}
+      <p class="note">대표 차는 상사매입비·원천징수·딜러 지급이 없습니다. 상품화비용은 <a href=${`#/car/${car.id}/costs`}>상품화비용 탭</a>에서 고치세요.</p>
+    </div>
+    <div class="card statement print-area">
+      <div class="st-head"><h3>차량 손익</h3><span>${app.settings.company_name} · ${fin ? "손익확정" : "미확정"}</span></div>
+      <div class="st-meta"><span>${car.plate} ${car.car_name}</span><span>매입담당 ${owner?.name || "-"} (대표)</span>
+        <span>제시 ${car.purchase_date} · 매도 ${sale.sale_date}${sale.sale_type !== "소매" ? ` (${sale.sale_type})` : ""}</span></div>
+      <table class="st"><tbody>
+        ${L("매도금액", sale.sale_amount)}
+        ${Number(sale.sale_fee) ? L("상사매도비", sale.sale_fee, "대표 본인 수익") : ""}
+        ${Number(sale.perf_insurance) ? L("성능보험료 수입", sale.perf_insurance) : ""}
+        ${f.other_revenue.filter(x => Number(x.금액)).map(x => L(x.항목 || "기타매출", x.금액))}
+        ${L("매출 합계", r.매출.금액, `공급가 ${won(r.매출.공급가)} / 부가세 ${won(r.매출.부가세)}`, "em")}
+        ${L("제시금액", -r.제시.금액, car.evidence === "계산서" ? "계산서 — 매입세액 공제 없음" : `${car.evidence} — 매입세액 ${won(r.제시.부가세)} 공제`)}
+        ${L("상품화비용", -r.C.금액, `${costs.length}건 · 부가세 ${won(r.C.부가세)}`)}
+        ${r.이자 ? L("재고금융 이자(캐피탈)", -r.이자, "실행일 ~ 매도일") : ""}
+        ${L("세전 손익", r.세전손익, "", "em")}
+        ${L("부가세 납부분", -r.부가세, "매출세액 − 제시·비용 매입세액")}
+        ${L("차량 손익 (실적)", r.손익, "부가세 뺀 기준", "em")}
+      </tbody></table>
+    </div>
+  </div>`;
+}
+
+function DealerSettle({ app, car, costs, loans, sale, settlement, reload, office }) {
   const dealer = app.dealers.find(d => d.id === (sale.dealer_id || car.dealer_id));
   const fin = !!settlement?.finalized;
   const init = settlement ? {
@@ -62,7 +141,7 @@ export function SettleTab({ app, car, costs, loans, sale, settlement, reload, of
       offset_total: r.L, payout: r.실지급액, net_income: r.세후소득, detail: r, finalized: !!finalize,
       broker_dealer_id: broker?.id || null, broker_amount: r.알선?.기준 || 0, broker_withholding: f.broker_withholding,
       broker_income: r.알선?.소득금액 || 0, broker_income_tax: r.알선?.소득세 || 0, broker_local_tax: r.알선?.지방세 || 0,
-      broker_tax_total: r.알선?.세액 || 0, broker_payout: r.알선?.지급액 || 0,
+      broker_tax_total: r.알선?.세액 || 0, broker_payout: r.알선?.지급액 || 0, mode: "딜러",
     };
     await run(() => q(app.db.from("settlements").upsert(row, { onConflict: "car_id" })), finalize ? "정산을 확정했습니다" : "임시저장했습니다");
     setBusy(false); reload();

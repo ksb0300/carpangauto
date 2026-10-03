@@ -829,3 +829,67 @@ alter table car_inspections enable row level security;
 create policy office_all on car_inspections for all to authenticated using (is_office()) with check (is_office());
 create policy dealer_inspections on car_inspections for select to authenticated
   using (my_role() = 'dealer' and exists (select 1 from cars c where c.id = car_id and c.dealer_id = my_dealer_id()));
+
+
+-- 20261003000002_kaiwa_check_cost.sql
+-- 성능점검비도 KAIWA 에서 끌어와 상품화비용으로 자동 등록 (보험료와 별도 행)
+alter table car_inspections add column check_cost_id uuid references car_costs(id) on delete set null;
+
+
+-- 20261003000003_partners.sql
+-- 공동대표 구조: 매입담당이 '대표'인 차는 딜러 차처럼 정산하지 않는다.
+--   · 상사매입비 없음 (대표 본인 회사라 떼어 갈 곳이 없다)
+--   · 원천징수·딜러 지급·딜러 이자 없음
+--   · 차량 손익(상사매도비 포함, 부가세 뺀 기준)이 그 대표의 실적. 회사 수익은 대표 손익의 합이고 3등분한다.
+-- 딜러를 새로 뽑으면 그 딜러 차는 지금까지의 딜러 방식 그대로.
+
+alter table dealers add column partner boolean not null default false;
+comment on column dealers.partner is '공동대표 (상사매입비·원천징수·딜러이자 없음, 차량 손익이 본인 실적)';
+
+alter table settlements add column mode text not null default '딜러' check (mode in ('딜러', '대표'));
+comment on column settlements.mode is '딜러: 딜러 정산(원천징수·지급) / 대표: 손익 확정만 (지급 없음, base_amount·net_income = 차량 손익)';
+
+-- 대표 차는 상사매입비 0
+create or replace function cars_partner_fee() returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if exists (select 1 from dealers where id = new.dealer_id and partner) then new.purchase_fee := 0; end if;
+  return new;
+end $$;
+create trigger cars_partner_fee before insert or update of purchase_fee, dealer_id on cars
+  for each row execute function cars_partner_fee();
+
+-- 담당만 바꿔도(일괄 변경) 상사매입비 비용 행이 따라가게
+drop trigger cars_sync_auto_costs on cars;
+create trigger cars_sync_auto_costs after insert or update of purchase_fee, acq_tax, purchase_date, transfer_date, dealer_id on cars
+  for each row execute function cars_sync_auto_costs();
+
+-- 수출로 팔면 성능점검비 22,000원 환급 (점검비 행이 있을 때만, 매도유형을 바꾸거나 매도취소하면 지운다)
+create or replace function car_sales_export_refund() returns trigger language plpgsql security definer set search_path = public as $$
+declare cid uuid := coalesce(new.car_id, old.car_id);
+begin
+  delete from car_costs where car_id = cid and auto_source = '수출환급';
+  if tg_op <> 'DELETE' and new.sale_type = '수출'
+     and exists (select 1 from car_costs where car_id = cid and item = '성능점검비') then
+    insert into car_costs (car_id, item, paid_by, taxable, amount, paid_date, include_in_settlement, auto_source, sort, memo)
+    values (cid, '성능점검비 환급', '딜러', true, -22000, new.sale_date, true, '수출환급', 11, '수출 매도 — 성능점검비 환급');
+  end if;
+  return coalesce(new, old);
+end $$;
+create trigger car_sales_export_refund after insert or update of sale_type, sale_date or delete on car_sales
+  for each row execute function car_sales_export_refund();
+
+-- 딜러(권한 없음) 계정은 업무관리 데이터에 접근 금지 — 공동대표(admin)·사무장(staff)만 본다.
+-- 딜러는 로그인 없이 '매입담당' 명단(dealers)으로만 관리한다.
+drop policy dealer_cars on cars;
+drop policy dealer_costs on car_costs;
+drop policy dealer_loans on car_loans;
+drop policy dealer_payments on loan_payments;
+drop policy dealer_sales on car_sales;
+drop policy dealer_settlements on settlements;
+drop policy dealer_settlements_broker on settlements;
+drop policy dealer_lookup_lenders on lenders;
+drop policy dealer_lookup_settings on settings;
+drop policy dealer_self on dealers;
+drop policy dealer_brokerages on brokerages;
+drop policy dealer_docs on issue_docs;
+drop policy dealer_inspections on car_inspections;

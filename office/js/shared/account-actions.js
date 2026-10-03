@@ -26,13 +26,12 @@ export const ACCOUNT_ACTIONS = {
     if (!/^\S+@\S+\.\S+$/.test(email || "")) throw new Error("이메일 형식이 아닙니다.");
     checkPw(password);
     if (!["admin", "staff", "dealer"].includes(role)) throw new Error("역할을 고르세요.");
-    if (role === "dealer" && !dealer_id) throw new Error("딜러 계정은 연결할 딜러를 골라야 합니다.");
     const { user } = await q(admin.auth.admin.createUser({
       email: email.trim().toLowerCase(), password, email_confirm: true,
       user_metadata: { name, must_change_password: true },
     }));
     // 가입 트리거가 만든 profiles 행에 역할을 정한다
-    await q(db.from("profiles").update({ name: name || email, role, dealer_id: role === "dealer" ? dealer_id : null }).eq("user_id", user.id));
+    await q(db.from("profiles").update({ name: name || email, role, dealer_id: role === "admin" ? dealer_id || null : null }).eq("user_id", user.id));
     return { id: user.id };
   },
 
