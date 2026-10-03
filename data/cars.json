@@ -1,5 +1,5 @@
 {
- "updated": "2026-10-02 21:16",
+ "updated": "2026-10-03 21:15",
  "count": 40,
  "cars": [
   {
@@ -393,32 +393,6 @@
    "link": "https://fem.encar.com/cars/detail/42299866"
   },
   {
-   "id": "42764458",
-   "plate": "42서5766",
-   "maker": "벤츠",
-   "model": "EQC",
-   "grade": "EQC400 4MATIC",
-   "year": "20년 06월",
-   "yearRaw": "202006",
-   "mileage": 86248,
-   "fuel": "전기",
-   "transmission": "오토",
-   "color": "흰색",
-   "price": 3490,
-   "diagnosis": true,
-   "photos": [
-    "https://ci.encar.com/carpicture06/pic4276/42764458_027.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture06/pic4276/42764458_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture06/pic4276/42764458_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture06/pic4276/42764458_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture06/pic4276/42764458_036.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture06/pic4276/42764458_046.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture06/pic4276/42764458_008.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture06/pic4276/42764458_041.jpg?impolicy=widthRate&wid=800"
-   ],
-   "link": "https://fem.encar.com/cars/detail/42764458"
-  },
-  {
    "id": "42604274",
    "plate": "02보6584",
    "maker": "BMW",
@@ -443,6 +417,32 @@
     "https://ci.encar.com/carpicture10/pic4260/42604274_032.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42604274"
+  },
+  {
+   "id": "42764458",
+   "plate": "42서5766",
+   "maker": "벤츠",
+   "model": "EQC",
+   "grade": "EQC400 4MATIC",
+   "year": "20년 06월",
+   "yearRaw": "202006",
+   "mileage": 86248,
+   "fuel": "전기",
+   "transmission": "오토",
+   "color": "흰색",
+   "price": 3490,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture06/pic4276/42764458_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4276/42764458_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4276/42764458_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4276/42764458_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4276/42764458_036.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4276/42764458_046.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4276/42764458_008.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4276/42764458_041.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42764458"
   },
   {
    "id": "42806307",
