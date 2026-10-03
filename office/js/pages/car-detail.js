@@ -22,7 +22,7 @@ export async function loadCar(db, id) {
   return { car, costs, loans: loans.map(l => ({ ...l, payments: payments.filter(p => p.loan_id === l.id) })), sale, buyers, settlement };
 }
 
-const TABS = [["info", "제시정보"], ["costs", "상품화비용"], ["loans", "재고금융"], ["sale", "매도"], ["docs", "매출증빙"], ["settle", "정산"], ["files", "첨부서류"]];
+const TABS = [["info", "차량정보"], ["costs", "상품화비용"], ["loans", "재고금융"], ["sale", "매도"], ["docs", "매출증빙"], ["settle", "정산"], ["files", "첨부서류"]];
 
 export function CarDetail({ app, id, tab }) {
   const [d, setD] = useState(undefined);
@@ -47,11 +47,11 @@ export function CarDetail({ app, id, tab }) {
           <${Badge} tone=${car.status === "매도" ? "blue" : "gray"}>${car.status}<//>
           ${car.consign === "고객위탁" && html`<${Badge}>고객위탁<//>`}
           ${settlement && html`<${Badge} tone=${settlement.finalized ? "green" : "amber"}>${settlement.mode === "대표" ? (settlement.finalized ? "손익확정" : "임시") : settlement.finalized ? "정산완료" : "임시정산"}<//>`}
-          <span class="muted">${car.code} · ${dealer ? dealer.name + (dealer.partner ? " (대표)" : "") : "담당 미지정"} · 제시 ${car.purchase_date}</span>
+          <span class="muted">${car.code} · ${dealer ? dealer.name + (dealer.partner ? " (대표)" : "") : "담당 미지정"} · 매입 ${car.purchase_date}</span>
         </div>
       </div>
       <div class="nums">
-        <div><small>제시금액</small><b>${won(car.purchase_amount)}</b></div>
+        <div><small>매입가</small><b>${won(car.purchase_amount)}</b></div>
         <div><small>상품화비</small><b>${won(cost)}</b></div>
         <div><small>재고금융</small><b>${won(loan)}</b></div>
         <div><small>매도금액</small><b>${sale ? won(sale.sale_amount) : "-"}</b></div>
@@ -70,63 +70,31 @@ export function CarDetail({ app, id, tab }) {
 }
 
 function InfoTab({ app, car, sale, office }) {
-  const [ssn, setSsn] = useState(null);
   const zone = app.parking.find(p => p.id === car.parking_zone_id);
   const rows = [
-    ["제시구분", car.consign], ["매입담당", (d => d ? d.name + (d.partner ? " (대표)" : "") : null)(app.dealers.find(x => x.id === car.dealer_id))],
-    ["제시일", car.purchase_date], ["이전일", car.transfer_date],
-    ["제시금액", `${won(car.purchase_amount)} (공급가 ${won(car.purchase_supply)} / 부가세 ${won(car.purchase_vat)})`],
-    ["상사매입비", won(car.purchase_fee)], ["(예상)취득세", won(car.acq_tax)],
-    ["차종", car.car_kind], ["차량번호(제시전)", car.plate_before], ["제시증빙", car.evidence],
-    ["매입처", car.purchase_channel], ["브랜드 · 모델", [car.brand, car.model, car.grade].filter(Boolean).join(" · ")], ["통합키", car.fskey],
+    ["매입담당", (d => d ? d.name + (d.partner ? " (대표)" : " (딜러)") : html`<span class="red">미지정</span>`)(app.dealers.find(x => x.id === car.dealer_id))],
+    ["매입일", car.purchase_date],
+    ["매입가", `${won(car.purchase_amount)} (공급가 ${won(car.purchase_supply)} / 부가세 ${won(car.purchase_vat)})`],
+    ["매입처", car.purchase_channel], ["매입증빙", car.evidence], ["취득세", won(car.acq_tax)],
+    ...(Number(car.purchase_fee) ? [["상사매입비", won(car.purchase_fee)]] : []),
+    ["브랜드 · 모델", [car.brand, car.model, car.grade].filter(Boolean).join(" · ")], ["통합키", car.fskey],
     ["차대번호", car.vin], ["연식", car.model_year], ["최초등록일", car.first_reg_date],
     ["주행거리", car.mileage != null ? `${won(car.mileage)} km` : null], ["연료 · 변속기", [car.fuel, car.transmission].filter(Boolean).join(" · ")], ["원동기형식", car.motor_type],
-    ["매도자", car.seller_name ? `${car.seller_name} (${car.seller_type})` : null],
-    ["주민(법인)번호", ssn ? html`<b>${ssn}</b>` : car.seller_ssn_masked],
-    ["사업자번호", car.seller_biz_no], ["연락처", car.seller_phone], ["이메일", car.seller_email],
-    ["주소", [car.seller_zip, car.seller_addr1, car.seller_addr2].filter(Boolean).join(" ")],
-    ["관인계약서번호", car.contract_no], ["계산서 발행일", car.invoice_date], ["사실확인서", car.fact_confirm],
-    ["주차위치", zone?.name], ["Key번호", car.key_no], ["특이사항", car.memo], ["조합제시메모", car.association_memo],
+    ["주차위치", zone?.name], ["Key번호", car.key_no], ["메모", car.memo],
   ];
   const remove = async () => {
     if (sale) return toast("매도된 차량은 삭제할 수 없습니다. 매도취소 후 삭제하세요.", "err");
-    if (!confirm(`${car.plate} 제시를 삭제할까요? (목록에서 사라지고, 이력은 남습니다)`)) return;
+    if (!confirm(`${car.plate} 차량을 삭제할까요? (목록에서 사라지고, 이력은 남습니다)`)) return;
     const ok = await run(() => q(app.db.from("cars").update({ deleted_at: new Date().toISOString() }).eq("id", car.id).select("id")), "삭제했습니다");
     if (ok) go("/cars");
   };
   return html`<div class="card">
-    <div class="bar no-print"><h3>제시정보</h3><span class="grow"></span>
+    <div class="bar no-print"><h3>차량정보</h3><span class="grow"></span>
       <button class="btn ghost" onClick=${() => print()}>인쇄</button>
-      <button class="btn ghost" onClick=${() => { document.body.classList.add("print-ledger"); setTimeout(() => { print(); document.body.classList.remove("print-ledger"); }, 50); }}>매입장 출력</button>
-      ${app.profile.role === "admin" && car.seller_ssn_masked && !ssn && html`<button class="btn sm ghost" onClick=${() =>
-        run(async () => setSsn(await q(app.db.rpc("reveal_ssn", { p_target: "car_seller", p_id: car.id }))))}>주민번호 원문 보기</button>`}
       ${office && html`<button class="btn" onClick=${() => go(`/car/${car.id}/edit`)}>수정</button>
-        <button class="btn danger" onClick=${remove}>제시 삭제</button>`}
+        <button class="btn danger" onClick=${remove}>차량 삭제</button>`}
     </div>
     <div class="kvgrid">${rows.map(([k, v]) => html`<div><span>${k}</span><b>${v || html`<i class="muted">-</i>`}</b></div>`)}</div>
-    <${BuyLedger} app=${app} car=${car} ssn=${ssn} />
   </div>
   <${InspectionCard} app=${app} car=${car} office=${office} />`;
-}
-
-/** 매입장 (차 한 대) — 인쇄 전용. 똑순이 상세보기의 '매입장 출력' */
-function BuyLedger({ app, car, ssn }) {
-  const st = app.settings;
-  const R = (k, v) => html`<tr><th>${k}</th><td>${v || ""}</td></tr>`;
-  return html`<div class="buy-ledger statement">
-    <h2 style="text-align:center;letter-spacing:12px">매 입 장</h2>
-    <div class="st-meta"><span>${st.company_name}</span><span>사업자번호 ${st.biz_no || ""}</span><span>대표 ${st.ceo_name || ""}</span><span>${st.address || ""}</span></div>
-    <div class="two">
-      <table class="st"><caption>차량</caption><tbody>
-        ${R("관리번호", car.code)}${R("제시일", car.purchase_date)}${R("이전일", car.transfer_date)}${R("차명", car.car_name)}${R("차량번호", car.plate)}
-        ${R("제시전 번호", car.plate_before)}${R("차종", car.car_kind)}${R("관인계약서번호", car.contract_no)}</tbody></table>
-      <table class="st"><caption>매도자 (전소유자)</caption><tbody>
-        ${R("성명/상호", car.seller_name)}${R("구분", car.seller_type)}${R("주민(법인)번호", ssn || car.seller_ssn_masked)}${R("사업자번호", car.seller_biz_no)}
-        ${R("주소", [car.seller_zip, car.seller_addr1, car.seller_addr2].filter(Boolean).join(" "))}${R("연락처", car.seller_phone)}</tbody></table>
-    </div>
-    <table class="st" style="margin-top:12px"><caption>매입 금액</caption><tbody>
-      <tr><th>매입금액</th><td class="r"><b>${won(car.purchase_amount)}원</b></td><th>공급가액</th><td class="r">${won(car.purchase_supply)}</td><th>세액</th><td class="r">${won(car.purchase_vat)}</td></tr>
-      <tr><th>증빙</th><td>${car.evidence}</td><th>계산서 발행일</th><td>${car.invoice_date || ""}</td><th>사실확인서</th><td>${car.fact_confirm || ""}</td></tr></tbody></table>
-    <div class="st-meta" style="margin-top:28px;justify-content:space-between"><span>작성일 ${new Date().toISOString().slice(0, 10)}</span><span>매도자 ____________ (서명)</span><span>매수자 ${st.company_name} ____________ (인)</span></div>
-  </div>`;
 }

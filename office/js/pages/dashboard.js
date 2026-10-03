@@ -1,4 +1,4 @@
-// 대시보드: 오늘 확인할 것 — 미정산·미발행·미매칭·만기 임박·장기재고, 이번 달 숫자, 재고금융 한도
+// 대시보드: 위젯 모음 — 계정마다 켜고 끄고 순서를 바꾼다(위젯 편집). 확인할 것·공동대표 실적·재고금융·성능점검·미발행·이자·추이·한도
 import { html, useState, useEffect, Loading, run, won, today } from "../ui.js";
 import { q } from "../db.js";
 import { loadAll } from "./report-data.js";
@@ -12,6 +12,7 @@ import { 할일 } from "./lenders.js";
 
 export function Dashboard({ app }) {
   const [d, setD] = useState(null);
+  const [edit, setEdit] = useState(false);
   useEffect(() => { run(async () => {
     const [all, docs, unmatched, insp] = await Promise.all([
       loadAll(app.db),
@@ -77,42 +78,87 @@ export function Dashboard({ app }) {
   const 나 = 대표들.find(r => r.dealer_id === app.profile.dealer_id);
   const 배분 = 대표들.length ? 수익배분(d, m.from, m.to, t) : null;
 
-  return html`<div class="bar"><h2>대시보드</h2><span class="muted">${t} · ${app.settings.company_name}</span></div>
-    ${배분 && html`<div class="card"><div class="bar"><h3>이번 달 공동대표 실적</h3><span class="grow"></span><a class="btn sm" href="#/reports/partners">대표별 실적</a><a class="btn sm" href="#/reports/share">수익 배분</a></div>
-      <div class="stat-grid">
+  // ── 위젯: 계정마다 켜고 끄고 순서를 바꾼다 (profiles.dashboard)
+  const card = (title, body, extra) => html`<div class="card"><div class="bar"><h3>${title}</h3><span class="grow"></span>${extra || ""}</div>${body}</div>`;
+  const 미발행카드 = k => card(`${k === "현금영수증" ? "현금영수증" : "전자세금계산서"} 미발행 리스트`,
+    !미발행[k].length ? html`<p class="muted">없음</p>` : html`<div class="table-wrap"><table class="grid click"><thead><tr><th>차량</th><th class="r">금액</th><th>고객명</th><th>거래일자</th><th class="r">경과일</th></tr></thead>
+      <tbody>${미발행[k].slice(0, 8).map(x => html`<tr onClick=${() => (location.hash = `/car/${x.c.id}/docs`)}><td><b>${x.c.plate}</b> <span class="small">${x.l.parts.join("+")}</span></td>
+        <td class="r">${won(x.l.amount)}</td><td>${(x.l.buyer || x.l.dealer)?.name || "-"}</td><td>${x.s.sale_date}</td><td class=${"r" + (x.경과 > 3 ? " red" : "")}>${x.경과}</td></tr>`)}</tbody></table></div>
+      ${미발행[k].length > 8 ? html`<p class="note">외 ${미발행[k].length - 8}건</p>` : ""}`, html`<a class="btn sm" href="#/issue/wait">발행대기 리스트</a>`);
+  const 차표 = (rows, cols, cell, tab = "info") => !rows.length ? html`<p class="muted">없음</p>` : html`<div class="table-wrap"><table class="grid click">
+    <thead><tr>${cols.map(c => html`<th>${c}</th>`)}</tr></thead><tbody>${rows.slice(0, 10).map(x => html`<tr onClick=${() => (location.hash = `/car/${x.c.id}/${tab}`)}>${cell(x)}</tr>`)}</tbody></table></div>
+    ${rows.length > 10 ? html`<p class="note">외 ${rows.length - 10}대</p>` : ""}`;
+
+  const WIDGETS = {
+    partners: { title: "이번 달 공동대표 실적", size: "full", show: !!배분, render: () => card("이번 달 공동대표 실적", html`<div class="stat-grid">
         ${대표들.map(r => html`<a class=${"stat" + (r === 나 ? " on" : "")} href="#/reports/partners"><span>${r.이름}${r === 나 ? " (나)" : ""}</span>
           <b class=${r.손익 < 0 ? "red" : ""}>${won(r.손익)}</b><small>매입 ${r.매입대수} · 매도 ${r.매도대수} · 재고 ${r.재고대수}대${r.장기재고 ? ` (90일+ ${r.장기재고})` : ""}</small></a>`)}
-        <a class="stat" href="#/reports/share"><span>회사 순이익 → 1인 배분</span><b class=${배분.순이익 < 0 ? "red" : "blue"}>${won(배분.인당)}</b><small>순이익 ${won(배분.순이익)} ÷ ${배분.대표수}명</small></a>
-      </div></div>`}
-    <div class="card"><h3>확인할 것</h3>
-      ${!todo.length ? html`<p class="muted">밀린 일이 없습니다.</p>` : html`<ul class="todo">${todo.map(x => html`<li>
-        <span class=${"badge " + (x.tone === "bad" ? "red" : "amber")}>${x.tone === "bad" ? "급함" : "확인"}</span><a href=${x.href}>${x.text}</a></li>`)}</ul>`}</div>
-    <h3>이번 달</h3>
-    <div class="stat-grid">
+        <a class="stat" href="#/reports/share"><span>회사 순이익 → 1인 배분</span><b class=${배분.순이익 < 0 ? "red" : "blue"}>${won(배분.인당)}</b><small>순이익 ${won(배분.순이익)} ÷ ${배분.대표수}명</small></a></div>`,
+      html`<a class="btn sm" href="#/reports/partners">대표별 실적</a><a class="btn sm" href="#/reports/share">수익 배분</a>`) },
+    todo: { title: "확인할 것", size: "full", render: () => card("확인할 것", !todo.length ? html`<p class="muted">밀린 일이 없습니다.</p>` : html`<ul class="todo">${todo.map(x => html`<li>
+        <span class=${"badge " + (x.tone === "bad" ? "red" : "amber")}>${x.tone === "bad" ? "급함" : "확인"}</span><a href=${x.href}>${x.text}</a></li>`)}</ul>`) },
+    month: { title: "이번 달 숫자", size: "full", render: () => html`<div><h3>이번 달</h3><div class="stat-grid">
       <a class="stat" href="#/purchases"><span>재고</span><b>${s.재고.대수}대</b><small>${won(s.재고.금액)}원 · 평균 ${s.재고.평균일수}일</small></a>
       <a class="stat" href="#/reports/summary"><span>이번 달 매입 / 매도</span><b>${s.매입.대수} / ${s.매도.대수}대</b><small>매도 ${won(s.매도.금액)}원</small></a>
-      <a class="stat" href="#/settlements"><span>이번 달 정산 지급</span><b>${won(s.정산.실지급)}</b><small>${s.정산.건수}건 · 원천징수 ${won(s.정산.세액)}</small></a>
-      <a class="stat" href="#/reports/summary"><span>이번 달 상사 수익</span><b class=${s.수익합계 < 0 ? "red" : ""}>${won(s.수익합계)}</b><small>운영이익 ${won(s.운영이익)}</small></a>
-      <a class="stat" href="#/loans"><span>재고금융 진행중</span><b>${won(s.재고.재고금융)}</b><small>딜러 미납이자 ${won(미납합)}</small></a>
-    </div>
-    <div class="two">
-      ${["현금영수증", "세금계산서"].map(k => html`<div class="card"><div class="bar"><h3>${k === "현금영수증" ? "현금영수증" : "전자세금계산서"} 미발행 리스트</h3><span class="grow"></span>
-        <a class="btn sm" href="#/issue/wait">발행대기 리스트</a></div>
-        ${!미발행[k].length ? html`<p class="muted">없음</p>` : html`<div class="table-wrap"><table class="grid click"><thead><tr><th>차량</th><th class="r">금액</th><th>고객명</th><th>거래일자</th><th class="r">경과일</th></tr></thead>
-          <tbody>${미발행[k].slice(0, 8).map(x => html`<tr onClick=${() => (location.hash = `/car/${x.c.id}/docs`)}><td><b>${x.c.plate}</b> <span class="small">${x.l.parts.join("+")}</span></td>
-            <td class="r">${won(x.l.amount)}</td><td>${(x.l.buyer || x.l.dealer)?.name || "-"}</td><td>${x.s.sale_date}</td><td class=${"r" + (x.경과 > 3 ? " red" : "")}>${x.경과}</td></tr>`)}</tbody></table></div>
-          ${미발행[k].length > 8 ? html`<p class="note">외 ${미발행[k].length - 8}건</p>` : ""}`}</div>`)}
-    </div>
-    <div class="two">
-      <div class="card"><div class="bar"><h3>미납 이자 납부 대상</h3><span class="grow"></span><a class="btn sm" href="#/loans/interest">이자납입 리스트</a></div>
-        ${!이자예정.length ? html`<p class="muted">한 달 안에 낼 이자가 없습니다.</p>` : html`<div class="table-wrap"><table class="grid click"><thead><tr><th>차량</th><th>재고금융사</th><th class="r">대출금액</th><th class="r">월이자</th><th>납입예정일</th></tr></thead>
-          <tbody>${이자예정.map(x => html`<tr onClick=${() => (location.hash = `/car/${x.car.id}/loans`)}><td><b>${x.car.plate}</b></td><td>${x.금융사}</td><td class="r">${won(x.대출금액)}</td>
-            <td class="r">${x.월이자 ? won(x.월이자) : html`<span class="muted" title="캐피탈이율 미입력">-</span>`}</td><td>${x.납입예정일}</td></tr>`)}</tbody></table></div>
-          <p class="note">상사가 재고금융사에 내는 이자입니다(캐피탈이율 × 대출금 ÷ 12). 납입예정일은 설정 → 재고금융사의 이자지급일, 없으면 실행일 기준.</p>`}</div>
-      <div class="card"><h3>최근 12개월 제시 · 매도 추이</h3><${TrendChart} rows=${추이} a=${{ key: "제시", label: "제시(대)" }} b=${{ key: "매도", label: "매도(대)" }} /></div>
-    </div>
-    ${lenders.length > 0 && html`<div class="card"><h3>재고금융 이용 현황</h3><table class="st"><tbody>${lenders.map(l => {
+      <a class="stat" href="#/reports/summary"><span>이번 달 회사 수익</span><b class=${s.수익합계 < 0 ? "red" : ""}>${won(s.수익합계)}</b><small>운영이익 ${won(s.운영이익)}</small></a>
+      <a class="stat" href="#/loans"><span>재고금융 진행중</span><b>${won(s.재고.재고금융)}</b><small>${act.length}건</small></a>
+      <a class="stat" href="#/settlements"><span>이번 달 딜러 정산 지급</span><b>${won(s.정산.실지급)}</b><small>${s.정산.건수}건 · 원천징수 ${won(s.정산.세액)}</small></a></div></div>` },
+    loans_todo: { title: "재고금융 연장·상환 챙길 것", size: "half", render: () => card("재고금융 연장·상환 챙길 것",
+      차표(챙길.map(x => ({ ...x, c: car[x.l.car_id] })), ["차량", "금융사", "대출", "할 일"],
+        x => html`<td><b>${x.c.plate}</b></td><td>${d.lenders.find(l => l.id === x.l.lender_id)?.name}</td><td class="r">${won(x.l.amount)}</td><td><span class=${"badge " + x.h.tone}>${x.h.text}</span></td>`, "loans"),
+      html`<a class="btn sm" href="#/loans/lenders">금융사별 현황</a>`) },
+    insp: { title: "성능점검 90일 지난 재고", size: "half", render: () => card(`성능점검 ${ALERT_DAYS}일 지난 재고`,
+      차표(성능, ["차량", "경과", "상태"], x => html`<td><b>${x.c.plate}</b> <span class="small">${x.c.car_name}</span></td><td class="r">${x.s.경과}일</td><td><span class=${"badge " + x.s.tone}>${x.s.text}</span></td>`)) },
+    stock_old: { title: "90일 넘은 재고", size: "half", render: () => card("90일 넘은 재고",
+      차표(장기.map(c => ({ c, 일: Math.round((Date.parse(t) - Date.parse(c.purchase_date)) / 864e5) })).sort((a, b) => b.일 - a.일), ["차량", "매입가", "재고일"],
+        x => html`<td><b>${x.c.plate}</b> <span class="small">${x.c.car_name}</span></td><td class="r">${won(x.c.purchase_amount)}</td><td class="r red">${x.일}일</td>`)) },
+    cash: { title: "현금영수증 미발행", size: "half", render: () => 미발행카드("현금영수증") },
+    tax: { title: "전자세금계산서 미발행", size: "half", render: () => 미발행카드("세금계산서") },
+    interest: { title: "이자 납부 대상", size: "half", render: () => card("미납 이자 납부 대상",
+      !이자예정.length ? html`<p class="muted">한 달 안에 낼 이자가 없습니다.</p>` : html`<div class="table-wrap"><table class="grid click"><thead><tr><th>차량</th><th>재고금융사</th><th class="r">대출금액</th><th class="r">월이자</th><th>납입예정일</th></tr></thead>
+        <tbody>${이자예정.map(x => html`<tr onClick=${() => (location.hash = `/car/${x.car.id}/loans`)}><td><b>${x.car.plate}</b></td><td>${x.금융사}</td><td class="r">${won(x.대출금액)}</td>
+          <td class="r">${x.월이자 ? won(x.월이자) : html`<span class="muted" title="캐피탈이율 미입력">-</span>`}</td><td>${x.납입예정일}</td></tr>`)}</tbody></table></div>`,
+      html`<a class="btn sm" href="#/loans/interest">이자납입 리스트</a>`) },
+    trend: { title: "최근 12개월 매입·매도 추이", size: "half", render: () => card("최근 12개월 매입 · 매도 추이", html`<${TrendChart} rows=${추이} a=${{ key: "제시", label: "매입(대)" }} b=${{ key: "매도", label: "매도(대)" }} />`) },
+    lenders: { title: "재고금융 한도 현황", size: "full", render: () => card("재고금융 한도 현황", !lenders.length ? html`<p class="muted">한도를 넣은 금융사가 없습니다. 재고금융 → 금융사별 현황 → 조건 설정에서 넣으세요.</p>`
+      : html`<table class="st"><tbody>${lenders.map(l => {
       const u = used(l.id) + Number(l.existing_amount || 0), lim = Number(l.credit_limit), pct = Math.round(u / lim * 100);
       return html`<tr><th>${l.name}</th><td><div class="bar-meter"><i class=${pct > 100 ? "over" : ""} style=${`width:${Math.min(100, pct)}%`}></i></div></td>
-        <td class="r">${won(u)} / ${won(lim)}</td><td class=${"r" + (lim - u < 0 ? " red" : "")}>잔여 ${won(lim - u)}</td></tr>`; })}</tbody></table></div>`}`;
+        <td class="r">${won(u)} / ${won(lim)}</td><td class=${"r" + (lim - u < 0 ? " red" : "")}>잔여 ${won(lim - u)}</td></tr>`; })}</tbody></table>`) },
+  };
+  const layout = normalize(app.profile.dashboard);
+
+  return html`<div class="bar"><h2>대시보드</h2><span class="muted">${t} · ${app.settings.company_name}</span><span class="grow"></span>
+      <button class="btn sm ghost" onClick=${() => setEdit(!edit)}>${edit ? "편집 닫기" : "위젯 편집"}</button></div>
+    ${edit && html`<${DashEditor} app=${app} layout=${layout} widgets=${WIDGETS} onDone=${() => setEdit(false)} />`}
+    <div class="dash-grid">${layout.filter(w => w.on && WIDGETS[w.id] && WIDGETS[w.id].show !== false)
+      .map(w => html`<div class=${WIDGETS[w.id].size === "full" ? "full" : ""} key=${w.id}>${WIDGETS[w.id].render()}</div>`)}</div>`;
+}
+
+// 기본 배치 (새 위젯은 여기 추가하면 기존 계정 배치 끝에 꺼진 채로 붙는다)
+const DEFAULT = ["partners", "todo", "month", "loans_todo", "insp", "cash", "tax", "interest", "trend", "stock_old", "lenders"];
+const DEFAULT_OFF = new Set(["stock_old"]);
+function normalize(saved) {
+  const list = Array.isArray(saved) ? saved.filter(w => DEFAULT.includes(w.id)) : DEFAULT.map(id => ({ id, on: !DEFAULT_OFF.has(id) }));
+  for (const id of DEFAULT) if (!list.some(w => w.id === id)) list.push({ id, on: false });
+  return list;
+}
+
+function DashEditor({ app, layout, widgets, onDone }) {
+  const [rows, setRows] = useState(layout);
+  const move = (i, d) => setRows(r => { const x = [...r], j = i + d; if (j < 0 || j >= x.length) return r; [x[i], x[j]] = [x[j], x[i]]; return x; });
+  const save = async list => {
+    const ok = await run(async () => { await q(app.db.rpc("set_dashboard", { p_layout: list })); await app.reload(); return true; }, "대시보드를 저장했습니다");
+    if (ok) onDone();
+  };
+  return html`<div class="card dash-edit">
+    <div class="bar"><h3>위젯 편집</h3><span class="muted small">켜고 끄고, ↑↓로 순서를 바꾼 뒤 저장 — 내 계정에만 적용됩니다</span><span class="grow"></span>
+      <button class="btn sm ghost" onClick=${() => save(null)}>기본값으로</button><button class="btn sm primary" onClick=${() => save(rows)}>저장</button></div>
+    ${rows.map((w, i) => html`<div class="row line">
+      <label class="check"><input type="checkbox" checked=${w.on} onChange=${e => setRows(r => r.map((x, j) => j === i ? { ...x, on: e.target.checked } : x))} />
+        ${widgets[w.id].title}${widgets[w.id].size === "half" ? html` <span class="muted small">(반 칸)</span>` : ""}</label>
+      <span class="grow"></span>
+      <button type="button" class="btn sm ghost" disabled=${i === 0} onClick=${() => move(i, -1)}>↑</button>
+      <button type="button" class="btn sm ghost" disabled=${i === rows.length - 1} onClick=${() => move(i, 1)}>↓</button></div>`)}
+  </div>`;
 }

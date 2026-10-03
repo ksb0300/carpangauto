@@ -194,3 +194,7 @@ a.stat { color: inherit; } a.stat:hover { border-color: var(--pri); }
   box-shadow: 0 6px 20px rgba(0,0,0,.12); max-height: 320px; overflow: auto; padding: 4px; }
 .keylist button { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 7px 8px; border-radius: 6px; cursor: pointer; }
 .keylist button:hover { background: var(--line2, #f3f4f6); } .keylist button span { margin-left: 4px; } .keylist button small { display: block; }
+.dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; align-items: start; } .dash-grid > .full { grid-column: 1 / -1; }
+.dash-grid > div > .card, .dash-grid > div > div { margin-bottom: 16px; }
+@media (max-width: 900px) { .dash-grid { grid-template-columns: 1fr; } }
+.dash-edit .row.line { border-bottom: 1px solid var(--line2); padding: 4px 0; } .dash-edit .row.line > * { flex: 0 0 auto; } .dash-edit .grow { flex: 1; }

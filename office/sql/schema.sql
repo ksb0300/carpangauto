@@ -1041,3 +1041,14 @@ create policy office_read on car_keys for select to authenticated using (is_offi
 alter table cars
   add column fskey    text,      -- 통합키
   add column car_type text;      -- domestic / import
+
+
+-- 20261003000007_dashboard_layout.sql
+-- 대시보드 위젯 배치 (계정마다): [{ "id": "todo", "on": true }, ...] 순서대로
+alter table profiles add column dashboard jsonb;
+
+-- 본인 배치만 바꿀 수 있게 (profiles 는 대표만 수정 가능하므로 전용 함수로)
+create or replace function set_dashboard(p_layout jsonb) returns void
+language sql security definer set search_path = public as
+$$ update profiles set dashboard = p_layout where user_id = auth.uid() $$;
+grant execute on function set_dashboard(jsonb) to authenticated;
