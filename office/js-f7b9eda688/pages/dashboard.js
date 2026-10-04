@@ -9,6 +9,7 @@ import { 미납이자 } from "../calc.js";
 import { monthRange } from "../ui.js";
 import { inspState, ALERT_DAYS, renewInsp } from "./tab-insp.js";
 import { 할일, LoanAction } from "./lenders.js";
+import { SignsWidget } from "./signs.js";
 import { news } from "../pb.js";
 
 export function Dashboard({ app }) {
@@ -137,6 +138,7 @@ ${hasDealer && html`      <a class="stat" href="#/settlements"><span>이번 달 
           <td class="r">${x.월이자 ? won(x.월이자) : html`<span class="muted" title="캐피탈이율 미입력">-</span>`}</td><td>${x.납입예정일}</td></tr>`)}</tbody></table></div>`,
       html`<a class="btn sm" href="#/loans/interest">이자납입 리스트</a>`) },
     trend: { title: "최근 12개월 매입·매도 추이", size: "half", render: () => card("최근 12개월 매입 · 매도 추이", html`<${TrendChart} rows=${추이} a=${{ key: "제시", label: "매입(대)" }} b=${{ key: "매도", label: "매도(대)" }} />`) },
+    signs: { title: "새 서류 (비사업용 확인서)", size: "half", render: () => html`<${SignsWidget} app=${app} />` },
     news: { title: "중고차 뉴스", size: "half", render: () => html`<${NewsWidget} app=${app} />` },
     lenders: { title: "재고금융 한도 현황", size: "full", render: () => card("재고금융 한도 현황", !lenders.length ? html`<p class="muted">진행중 재고금융이 없습니다.</p>`
       : html`<table class="st"><tbody>${lenders.map(l => {
@@ -191,7 +193,7 @@ ${hasDealer && html`      <a class="stat" href="#/settlements"><span>이번 달 
 }
 
 // 기본 배치 (새 위젯은 여기 추가하면 기존 계정 배치 끝에 꺼진 채로 붙는다)
-const DEFAULT = ["partners", "todo", "month", "loans_todo", "cash_cars", "insp", "news", "cash", "tax", "interest", "trend", "stock_old", "lenders"];
+const DEFAULT = ["partners", "todo", "signs", "month", "loans_todo", "cash_cars", "insp", "news", "cash", "tax", "interest", "trend", "stock_old", "lenders"];
 const DEFAULT_OFF = new Set(["stock_old"]);
 function normalize(saved) {
   const list = Array.isArray(saved) ? saved.filter(w => DEFAULT.includes(w.id)) : DEFAULT.map(id => ({ id, on: !DEFAULT_OFF.has(id) }));
