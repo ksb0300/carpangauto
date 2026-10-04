@@ -1129,3 +1129,11 @@ begin
   return old;
 end $$;
 create trigger sign_docs_cleanup after delete on sign_docs for each row execute function sign_docs_cleanup();
+
+
+-- 20261004000005_extra_income.sql
+-- 차량 리스트: 판매가는 매도비를 뺀 차값으로 받고(대장과 같게), 옆에 추가수익(할부 수수료 등 예상) 칸을 둔다.
+alter table cars add column extra_income bigint;
+-- 이미 넣어 둔 판매가(매도비 포함)는 기본 매도비를 빼서 차값으로 바꾼다
+update cars set list_price = list_price - (select sale_fee from settings where id = 1)
+ where list_price is not null and list_price > (select sale_fee from settings where id = 1);
