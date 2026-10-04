@@ -21,6 +21,7 @@ function Ops({ app }) {
   const save = () => run(async () => {
     const { id, updated_at, revenue_items, expense_items, ...row } = f;
     row.purchase_channels = (f.purchase_channels || []).filter(c => c.name.trim()).map(c => ({ name: c.name.trim(), fee: Number(c.fee) || 0 }));
+    row.installment_companies = [...new Set((f.installment_companies || []).map(x => x.trim()).filter(Boolean))];
     await q(app.db.from("settings").update(row).eq("id", 1));
     await app.reload();
   }, "저장했습니다");
@@ -42,6 +43,12 @@ function Ops({ app }) {
       <${Money} value=${c.fee} onInput=${v => set("purchase_channels")(f.purchase_channels.map((x, j) => j === i ? { ...x, fee: v } : x))} />
       <button type="button" class="btn sm ghost" onClick=${() => set("purchase_channels")(f.purchase_channels.filter((_, j) => j !== i))}>✕</button></div>`)}
     <button type="button" class="btn sm" onClick=${() => set("purchase_channels")([...(f.purchase_channels || []), { name: "", fee: 0 }])}>+ 매입처 추가</button>
+    <h3>할부 캐피탈사</h3>
+    <p class="note">매도 화면 '할부 내용'의 캐피탈사 드롭다운 목록입니다. 재고금융 → 할부실적이 이 이름별로 모입니다.</p>
+    ${(f.installment_companies || []).map((c, i) => html`<div class="row line channel-row">
+      <input placeholder="캐피탈사" value=${c} onInput=${e => set("installment_companies")(f.installment_companies.map((x, j) => j === i ? e.target.value : x))} />
+      <button type="button" class="btn sm ghost" onClick=${() => set("installment_companies")(f.installment_companies.filter((_, j) => j !== i))}>✕</button></div>`)}
+    <button type="button" class="btn sm" onClick=${() => set("installment_companies")([...(f.installment_companies || []), ""])}>+ 캐피탈사 추가</button>
     <div class="actions"><button class="btn primary" onClick=${save}>저장</button></div>
   </div>`;
 }

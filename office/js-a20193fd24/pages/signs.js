@@ -1,4 +1,4 @@
-// 서류: 고객이 carpangauto.com/sign 에서 서명한 비사업용 사실확인서 (예전 구글 앱스스크립트 → 이제 서버 함수 sign 이 여기 저장).
+// 서류: 고객이 tieronekorea.com/sign 에서 서명한 비사업용 사실확인서 (예전 구글 앱스스크립트 → 이제 서버 함수 sign 이 여기 저장).
 // 목록 → 확인서 보기·인쇄(PDF 저장). 주민번호는 가린 값으로 보이고, 대표만 원문을 넣어 인쇄할 수 있다.
 import { html, useState, useEffect, Loading, Empty, Badge, run, toast, go } from "../ui.js";
 import { q } from "../db.js";
@@ -28,10 +28,10 @@ function SignList({ app }) {
   useEffect(() => { run(async () => setRows(await withCars(app.db, await q(app.db.from("sign_docs").select("*").order("created_at", { ascending: false }))))); }, []);
   if (!rows) return html`<${Loading} />`;
   const list = rows.filter(r => only === "전체" || !r.checked_at);
-  return html`<div class="bar"><h2>서류 접수</h2><span class="muted small">비사업용 사실확인서 · 고객 작성 주소 <a href="/sign/" target="_blank">carpangauto.com/sign</a></span>
+  return html`<div class="bar"><h2>서류 접수</h2><span class="muted small">비사업용 사실확인서 · 고객 작성 주소 <a href="/sign/" target="_blank">tieronekorea.com/sign</a></span>
       <span class="grow"></span>
       <div class="seg">${["전체", "새 서류"].map(k => html`<button class=${only === k ? "on" : ""} onClick=${() => setOnly(k)}>${k}${k === "새 서류" ? ` ${rows.filter(r => !r.checked_at).length}` : ""}</button>`)}</div></div>
-    ${!list.length ? html`<${Empty}>${rows.length ? "새로 들어온 서류가 없습니다." : "아직 접수된 서류가 없습니다. 고객에게 carpangauto.com/sign 주소를 보내면 여기에 쌓입니다."}<//>`
+    ${!list.length ? html`<${Empty}>${rows.length ? "새로 들어온 서류가 없습니다." : "아직 접수된 서류가 없습니다. 고객에게 tieronekorea.com/sign 주소를 보내면 여기에 쌓입니다."}<//>`
       : html`<div class="table-wrap"><table class="grid click">
         <thead><tr><th>접수일시</th><th>차량번호</th><th>차명</th><th>성명</th><th>주민번호</th><th>전화번호</th><th>사업자번호</th><th>우리 차</th><th>상태</th></tr></thead>
         <tbody>${list.map(r => html`<tr key=${r.id} onClick=${() => go("/signs/" + r.id)}>

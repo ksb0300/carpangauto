@@ -5,6 +5,8 @@ import { 부가세분리, 할부수수료 } from "../calc.js";
 export const SALE_TYPES = ["내수판매", "수출", "엔카믿고", "알선판매"];
 
 let tmp = 0;
+// 매수고객 입력은 조합 전산과 연동되기 전까지 숨긴다 (사용자 2026-10-04). 연동되면 true 로 — 똑순이처럼 공동명의·지분율까지 받는 코드는 그대로 있다
+const SHOW_BUYERS = false;
 const newBuyer = share => ({ _new: ++tmp, name: "", ssn: "", biz_no: "", phone: "", zip: "", addr: "", memo: "", share_rate: share });
 
 export function SaleTab({ app, car, sale, buyers, settlement, reload, locked, office }) {
@@ -32,22 +34,22 @@ export function SaleTab({ app, car, sale, buyers, settlement, reload, locked, of
       <div><span>매도금액</span><b>${won(sale.sale_amount)} <small class="muted">(공급가 ${won(sale.sale_supply)} / 부가세 ${won(sale.sale_vat)})</small></b></div>
       <div><span>상사매도비</span><b>${won(sale.sale_fee)}</b></div>
       <div><span>성능보험료</span><b>${won(sale.perf_insurance)}</b></div>
-      ${Number(sale.installment_amount) > 0 && html`<div><span>할부금융 수익</span><b>${won(sale.installment_income)} <small class="muted">(할부 ${won(sale.installment_amount)} × ${Number(sale.installment_rate)}% = ${won(sale.installment_fee)} − 원천징수 ${won(sale.installment_tax)})</small></b></div>`}
+      ${Number(sale.installment_amount) > 0 && html`<div><span>할부 (${sale.installment_company || "캐피탈사 미입력"})</span><b>${won(sale.installment_income)} <small class="muted">(할부 ${won(sale.installment_amount)} × ${Number(sale.installment_rate)}% = ${won(sale.installment_fee)} − 원천징수 ${won(sale.installment_tax)})</small></b></div>`}
       <div><span>출고 번호판</span><b>${sale.plate_out || car.plate}</b></div>
       <div><span>특이사항</span><b>${sale.memo || "-"}</b></div>
     </div>
-    <h3>매수고객</h3>
+    ${(SHOW_BUYERS || buyers.length > 0) && html`<h3>매수고객</h3>
     <div class="table-wrap"><table class="grid"><thead><tr><th>고객명</th><th>주민(법인)번호</th><th>사업자번호</th><th>연락처</th><th>주소</th><th class="r">지분율</th></tr></thead>
-      <tbody>${buyers.map(b => html`<tr><td>${b.name}</td><td>${b.ssn_masked || "-"}</td><td>${b.biz_no || "-"}</td><td>${b.phone || "-"}</td><td>${b.addr || "-"}</td><td class="r">${b.share_rate}%</td></tr>`)}</tbody></table></div>
+      <tbody>${buyers.map(b => html`<tr><td>${b.name}</td><td>${b.ssn_masked || "-"}</td><td>${b.biz_no || "-"}</td><td>${b.phone || "-"}</td><td>${b.addr || "-"}</td><td class="r">${b.share_rate}%</td></tr>`)}</tbody></table></div>`}
   </div>`;
 }
 
 function SaleForm({ app, car, sale, buyers, onDone }) {
   const [f, setF] = useState(sale ? { ...sale } : {
     sale_date: today(), dealer_id: car.dealer_id, other_dealer: false, sale_type: "내수판매",
-    sale_amount: car.list_price ? Math.max(0, Number(car.list_price) - Number(app.settings.sale_fee || 0)) : 0,   // 리스트에 넣은 판매가(매도비 포함) − 매도비
+    sale_amount: car.list_price ? Number(car.list_price) : 0,   // 리스트에 넣은 판매가(매도비 제외 차값)
     plate_out: car.plate, sale_fee: app.settings.sale_fee, perf_insurance: 0, memo: "", broker_dealer_id: null,
-    installment_amount: 0, installment_rate: 0 });
+    installment_company: null, installment_amount: 0, installment_rate: 0 });
   const [bs, setBs] = useState(buyers.length ? buyers.map(b => ({ ...b, ssn: "" })) : [newBuyer(100)]);
   // 새 매도: 성능보험료는 최근 성능점검(KAIWA)의 보험료를 기본값으로 (손님이 내는 돈 — 현금영수증용)
   useEffect(() => { if (!sale) run(async () => {
@@ -67,19 +69,22 @@ function SaleForm({ app, car, sale, buyers, onDone }) {
   const save = async e => {
     e.preventDefault();
     if (!f.sale_amount) return toast("매도금액을 입력하세요.", "err");
-    for (const b of bs) {
+    if (SHOW_BUYERS) for (const b of bs) {
       if (!b.name.trim()) return toast("매수고객 이름을 입력하세요.", "err");
       if (!b.ssn.trim() && !b.ssn_masked && !b.biz_no?.trim()) return toast(`${b.name}: 주민번호나 사업자번호 중 하나는 꼭 입력하세요.`, "err");
     }
-    if (Math.abs(shareSum - 100) > 0.001) return toast(`지분율 합계가 100%가 아닙니다 (${shareSum}%).`, "err");
+    if (SHOW_BUYERS && Math.abs(shareSum - 100) > 0.001) return toast(`지분율 합계가 100%가 아닙니다 (${shareSum}%).`, "err");
+    if (Number(f.installment_amount) > 0 && !f.installment_company) return toast("할부 캐피탈사를 고르세요.", "err");
     setBusy(true);
     const ok = await run(async () => {
       const row = { car_id: car.id, sale_date: f.sale_date, dealer_id: f.dealer_id, other_dealer: f.other_dealer, sale_type: f.sale_type,
         sale_amount: f.sale_amount, plate_out: f.plate_out || null, sale_fee: f.sale_fee, perf_insurance: f.perf_insurance, memo: f.memo || null,
         broker_dealer_id: f.broker_dealer_id || null,
+        installment_company: Number(f.installment_amount) > 0 ? (f.installment_company || null) : null,
         installment_amount: Number(f.installment_amount) || 0, installment_rate: Number(f.installment_rate) || 0 };
       if (sale) await q(app.db.from("car_sales").update(row).eq("car_id", car.id));
       else await q(app.db.from("car_sales").insert(row));
+      if (!SHOW_BUYERS) return true;     // 매수고객 숨김 중 — 기존 기록은 건드리지 않는다
       const keep = new Set(bs.filter(b => b.id).map(b => b.id));
       const gone = buyers.filter(b => !keep.has(b.id)).map(b => b.id);
       if (gone.length) await q(app.db.from("car_buyers").delete().in("id", gone));
@@ -111,13 +116,18 @@ function SaleForm({ app, car, sale, buyers, onDone }) {
       <${Field} label="매도금액" req hint=${f.sale_amount ? `공급가 ${won(vat.공급가)} / 부가세 ${won(vat.부가세)}` : "부가세 포함"}><${Money} value=${f.sale_amount} onInput=${set("sale_amount")} /><//>
       <${Field} label="상사매도비" hint="상사 매출로 잡힙니다"><${Money} value=${f.sale_fee} onInput=${set("sale_fee")} /><//>
       <${Field} label="성능보험료" hint="손님이 내는 돈 — 현금영수증용, 손익에는 안 들어감"><${Money} value=${f.perf_insurance} onInput=${set("perf_insurance")} /><//>
-      <${Field} label="할부금액" hint="할부(금융)로 판 경우"><${Money} value=${f.installment_amount} onInput=${set("installment_amount")} /><//>
-      <${Field} label="할부피(%)" hint=${할부.수수료 ? `수수료 ${won(할부.수수료)} − 원천징수 ${won(할부.원천징수)} = 수익 ${won(할부.수익)}` : "수익 = 할부금액 × 할부피 − 원천징수 3.3%"}>
-        <input inputmode="decimal" value=${f.installment_rate || ""} onInput=${e => set("installment_rate")(e.target.value)} /><//>
       <${Field} label="출고 번호판"><input value=${f.plate_out || ""} onInput=${e => set("plate_out")(e.target.value)} /><//>
       <${Field} label="특이사항" wide><input value=${f.memo || ""} onInput=${e => set("memo")(e.target.value)} /><//>
     </div>
-    <div class="bar"><h3>매수고객</h3><span class=${"muted" + (Math.abs(shareSum - 100) > 0.001 ? " red" : "")}>지분율 합계 ${shareSum}%</span><span class="grow"></span>
+    <div class="bar"><h3>할부 내용</h3><span class="muted small">할부(금융)로 판 경우만 — 재고금융 → 할부실적에 캐피탈사별로 쌓입니다</span></div>
+    <div class="fgrid">
+      <${Field} label="캐피탈사"><${Select} value=${f.installment_company} onChange=${set("installment_company")} empty="선택"
+        options=${[...new Set([...(app.settings.installment_companies || []), ...(f.installment_company ? [f.installment_company] : [])])]} /><//>
+      <${Field} label="할부금액"><${Money} value=${f.installment_amount} onInput=${set("installment_amount")} /><//>
+      <${Field} label="할부피(%)" hint=${할부.수수료 ? `수수료 ${won(할부.수수료)} − 원천징수 ${won(할부.원천징수)} = 수익 ${won(할부.수익)}` : "수익 = 할부금액 × 할부피 − 원천징수 3.3%"}>
+        <input inputmode="decimal" value=${f.installment_rate || ""} onInput=${e => set("installment_rate")(e.target.value)} /><//>
+    </div>
+    ${SHOW_BUYERS && html`<div class="bar"><h3>매수고객</h3><span class=${"muted" + (Math.abs(shareSum - 100) > 0.001 ? " red" : "")}>지분율 합계 ${shareSum}%</span><span class="grow"></span>
       <button type="button" class="btn sm" onClick=${() => setBs(x => [...x, newBuyer(0)])}>+ 공동명의 추가</button></div>
     ${bs.map((b, i) => html`<div class="buyer fgrid">
       <${Field} label="고객명" req><input value=${b.name} onInput=${e => upd(i, "name", e.target.value)} /><//>
@@ -127,6 +137,6 @@ function SaleForm({ app, car, sale, buyers, onDone }) {
       <${Field} label="주소" wide><input value=${b.addr || ""} onInput=${e => upd(i, "addr", e.target.value)} /><//>
       <${Field} label="지분율(%)"><div class="row"><input inputmode="decimal" value=${b.share_rate} onInput=${e => upd(i, "share_rate", e.target.value)} />
         ${bs.length > 1 && html`<button type="button" class="btn sm ghost" onClick=${() => setBs(x => x.filter((_, j) => j !== i))}>삭제</button>`}</div><//>
-    </div>`)}
+    </div>`)}`}
   </form>`;
 }

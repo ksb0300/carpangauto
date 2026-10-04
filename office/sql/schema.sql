@@ -1137,3 +1137,11 @@ alter table cars add column extra_income bigint;
 -- 이미 넣어 둔 판매가(매도비 포함)는 기본 매도비를 빼서 차값으로 바꾼다
 update cars set list_price = list_price - (select sale_fee from settings where id = 1)
  where list_price is not null and list_price > (select sale_fee from settings where id = 1);
+
+
+-- 20261004000006_installment_company.sql
+-- 할부로 판 차: 어느 캐피탈사에 할부를 넣었는지 (재고금융 → 할부실적은 캐피탈사별 할부금액 합계가 핵심)
+alter table car_sales add column installment_company text;
+-- 매도 화면 캐피탈사 드롭다운 목록 (환경설정에서 고친다)
+alter table settings add column installment_companies jsonb not null default
+  '["JB우리캐피탈","KB캐피탈","BNK캐피탈","현대캐피탈","하나캐피탈","신한카드","우리금융캐피탈","롯데캐피탈","DGB캐피탈","메리츠캐피탈","오케이캐피탈"]'::jsonb;
