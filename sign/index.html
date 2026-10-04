@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>서류 작성 · TierONE</title>
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#0a0a0c">
@@ -10,11 +10,59 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="stylesheet" href="/assets/style.css?v=8bb9c7a9">
 <style>
-  .doc{background:var(--bk);border-radius:16px;overflow:hidden;min-height:78vh;
-    border:1px solid var(--line);box-shadow:0 30px 80px rgba(139,47,255,.10)}
-  .doc iframe{width:100%;height:80vh;border:0;display:block}
-  .setup{padding:60px 24px;text-align:center;color:var(--tx2)}
-  .setup b{display:block;color:var(--tx);font-size:17px;margin-bottom:8px}
+  /* 예전엔 구글 앱스스크립트를 iframe 으로 넣었다. 이제 이 페이지가 직접 받아 업무관리(서버 함수 sign)에 저장한다. */
+  .sf{max-width:560px;margin:0 auto}
+  .sf .card{background:var(--bk2);border:1px solid var(--line);border-radius:14px;padding:20px 18px;margin-bottom:14px}
+  .sf label{display:block;font-size:13.5px;font-weight:700;margin:0 0 7px;color:var(--tx)}
+  .sf .req{color:var(--pp2)}
+  .sf input[type=text],.sf input[type=tel]{width:100%;padding:14px 13px;font-size:17px;border:1px solid rgba(255,255,255,.18);
+    border-radius:10px;background:var(--bk3);color:var(--tx);font-family:inherit;box-sizing:border-box}
+  .sf input::placeholder{color:var(--tx3)}
+  .sf input:focus{outline:0;border-color:var(--pp);box-shadow:0 0 0 3px var(--pp-dim)}
+  .sf .hint{font-size:13px;color:var(--tx3);margin:6px 0 0}
+  .sf .split{display:flex;align-items:center;gap:7px}
+  .sf .split input{flex:1;min-width:0;text-align:center}
+  .sf .dash{color:var(--tx3);font-size:16px;flex:0 0 auto}
+  .sf .field{margin-bottom:18px} .sf .field:last-child{margin-bottom:0}
+  .sf .statement{background:rgba(255,190,80,.07);border:1px solid rgba(255,190,80,.22);border-radius:12px;padding:18px 16px;
+    font-size:14.5px;color:var(--tx2);line-height:1.75}
+  .sf .statement b{color:var(--tx)} .sf .statement ol{margin:0;padding-left:22px} .sf .statement li{margin-bottom:12px}
+  .sf .agree{display:flex;align-items:flex-start;gap:12px;font-weight:400;font-size:15px;line-height:1.5;color:var(--tx2);cursor:pointer}
+  .sf .agree input{width:22px;height:22px;margin-top:1px;flex:0 0 auto;accent-color:var(--pp)}
+  .sf .agree b{color:var(--tx)}
+  #pad{width:100%;height:200px;background:var(--bk3);border:2px dashed rgba(255,255,255,.18);border-radius:12px;touch-action:none;display:block}
+  .sf .padrow{display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+  .ghostbtn{background:transparent;border:1px solid rgba(255,255,255,.18);color:var(--tx2);padding:9px 16px;border-radius:9px;
+    font-size:14px;font-family:inherit;cursor:pointer}
+  .sf .submit{width:100%;padding:17px;font-size:17px;font-weight:800;background:var(--pp);color:#fff;border:0;border-radius:12px;
+    margin-top:6px;font-family:inherit;cursor:pointer}
+  .sf .submit:disabled{background:var(--bk3);color:var(--tx3)}
+  .sf .err{background:rgba(255,80,80,.1);border:1px solid rgba(255,80,80,.3);color:#ff9c9c;padding:13px;border-radius:10px;
+    font-size:15px;margin-bottom:14px}
+  .sf .foot{text-align:center;color:var(--tx3);font-size:13px;margin-top:12px}
+  .done{text-align:center;padding:40px 10px 20px}
+  .done .mark{width:64px;height:64px;border-radius:50%;background:var(--pp-dim);color:var(--pp2);font-size:30px;line-height:64px;margin:0 auto 6px}
+  .done h2{margin:14px 0 8px;font-size:22px} .done p{color:var(--tx2);margin:0 0 4px;font-size:15px}
+  /* 제출한 확인서 사본 (흰 종이) — 인쇄·PDF 저장용 */
+  .paper{background:#fff;color:#000;border-radius:8px;padding:26px 24px;margin:22px auto 0;max-width:620px;text-align:left;
+    font-family:"Malgun Gothic","Apple SD Gothic Neo",sans-serif;font-size:12.5px;line-height:1.6}
+  .paper h1{text-align:center;font-size:20px;letter-spacing:8px;margin:0 0 18px;text-decoration:underline;text-underline-offset:6px;color:#000}
+  .paper .sec{font-weight:bold;margin:0 0 5px}
+  .paper p{color:#000;font-size:12.5px}
+  .paper table{border-collapse:collapse;width:100%;margin-bottom:14px}
+  .paper th,.paper td{border:1px solid #000;padding:6px 10px;color:#000}
+  .paper th{width:112px;text-align:center;font-weight:normal;letter-spacing:2px}
+  .paper ol{margin:0 0 16px;padding-left:19px} .paper ol li{margin-bottom:9px;text-align:justify}
+  .paper .daum{text-align:center;letter-spacing:10px;margin:0 0 14px} .paper .date{text-align:center;letter-spacing:4px;margin:20px 0 18px}
+  .paper td.owner{position:relative;height:42px}
+  .paper .sigwrap{position:absolute;right:16px;top:5px;width:116px;height:42px}
+  .paper .sigmark{position:absolute;left:0;right:0;top:14px;text-align:center;color:#adadad;font-size:11px}
+  .paper .sig{position:absolute;left:0;top:0;width:116px;height:42px}
+  .paper .buyer{margin-top:16px;padding-top:8px;border-top:1px solid #bbb;font-size:10px;color:#555}
+  @media print{
+    body *{visibility:hidden} .paper,.paper *{visibility:visible}
+    .paper{position:absolute;left:0;top:0;margin:0;max-width:none;width:100%;border-radius:0;padding:30px 46px}
+  }
 </style>
 </head>
 <body>
@@ -25,19 +73,161 @@
     <h1 class="t">비사업용 사실확인서</h1>
     <p class="s">사업자등록증이 있으신 분 중, 차량을 경비처리하지 않으신 경우 작성해 주시는 서류입니다.
        휴대폰으로 바로 서명하실 수 있습니다.</p>
-    <div class="doc" id="doc"></div>
+
+    <div class="sf" id="form">
+      <div class="err" id="err" hidden></div>
+      <div class="card">
+        <div class="field"><label>차량번호 <span class="req">*</span></label>
+          <input type="text" id="carNo" placeholder="12가3456" autocomplete="off"></div>
+        <div class="field"><label>차명 <span class="req">*</span></label>
+          <input type="text" id="carName" placeholder="BMW 3시리즈" autocomplete="off"></div>
+        <div class="field"><label>성명 <span class="req">*</span></label>
+          <input type="text" id="name" placeholder="홍길동" autocomplete="name"></div>
+        <div class="field"><label>주민등록번호 <span class="req">*</span></label>
+          <div class="split">
+            <input type="tel" id="rrn1" maxlength="6" placeholder="910729" inputmode="numeric" autocomplete="off">
+            <span class="dash">-</span>
+            <input type="tel" id="rrn2" maxlength="7" placeholder="1234567" inputmode="numeric" autocomplete="off">
+          </div>
+          <p class="hint">인감증명서와 동일하게 입력해 주세요. 암호화해서 보관합니다.</p></div>
+        <div class="field"><label>주소 <span class="req">*</span></label>
+          <input type="text" id="address" placeholder="부산광역시 금정구 ..." autocomplete="street-address"></div>
+        <div class="field"><label>전화번호 <span class="req">*</span></label>
+          <div class="split">
+            <input type="tel" id="tel1" maxlength="3" value="010" inputmode="numeric" autocomplete="off">
+            <span class="dash">-</span>
+            <input type="tel" id="tel2" maxlength="4" placeholder="0000" inputmode="numeric" autocomplete="off">
+            <span class="dash">-</span>
+            <input type="tel" id="tel3" maxlength="4" placeholder="0000" inputmode="numeric" autocomplete="off">
+          </div></div>
+        <div class="field"><label>사업자등록번호</label>
+          <input type="text" id="bizNo" placeholder="없으면 비워 두세요" autocomplete="off"></div>
+      </div>
+
+      <div class="card">
+        <div class="statement">
+          <p style="margin:0 0 4px"><b>본인은 상기 차량을 귀 자동차매매상사에 판매함에 있어 다음 사항에 대해 확인드립니다.</b></p>
+          <p style="text-align:center;margin:14px 0 12px;letter-spacing:6px;color:var(--pp2);font-weight:700">- 다 음 -</p>
+          <ol id="clauses"></ol>
+        </div>
+      </div>
+
+      <div class="card">
+        <label class="agree"><input type="checkbox" id="agree">
+          <span>위 <b>1 · 2 · 3항의 내용을 모두 읽고 확인</b>하였으며, 사실과 다름이 없음을 확인합니다.</span></label>
+      </div>
+
+      <div class="card">
+        <label>서명 <span class="req">*</span></label>
+        <p class="hint" style="margin:0 0 10px">아래 칸에 손가락으로 서명해 주세요.</p>
+        <canvas id="pad"></canvas>
+        <div class="padrow"><span class="hint" id="padHint">서명 전</span>
+          <button class="ghostbtn" type="button" id="clear">다시 쓰기</button></div>
+      </div>
+
+      <button class="submit" id="send" type="button">제출하기</button>
+      <p class="foot">제출 시각과 입력하신 정보가 함께 기록됩니다. 제출 후 확인서 사본을 저장하실 수 있습니다.</p>
+    </div>
+
+    <div id="done" class="done" hidden>
+      <div class="mark">✓</div>
+      <h2>제출되었습니다</h2>
+      <p>확인서가 정상적으로 접수되었습니다. 감사합니다.</p>
+      <p style="margin-top:14px"><button class="ghostbtn" type="button" id="print" style="border-color:var(--pp);color:#fff">확인서 사본 저장·인쇄</button></p>
+      <p style="font-size:13px;color:var(--tx3)">인쇄 창에서 'PDF로 저장'을 고르시면 파일로 보관됩니다.</p>
+      <div class="paper" id="paper"></div>
+    </div>
   </div>
 </section>
 
 <script src="/assets/site.js?v=0f0f056c"></script>
 <script>
-/* Apps Script 웹앱 주소. 직접 들어가면 구글이 '악용사례 신고' 배너를 붙여
-   고객이 불안해한다. iframe 으로 감싸면 배너 없이 우리 도메인 안에서 열린다. */
-var 웹앱주소 = "https://script.google.com/macros/s/AKfycbyJWw4vetW67C9zqc57C4ktTwnMgTTflS4znWK9rtXOovrTXibS9-_ew3d11hkD755C/exec";
+var API = "https://fwqtyyjhfewpxihpaasu.supabase.co/functions/v1/sign";
+var 매수자 = "김상혁 (티어원)", 매수자주소 = "부산광역시 기장군 장안읍 반룡산단3로 95, 604호, 605호(경동오토필드)";
+var 조항 = [
+  "본인은 당초 상기 매각차량의 구입과 관련하여 매입세금계산서를 비사업자로 수취하였습니다.",
+  "본인은 본인이 운영하고 있는 사업장의 부가가치세 신고시 상기 매각차량의 구입과 관련하여 매입세액으로 공제받은 사실이 없습니다.",
+  "상기 매각차량은 본인이 운영하고 있는 사업장과는 아무런 관련이 없이 본인개인용도의 가정용으로 사용하였으며, 이에 따라 상기 매각차량을 " +
+  "사업자 장부에 등재하거나 관련 감가상각비 및 기타 운행경비를 사업장 장부에 반영한 사실이 없습니다. 만일 위 사실과 관련하여 허위기재로 인한 " +
+  "귀하의 불이익이 발생할 경우 본인이 책임지겠음을 각서하며 이에 비사업용 사실확인서를 제출합니다."];
+var $ = function (id) { return document.getElementById(id); };
+$("clauses").innerHTML = 조항.map(function (t) { return "<li>" + t + "</li>"; }).join("");
 
-document.getElementById("doc").innerHTML = 웹앱주소
-  ? '<iframe src="' + 웹앱주소 + '?embed=1" title="비사업용 사실확인서"></iframe>'
-  : '<div class="setup"><b>연결 준비 중입니다</b>서명 페이지 주소가 아직 등록되지 않았습니다.</div>';
+/* 서명 패드 */
+var canvas = $("pad"), ctx = canvas.getContext("2d"), drawing = false, hasInk = false;
+function sizePad() {
+  var r = window.devicePixelRatio || 1;
+  canvas.width = canvas.offsetWidth * r; canvas.height = canvas.offsetHeight * r;
+  ctx.scale(r, r); ctx.lineWidth = 2.5; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.strokeStyle = "#f4f4f6";
+}
+sizePad();
+window.addEventListener("resize", function () {
+  var data = hasInk ? canvas.toDataURL() : null; sizePad();
+  if (data) { var img = new Image(); img.onload = function () { ctx.drawImage(img, 0, 0, canvas.offsetWidth, canvas.offsetHeight); }; img.src = data; }
+});
+function pos(e) { var r = canvas.getBoundingClientRect(), p = e.touches ? e.touches[0] : e; return { x: p.clientX - r.left, y: p.clientY - r.top }; }
+function start(e) { e.preventDefault(); drawing = true; var p = pos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); }
+function move(e) { if (!drawing) return; e.preventDefault(); var p = pos(e); ctx.lineTo(p.x, p.y); ctx.stroke();
+  if (!hasInk) { hasInk = true; $("padHint").textContent = "서명됨"; } }
+canvas.addEventListener("mousedown", start); canvas.addEventListener("mousemove", move); window.addEventListener("mouseup", function () { drawing = false; });
+canvas.addEventListener("touchstart", start, { passive: false }); canvas.addEventListener("touchmove", move, { passive: false });
+canvas.addEventListener("touchend", function () { drawing = false; });
+$("clear").onclick = function () { ctx.clearRect(0, 0, canvas.width, canvas.height); hasInk = false; $("padHint").textContent = "서명 전"; };
+
+/* 숫자 칸: 다 채우면 다음 칸, 빈 칸에서 지우기 누르면 앞 칸 */
+[["rrn1", 6, "rrn2"], ["rrn2", 7, null, "rrn1"], ["tel1", 3, "tel2"], ["tel2", 4, "tel3", "tel1"], ["tel3", 4, null, "tel2"]].forEach(function (c) {
+  var el = $(c[0]);
+  el.addEventListener("input", function () { var v = this.value.replace(/[^0-9]/g, "").slice(0, c[1]); this.value = v; if (v.length >= c[1] && c[2]) $(c[2]).focus(); });
+  el.addEventListener("keydown", function (e) { if (e.key === "Backspace" && this.value === "" && c[3]) $(c[3]).focus(); });
+});
+
+function showErr(msg) { var b = $("err"); b.textContent = msg; b.hidden = false; window.scrollTo({ top: 0, behavior: "smooth" }); }
+function esc(v) { return String(v == null ? "" : v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+function tr(k, v) { return "<tr><th>" + esc(k) + "</th><td>" + esc(v) + "</td></tr>"; }
+function p2(n) { return String(n).padStart(2, "0"); }
+/* 업무관리 '서류' 화면과 같은 양식 (고객 사본은 주민번호 뒷자리를 가림) */
+function 확인서(d, sig, at) {
+  var t = new Date(at), 날짜 = t.getFullYear() + "년  " + (t.getMonth() + 1) + "월  " + t.getDate() + "일";
+  var 접수 = t.getFullYear() + "-" + p2(t.getMonth() + 1) + "-" + p2(t.getDate()) + " " + p2(t.getHours()) + ":" + p2(t.getMinutes());
+  return "<h1>비사업용 사실확인서</h1><div class='sec'>※ 매각차량</div><table>" + tr("차량번호", d.carNo) + tr("차명", d.carName) + tr("소유자", d.name) + "</table>" +
+    "<p>본인은 상기 차량을 귀 자동차매매상사에 판매함에 있어 다음사항에 대해 확인드립니다.</p><p class='daum'>- 다 음 -</p>" +
+    "<ol>" + 조항.map(function (x) { return "<li>" + x + "</li>"; }).join("") + "</ol><p class='date'>" + 날짜 + "</p>" +
+    "<div class='sec'>※ 차량소유자</div><table><tr><th>성명</th><td class='owner'>" + esc(d.name) +
+    "<span class='sigwrap'><span class='sigmark'>(서명)</span><img class='sig' src='" + sig + "'></span></td></tr>" +
+    tr("주민등록번호", d.resident.slice(0, 8) + "******") + tr("주소", d.address) + tr("전화번호", d.phone) + (d.bizNo ? tr("사업자등록번호", d.bizNo) : "") + "</table>" +
+    "<div class='buyer'>매수자 : " + esc(매수자) + " · " + esc(매수자주소) + "<br>전자서명 접수 : " + 접수 + " · 1·2·3항 확인 체크 완료</div>";
+}
+
+$("send").onclick = function () {
+  var d = {
+    carNo: $("carNo").value.trim(), carName: $("carName").value.trim(), name: $("name").value.trim(),
+    resident: $("rrn1").value.trim() + "-" + $("rrn2").value.trim(), address: $("address").value.trim(),
+    phone: [$("tel1").value.trim(), $("tel2").value.trim(), $("tel3").value.trim()].join("-"),
+    bizNo: $("bizNo").value.trim(), ua: navigator.userAgent, agreed: $("agree").checked
+  };
+  if (!d.carNo || !d.carName || !d.name || !d.address) return showErr("별표(*) 표시된 항목을 모두 입력해 주세요.");
+  if ($("rrn1").value.length !== 6 || $("rrn2").value.length !== 7) return showErr("주민등록번호를 앞 6자리 · 뒤 7자리로 입력해 주세요.");
+  if ($("tel1").value.length < 2 || $("tel2").value.length < 3 || $("tel3").value.length !== 4) return showErr("전화번호를 정확히 입력해 주세요.");
+  if (!d.agreed) return showErr("1 · 2 · 3항 확인란에 체크해 주세요.");
+  if (!hasInk) return showErr("서명을 입력해 주세요.");
+  // 화면은 어두운 패드 위 흰 선, 확인서는 흰 종이 → 선만 골라 검정으로
+  var c = document.createElement("canvas"); c.width = canvas.width; c.height = canvas.height;
+  var x = c.getContext("2d"); x.drawImage(canvas, 0, 0);
+  var im = x.getImageData(0, 0, c.width, c.height), px = im.data;
+  for (var i = 0; i < px.length; i += 4) if (px[i + 3] > 0) { px[i] = 17; px[i + 1] = 17; px[i + 2] = 17; }
+  x.putImageData(im, 0, 0); d.signature = c.toDataURL("image/png");
+
+  var btn = $("send"); btn.disabled = true; btn.textContent = "제출 중…";
+  fetch(API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(d) })
+    .then(function (r) { return r.json(); })
+    .then(function (res) {
+      if (!res || !res.ok) throw new Error((res && res.msg) || "제출에 실패했습니다. 다시 시도해 주세요.");
+      $("paper").innerHTML = 확인서(d, d.signature, res.at);
+      $("form").hidden = true; $("done").hidden = false; window.scrollTo(0, 0);
+    })
+    .catch(function (e) { showErr(/fetch|network/i.test(e.message) ? "통신 오류: 인터넷 연결을 확인해 주세요." : e.message); btn.disabled = false; btn.textContent = "제출하기"; });
+};
+$("print").onclick = function () { window.print(); };
 </script>
 </body>
 </html>

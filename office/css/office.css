@@ -235,3 +235,23 @@ a.stat { color: inherit; } a.stat:hover { border-color: var(--pri); }
 .carlist th, .carlist td { padding-left: 8px; padding-right: 8px; white-space: nowrap; }
 .carlist td.ellipsis { max-width: 200px; }
 .carlist td select { max-width: 120px; padding-top: 4px; padding-bottom: 4px; }
+
+/* 서류(비사업용 사실확인서) — 화면에선 흰 종이처럼, 인쇄하면 확인서만 */
+.sign-paper { background: #fff; color: #000; border: 1px solid var(--line); border-radius: 8px; padding: 30px 46px; max-width: 760px; margin: 0 auto 14px;
+  font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; font-size: 12.5px; line-height: 1.6; }
+.sign-paper h1 { text-align: center; font-size: 21px; letter-spacing: 8px; margin: 0 0 20px; text-decoration: underline; text-underline-offset: 6px; }
+.sign-paper .sec { font-weight: bold; margin: 0 0 5px; }
+.sign-paper table { border-collapse: collapse; width: 100%; margin-bottom: 14px; }
+.sign-paper th, .sign-paper td { border: 1px solid #000; padding: 6px 10px; font-size: 12.5px; }
+.sign-paper th { width: 112px; text-align: center; font-weight: normal; letter-spacing: 2px; background: none; }
+.sign-paper ol { margin: 0 0 16px; padding-left: 19px; } .sign-paper ol li { margin-bottom: 9px; text-align: justify; }
+.sign-paper .daum { text-align: center; letter-spacing: 10px; margin: 0 0 14px; } .sign-paper .date { text-align: center; letter-spacing: 4px; margin: 20px 0 18px; }
+.sign-paper td.owner { position: relative; height: 42px; }
+.sign-paper .sigwrap { position: absolute; right: 16px; top: 5px; width: 116px; height: 42px; }
+.sign-paper .sigmark { position: absolute; left: 0; right: 0; top: 14px; text-align: center; color: #adadad; font-size: 11px; }
+.sign-paper .sig { position: absolute; left: 0; top: 0; width: 116px; height: 42px; }
+.sign-paper .buyer { margin-top: 16px; padding-top: 8px; border-top: 1px solid #bbb; font-size: 10px; color: #555; }
+@media print {
+  body:has(.sign-paper) .page > *:not(.sign-paper) { display: none !important; }
+  .sign-paper { border: 0; border-radius: 0; max-width: none; margin: 0; }
+}

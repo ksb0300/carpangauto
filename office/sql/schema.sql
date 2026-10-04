@@ -1073,3 +1073,59 @@ comment on column car_inspections.renewed_on is '성능점검 연장(재점검)�
 -- 리스트에서 바로 넣는 판매가(매도비 포함) — 마진 = 판매가 − 총원가(매입가 + 재반비용 + 상품화비용)
 alter table cars add column list_price bigint;
 comment on column cars.list_price is '판매가(매도비 포함) — 리스트에서 바로 입력, 마진 계산용';
+
+
+-- 20261004000004_sign_docs.sql
+-- 서류 작성(비사업용 사실확인서)을 구글 앱스스크립트에서 업무관리로 옮긴다.
+-- 고객은 carpangauto.com/sign 에서 입력·서명 → 서버 함수 sign 이 여기 저장 (로그인 없는 공개 함수, service role).
+-- 주민번호는 다른 주민번호처럼 pii_ssn 에 암호화해 두고, 표에는 가린 값만. 서명 이미지는 car-files 버킷 sign/<id>.png
+create table sign_docs (
+  id             uuid primary key default gen_random_uuid(),
+  kind           text not null default '비사업용확인서',
+  car_no         text not null,
+  car_name       text not null,
+  name           text not null,
+  ssn_masked     text,
+  address        text not null,
+  phone          text not null,
+  biz_no         text,
+  agreed         boolean not null default false,
+  signature_path text,                                   -- car-files 버킷 경로
+  car_id         uuid references cars(id) on delete set null,   -- 같은 번호판의 우리 차 (있으면 자동 연결)
+  ua             text,
+  ip             text,
+  checked_at     timestamptz,                            -- 사무실에서 확인한 때 (대시보드 '새 서류'에서 빠짐)
+  checked_by     uuid references auth.users(id),
+  created_at     timestamptz not null default now()
+);
+create index sign_docs_created on sign_docs (created_at desc);
+alter table sign_docs enable row level security;
+create policy office_all on sign_docs for all to authenticated using (is_office()) with check (is_office());
+
+alter table pii_ssn drop constraint pii_ssn_target_check;
+alter table pii_ssn add constraint pii_ssn_target_check check (target in ('car_seller', 'buyer', 'dealer', 'sign_doc'));
+
+-- 서버 함수(sign)만 부른다: 접수 + 주민번호 암호화 + 번호판으로 차 연결을 한 번에. 공개 키로는 못 부르게 막는다.
+create or replace function sign_submit(p jsonb, p_ssn text) returns uuid
+language plpgsql security definer set search_path = public, extensions as $$
+declare nid uuid; cid uuid;
+begin
+  select id into cid from cars
+   where deleted_at is null and regexp_replace(plate, '\s', '', 'g') = regexp_replace(p->>'car_no', '\s', '', 'g')
+   order by purchase_date desc limit 1;
+  insert into sign_docs (car_no, car_name, name, ssn_masked, address, phone, biz_no, agreed, car_id, ua, ip)
+  values (p->>'car_no', p->>'car_name', p->>'name', _mask_ssn(p_ssn), p->>'address', p->>'phone', nullif(p->>'biz_no', ''),
+          coalesce((p->>'agreed')::boolean, false), cid, left(p->>'ua', 300), p->>'ip')
+  returning id into nid;
+  insert into pii_ssn (target, target_id, enc) values ('sign_doc', nid, pgp_sym_encrypt(p_ssn, _ssn_key()));
+  return nid;
+end $$;
+revoke all on function sign_submit(jsonb, text) from public, anon, authenticated;
+
+-- 확인서 지우면 암호문도 같이
+create or replace function sign_docs_cleanup() returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  delete from pii_ssn where target = 'sign_doc' and target_id = old.id;
+  return old;
+end $$;
+create trigger sign_docs_cleanup after delete on sign_docs for each row execute function sign_docs_cleanup();
