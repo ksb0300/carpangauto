@@ -35,7 +35,7 @@ export function BrokeragePage({ app }) {
       <tbody><tr><th>합계</th><td class="r">${shown.length}</td>${W(sum("fee"))}${W(sum("supply"))}${W(sum("tax_total"))}${W(sum("payout"))}</tr></tbody></table></div>`}
     ${!all ? html`<${Loading} />` : !shown.length ? html`<${Empty}>이 기간 알선 건이 없습니다.<//>` : html`
     <div class="table-wrap"><table class=${"grid" + (office ? " click" : "")}>
-      <thead><tr><th>알선일</th><th>딜러</th><th>항목</th><th>차량</th><th>고객/상사</th><th class="r">수수료</th><th class="r">공제</th>
+      <thead><tr><th>알선일</th><th>담당</th><th>항목</th><th>차량</th><th>고객/상사</th><th class="r">수수료</th><th class="r">공제</th>
         <th class="r">세액</th><th class="r">딜러지급</th><th>증빙</th>${office && html`<th></th>`}</tr></thead>
       <tbody>${shown.map(r => html`<tr onClick=${() => office && setEdit(r)}>
         <td>${r.sale_date}</td><td>${dealer[r.dealer_id]?.name || "-"}</td><td>${r.item}</td>

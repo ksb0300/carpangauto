@@ -268,7 +268,7 @@ export function 대표차량손익(data, from, to) {
 
 /** 대표별 실적 — 매입은 제시일, 매도·손익은 매도일 기준. 재고는 기준일 현재 */
 export function 대표별실적(data, from, to, 오늘 = to) {
-  const partners = (data.dealers || []).filter(d => d.partner);
+  const partners = (data.dealers || []).filter(d => d.partner).sort((a, b) => (a.joint ? 1 : 0) - (b.joint ? 1 : 0));   // 공동매입은 맨 끝
   const cars = live(data.cars), sold = 대표차량손익(data, from, to);
   const rows = partners.map(d => {
     const mine = cars.filter(c => c.dealer_id === d.id);
@@ -280,7 +280,7 @@ export function 대표별실적(data, from, to, 오늘 = to) {
     const 알선수익 = 알선.reduce((t, b) => t + n(b.base_amount) - n(b.payout), 0);   // 대표 알선은 지급 0 → 수수료(공제 후) 전액
     const 차량손익 = 매도.reduce((t, r) => t + r.손익, 0);
     const 손익 = 차량손익 + 알선수익;
-    return { dealer_id: d.id, 이름: d.name, 차량손익, 알선건수: 알선.length, 알선수익,
+    return { dealer_id: d.id, 이름: d.name, 공동: !!d.joint, 차량손익, 알선건수: 알선.length, 알선수익,
       매입대수: 매입.length, 매입금액: 매입.reduce((t, c) => t + n(c.purchase_amount), 0),
       매도대수: 매도.length, 매도금액: 매도.reduce((t, r) => t + n(r.sale.sale_amount), 0),
       세전손익: 매도.reduce((t, r) => t + r.세전손익, 0), 손익, 대당손익: 매도.length ? Math.round(차량손익 / 매도.length) : 0,
@@ -295,7 +295,7 @@ export function 대표별실적(data, from, to, 오늘 = to) {
 /** 수익 배분: 회사 순이익(대표 손익 + 딜러 관련 상사 수익 + 기타 − 운영비)을 대표 수로 똑같이 나눈다 */
 export function 수익배분(data, from, to, 오늘 = to) {
   const s = 종합현황(data, from, to, 오늘);
-  const 대표수 = (data.dealers || []).filter(d => d.partner && d.active !== false).length;
+  const 대표수 = (data.dealers || []).filter(d => d.partner && !d.joint && d.active !== false).length;   // 공동매입은 사람이 아니다
   return { 상사수익: s.상사수익, 수익합계: s.수익합계, 운영비: s.운영비, 순이익: s.운영이익, 대표수,
     인당: 대표수 ? Math.floor(s.운영이익 / 대표수) : 0 };
 }

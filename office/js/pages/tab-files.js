@@ -2,7 +2,7 @@
 import { html, useState, useEffect, Select, run, toast, ask } from "../ui.js";
 import { q } from "../db.js";
 
-const KINDS = ["제시", "매도", "정산", "성능", "기타"];
+const KINDS = [["제시", "매입"], ["매도", "매도"], ["정산", "정산"], ["성능", "성능"], ["기타", "기타"]];   // 값은 그대로(DB), 화면엔 매입
 const MAX = 20 * 1024 * 1024;
 const safe = s => s.replace(/[^\w.\-가-힣]/g, "_").slice(-80);
 
@@ -55,7 +55,7 @@ export function FilesTab({ app, car, office }) {
   if (!files) return null;
   return html`<div class="card">
     <div class="bar"><h3>첨부서류</h3><span class="muted small">${files.length}개</span></div>
-    ${office && html`<div class="row" style="margin-bottom:8px"><span class="muted small">구분</span><${Select} value=${kind} onChange=${setKind} options=${KINDS} /></div>
+    ${office && html`<div class="row" style="margin-bottom:8px; max-width:320px"><span class="muted small">구분</span><${Select} value=${kind} onChange=${setKind} options=${KINDS} /></div>
       <label class=${"dropzone" + (drag ? " on" : "")} onDragOver=${e => { e.preventDefault(); setDrag(true); }} onDragLeave=${() => setDrag(false)}
         onDrop=${e => { e.preventDefault(); setDrag(false); upload(e.dataTransfer.files); }}>
         ${busy ? "올리는 중…" : "여기로 끌어다 놓거나 눌러서 고르세요 (사진·PDF, 20MB 이하)"}
@@ -63,7 +63,7 @@ export function FilesTab({ app, car, office }) {
     ${!files.length ? html`<p class="muted">첨부된 서류가 없습니다.</p>` : html`<div class="files">${files.map(f => html`<div class="file">
       ${urls[f.id] ? html`<img src=${urls[f.id]} alt=${f.name} onClick=${() => open(f)} />` : html`<div class="muted small">${(f.mime || "").split("/")[1] || "파일"}</div>`}
       <b class="small ellipsis" title=${f.name}>${f.name}</b>
-      <span class="muted small">${f.kind} · ${f.created_at.slice(0, 10)} · ${Math.ceil((f.size || 0) / 1024)}KB</span>
+      <span class="muted small">${f.kind === "제시" ? "매입" : f.kind} · ${f.created_at.slice(0, 10)} · ${Math.ceil((f.size || 0) / 1024)}KB</span>
       <div class="row"><button class="btn sm" onClick=${() => open(f)}>열기</button>${office && html`<button class="btn sm ghost" onClick=${() => remove(f)}>삭제</button>`}</div>
     </div>`)}</div>`}
   </div>`;

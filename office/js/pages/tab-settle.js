@@ -85,7 +85,7 @@ function PartnerSettle({ app, car, costs, loans, sale, settlement, reload, offic
         ${Number(sale.installment_income) ? L("할부금융 수익", sale.installment_income, `할부 ${won(sale.installment_amount)} × ${Number(sale.installment_rate)}% − 원천징수 ${won(sale.installment_tax)}`) : ""}
         ${f.other_revenue.filter(x => Number(x.금액)).map(x => L(x.항목 || "기타매출", x.금액))}
         ${L("매출 합계", r.매출.금액, `공급가 ${won(r.매출.공급가)} / 부가세 ${won(r.매출.부가세)}`, "em")}
-        ${L("제시금액", -r.제시.금액, car.evidence === "계산서" ? "계산서 — 매입세액 공제 없음" : `${car.evidence} — 매입세액 ${won(r.제시.부가세)} 공제`)}
+        ${L("매입가", -r.제시.금액, car.evidence === "계산서" ? "계산서 — 매입세액 공제 없음" : `${car.evidence} — 매입세액 ${won(r.제시.부가세)} 공제`)}
         ${L("상품화비용", -r.C.금액, `${costs.length}건`)}
         ${r.이자 ? L("재고금융 이자(캐피탈)", -r.이자, "실행일 ~ 매도일") : ""}
         ${L("차량 손익 (실적)", r.손익, "부가세는 빼지 않음", "em")}

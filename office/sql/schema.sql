@@ -1052,3 +1052,18 @@ create or replace function set_dashboard(p_layout jsonb) returns void
 language sql security definer set search_path = public as
 $$ update profiles set dashboard = p_layout where user_id = auth.uid() $$;
 grant execute on function set_dashboard(jsonb) to authenticated;
+
+
+-- 20261004000001_joint_purchase.sql
+-- 매입담당 '공동매입' — 대표들이 같이 산 차. 대표 차와 같은 규칙(상사매입비·원천징수 없음),
+-- 실적은 '공동매입' 줄로 따로 보이고 수익 배분 인원(대표 수)에는 들어가지 않는다.
+alter table dealers add column joint boolean not null default false;
+comment on column dealers.joint is '공동매입 (대표들이 같이 산 차) — partner=true 와 함께 쓴다';
+insert into dealers (name, kind, partner, joint)
+select '공동매입', '사업자', true, true where not exists (select 1 from dealers where joint);
+
+
+-- 20261004000002_insp_renew.sql
+-- 성능점검 연장(재점검) 표시: 연장한 날부터 90일을 다시 센다 (그 전엔 만료 임박 목록에서 빠짐)
+alter table car_inspections add column renewed_on date;
+comment on column car_inspections.renewed_on is '성능점검 연장(재점검)한 날 — 경과일은 이 날부터, expire_date 도 같이 늘린다';

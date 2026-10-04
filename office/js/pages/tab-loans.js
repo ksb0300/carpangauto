@@ -1,7 +1,7 @@
 import { html, useState, useEffect, Money, Field, Select, Seg, run, won, today, toast } from "../ui.js";
 import { q } from "../db.js";
 import { 대출이자, 미납이자, 대출상태, 연장조건, 해지수수료, 재고금융이자 } from "../calc.js";
-import { 조건요약, 할일 } from "./lenders.js";
+import { 조건요약, 할일, extendLoan } from "./lenders.js";
 
 const MONTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 24, 36];
 const addMonths = (d, m) => { const x = new Date(d + "T00:00:00Z"); x.setUTCMonth(x.getUTCMonth() + Number(m)); return x.toISOString().slice(0, 10); };
@@ -9,6 +9,7 @@ const addMonths = (d, m) => { const x = new Date(d + "T00:00:00Z"); x.setUTCMont
 export function LoansTab({ app, car, loans, reload, locked, office }) {
   const [adding, setAdding] = useState(false);
   const edit = office && !locked;
+  const partnerCar = !!app.dealers.find(d => d.id === car.dealer_id)?.partner;   // 대표 차는 딜러 이자·이자마진이 없다
   const loanOf = l => ({ 대출금액: l.amount, 딜러이율: l.dealer_rate, 개월: l.months, 실행일: l.start_date,
     납입이자누계: l.payments.reduce((s, p) => s + Number(p.amount), 0) });
 
@@ -33,29 +34,7 @@ export function LoansTab({ app, car, loans, reload, locked, office }) {
     await run(() => q(app.db.from("loan_payments").delete().eq("id", p.id)), "납입 기록을 지웠습니다");
     reload();
   };
-  const extend = async l => {
-    const lender = app.lenders.find(x => x.id === l.lender_id), c = 연장조건(l, lender);
-    let m, 상환 = 0;
-    if (c.가능) {
-      // 금융사 조건대로: 기본 만기일부터 연장, 연장 전 원금 일부 상환, 연장분 이율
-      const 안내 = `${lender.name} 조건으로 ${c.개월}개월 연장합니다.
-연장 시작 ${c.시작일}` + (c.상환필요 ? `
-먼저 원금 ${won(c.상환필요)}원(${Number(lender.ext_repay_pct)}%)을 상환해야 합니다.` : "")
-        + (c.이율 != null && Number(c.이율) !== Number(l.lender_rate) ? `
-연장분 이율 ${Number(c.이율)}%` : "");
-      if (!confirm(안내)) return;
-      m = c.개월; 상환 = c.상환필요;
-    } else {
-      m = Number(String(window.prompt(`${lender?.name || ""}: 금융사 연장 조건이 없거나 이미 연장했습니다.
-${l.months}개월 → 몇 개월 연장할까요? (수동)`, "") || "").replace(/\D/g, ""));
-      if (!m) return;
-    }
-    const s = 대출상태(l, today());
-    await run(() => q(app.db.from("car_loans").update({ months: l.months + m, extended_months: (l.extended_months || 0) + m,
-      ext_start: l.ext_start || s.기본만기, ext_rate: c.가능 ? c.이율 : l.ext_rate, principal_repaid: Number(l.principal_repaid || 0) + 상환,
-      memo: [l.memo, `${today()} ${m}개월 연장${상환 ? ` (원금 ${won(상환)} 상환)` : ""}`].filter(Boolean).join(" / ") }).eq("id", l.id)), `${m}개월 연장했습니다`);
-    reload();
-  };
+  const extend = async l => { if (await extendLoan(app, l)) reload(); };
   const remove = async l => {
     if (!confirm("이 재고금융을 삭제할까요? 이자납입 기록도 함께 지워집니다.")) return;
     await run(() => q(app.db.from("car_loans").delete().eq("id", l.id)), "삭제했습니다");
@@ -83,10 +62,11 @@ ${l.months}개월 → 몇 개월 연장할까요? (수동)`, "") || "").replace(
           <div><span>캐피탈이율</span><b>${l.lender_rate ?? "-"}%${st.연장됨 && l.ext_rate != null && Number(l.ext_rate) !== Number(l.lender_rate) ? ` → ${Number(l.ext_rate)}%` : ""}</b><small>${done ? "낸" : "오늘까지"} 이자 ${won(쌓인이자)}</small></div>
           ${Number(l.principal_repaid) > 0 && html`<div><span>연장 때 상환</span><b>${won(l.principal_repaid)}</b><small>잔액 ${won(st.원금잔액)}</small></div>`}
           ${l.repay_fee != null && html`<div><span>상환해지수수료</span><b>${won(l.repay_fee)}</b></div>`}
-          <div><span>딜러이율</span><b>${l.dealer_rate}%</b><small>일 ${won(dl.일이자)} · 월 ${won(dl.월이자)} · 총 ${won(dl.총이자)}</small></div>
+          ${!partnerCar && html`<div><span>딜러이율</span><b>${l.dealer_rate}%</b><small>일 ${won(dl.일이자)} · 월 ${won(dl.월이자)} · 총 ${won(dl.총이자)}</small></div>
           <div><span>이자마진(총)</span><b>${won(dl.총이자 - cp.총이자)}</b></div>
           <div><span>납입이자</span><b>${won(paid)}</b><small>${l.payments.length}건</small></div>
-          <div><span>오늘까지 미납</span><b class=${due ? "red" : ""}>${won(due)}</b></div>
+          <div><span>오늘까지 미납</span><b class=${due ? "red" : ""}>${won(due)}</b></div>`}
+
         </div>
         ${l.payments.length > 0 && html`<div class="muted small">납입: ${l.payments.map((p, i) => html`${i ? " · " : ""}${p.paid_date} ${won(p.amount)}${edit && !done &&
           html` <button class="btn sm ghost" title="이 납입 기록 삭제" onClick=${() => removePay(p)}>✕</button>`}`)}</div>`}

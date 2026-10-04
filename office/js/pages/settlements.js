@@ -22,7 +22,7 @@ export function Settlements({ app }) {
     setData(st.filter(s => s.mode !== "대표").map(s => ({ ...s, car: car[s.car_id], sale: sale[s.car_id] })).filter(s => s.car));
   }); }, []);
 
-  const dateOf = r => ({ 정산일: r.settle_date, 매도일: r.sale?.sale_date, 제시일: r.car.purchase_date }[key]);
+  const dateOf = r => ({ 정산일: r.settle_date, 매도일: r.sale?.sale_date, 매입일: r.car.purchase_date }[key]);
   const rows = useMemo(() => (data || []).filter(r => {
     const d = dateOf(r), owner = r.sale?.dealer_id || r.car.dealer_id;
     return d >= period.from && d <= period.to && (only === "전체" || (only === "완료" ? r.finalized : !r.finalized))
@@ -44,19 +44,19 @@ export function Settlements({ app }) {
     <div class="bar">
       <input class="search" placeholder="차량번호·차명" value=${text} onInput=${e => setText(e.target.value)} />
       <${Select} value=${dealerF} onChange=${setDealerF} empty="매입담당 전체" options=${app.dealers.map(d => [d.id, d.name])} />
-      <${Select} value=${key} onChange=${setKey} options=${["정산일", "매도일", "제시일"]} />
+      <${Select} value=${key} onChange=${setKey} options=${["정산일", "매도일", "매입일"]} />
       <${Period} value=${period} onChange=${setPeriod} />
       <${Seg} value=${only} onChange=${setOnly} options=${["완료", "임시", "전체"]} />
     </div>
     ${!data ? html`<${Loading} />` : html`
     <div class="card"><h3>정산금액 종합현황 <span class="muted small">(선택조건 내 합계)</span></h3>
-      <div class="table-wrap"><table class="grid sumtable"><thead><tr><th class="r">제시금액</th><th class="r">매도금액</th><th class="r">정산과세금액</th><th class="r">소득금액</th>
+      <div class="table-wrap"><table class="grid sumtable"><thead><tr><th class="r">매입가</th><th class="r">매도금액</th><th class="r">정산과세금액</th><th class="r">소득금액</th>
         <th class="r">정산금액(세후)</th><th class="r">딜러지급액</th><th class="r">알선딜러지급액</th><th class="r">건수</th></tr></thead>
         <tbody><tr>${W(sum("purchase_total"))}${W(sum("sale_total"))}${W(sum("base_amount"))}${W(sum("income_amount"))}${W(sum("net_income"))}${W(sum("payout"))}${W(sum("broker_payout"))}
           <td class="r"><b>${rows.length}건</b></td></tr></tbody></table></div></div>
     ${!rows.length ? html`<${Empty}>조건에 맞는 정산 내역이 없습니다.<//>` : html`
     <div class="table-wrap"><table class="grid click">
-      <thead><tr><th>제시일</th><th>매도일</th><th>정산일</th><th>구분</th><th>차량번호</th><th>차명</th><th>딜러명</th><th class="r">제시금액</th><th class="r">매도금액</th>
+      <thead><tr><th>매입일</th><th>매도일</th><th>정산일</th><th>구분</th><th>차량번호</th><th>차명</th><th>딜러명</th><th class="r">매입가</th><th class="r">매도금액</th>
         <th class="r">정산과세금액</th><th class="r">소득금액</th><th class="r">정산금액</th><th class="r">딜러지급액</th><th class="r">알선딜러지급액</th></tr></thead>
       <tbody>${rows.map(r => html`<tr onClick=${() => go(`/car/${r.car_id}/settle`)}>
         <td>${r.car.purchase_date}</td><td>${r.sale?.sale_date || ""}</td><td>${r.settle_date}</td>

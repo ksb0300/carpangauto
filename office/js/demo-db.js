@@ -240,6 +240,14 @@ export async function createDemoClient() {
             const { handleAccount } = await import("./shared/account-actions.js");
             return { data: { data: await handleAccount(body.action, body, { admin: demoAdmin, db: client, role, uid: client.uid }) }, error: null };
           }
+          if (name === "news") {   // 데모: 바깥 뉴스를 못 읽으니 예시 기사
+            const now = Date.now(), h = n => new Date(now - n * 3600_000).toISOString();
+            return { data: { data: [
+              { title: "(예시) 중고차 수출 9월 역대 최대… 중동·중앙아시아 수요 견조", link: "https://news.google.com", source: "예시일보", date: h(2) },
+              { title: "(예시) 수입 중고차 시세 하락세 둔화, 전기차는 여전히 약세", link: "https://news.google.com", source: "예시경제", date: h(6) },
+              { title: "(예시) 캐피탈사 재고금융 금리 동결… 딜러 부담 지속", link: "https://news.google.com", source: "예시모터스", date: h(20) },
+            ] }, error: null };
+          }
           return { data: null, error: { message: "없는 함수: " + name } };
         } catch (e) { return { data: { error: e.message }, error: null }; }
       },

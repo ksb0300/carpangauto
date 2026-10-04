@@ -198,3 +198,33 @@ a.stat { color: inherit; } a.stat:hover { border-color: var(--pri); }
 .dash-grid > div > .card, .dash-grid > div > div { margin-bottom: 16px; }
 @media (max-width: 900px) { .dash-grid { grid-template-columns: 1fr; } }
 .dash-edit .row.line { border-bottom: 1px solid var(--line2); padding: 4px 0; } .dash-edit .row.line > * { flex: 0 0 auto; } .dash-edit .grow { flex: 1; }
+/* 입력 칸 안의 선택 버튼(예/아니오 등)은 칸 너비를 똑같이 나눈다 */
+.field .seg { display: flex; } .field .seg button { flex: 1 1 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* 합계표: 머리글도 숫자처럼 오른쪽 정렬해 칸을 맞춘다 */
+.sumtable td { text-align: right; } .sumtable th:first-child { text-align: left; }
+/* 매입처 수수료 편집: 이름은 넓게, 금액은 고정 폭 */
+.channel-row > .money { flex: 0 0 200px; } .channel-row > .btn { flex: 0 0 auto; }
+/* 항목명은 줄바꿈하지 않고, 긴 값만 줄바꿈 */
+.kvgrid > div > span { white-space: nowrap; flex: 0 0 auto; } .kvgrid > div > b { min-width: 0; overflow-wrap: anywhere; }
+/* 한 줄 안의 작은 안내 글자는 늘어나지 않게 */
+.row > span.small, .row > span.muted { flex: 0 0 auto; }
+/* 휴대폰: 메뉴줄이 화면 폭을 밀어내지 않게 (메뉴만 옆으로 넘김) */
+.top nav { min-width: 0; } .page { min-width: 0; }
+@media (max-width: 760px) { .top nav { order: 3; flex: 1 1 100%; } .kvgrid { grid-template-columns: 1fr; } }
+/* 대시보드 위젯 편집: 끌어서 옮기기 */
+.dash-grid.editing .dash-item { position: relative; cursor: grab; outline: 2px dashed #c7d2fe; outline-offset: 4px; border-radius: var(--radius); margin-bottom: 16px; }
+.dash-grid.editing .dash-item > :not(.dash-handle) { pointer-events: none; opacity: .85; }
+.dash-grid.editing .dash-item.dragging { opacity: .4; }
+.dash-handle { display: flex; align-items: center; gap: 6px; background: #eef2ff; color: #3730a3; font-weight: 600; font-size: 13px; padding: 6px 10px; border-radius: 8px; margin-bottom: 6px; }
+.dash-handle .grow { flex: 1; }
+.dash-tray { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.grid td select { min-width: 96px; }
+/* 통계 */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 16px; } .stats-grid .card { margin: 0; }
+.statbars th { width: 110px; white-space: nowrap; font-weight: 500; } .statbars td:nth-child(2) { width: 45%; }
+.statbar { height: 12px; background: #eef0f3; border-radius: 99px; overflow: hidden; } .statbar i { display: block; height: 100%; background: var(--pri); border-radius: 99px; }
+.statbar i.neg { background: var(--red); }
+@media (max-width: 520px) { .stats-grid { grid-template-columns: 1fr; } }
+.newslist { list-style: none; margin: 0; padding: 0; } .newslist li { padding: 7px 0; border-bottom: 1px solid var(--line2); display: flex; flex-direction: column; gap: 2px; }
+.newslist li:last-child { border-bottom: 0; } .newslist a { color: var(--ink); } .newslist a:hover { color: var(--pri); text-decoration: underline; }
+.news .bar select { width: auto; }

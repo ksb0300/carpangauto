@@ -3,6 +3,7 @@ import { DEMO } from "./config.js";
 
 export const popbill = (db, action, args = {}) => callFn(db, "popbill", action, args);
 export const accounts = (db, action, args = {}) => callFn(db, "accounts", action, args);
+export const news = (db, q) => callFn(db, "news", "list", { q });
 
 /** 서버 함수 호출 — 실패 이유를 그대로 던진다 */
 export async function callFn(db, name, action, args = {}) {

@@ -79,6 +79,6 @@ export function CostsTab({ app, car, costs, reload, locked, office }) {
       <div class="strong"><span>총계 ${all.n}건</span><b>${won(all.a)}</b><small>공급가 ${won(all.s)} · 부가세 ${won(all.v)}</small></div>
     </div>
     <p class="note">지출구분 <b>상사</b> + 정산반영이면 상사가 대신 낸 돈으로 보고 정산 때 딜러 지급액에서 상계합니다.
-      상사매입비·취득세 행은 제시정보에서 금액을 바꾸면 자동으로 따라갑니다.</p>
+      상사매입비·취득세·매입수수료 행은 차량정보에서 바꾸면 자동으로 따라갑니다.</p>
   </div>`;
 }

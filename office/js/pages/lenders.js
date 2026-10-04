@@ -18,6 +18,28 @@ export function 조건요약(x) {
   return parts.join(" · ");
 }
 
+/** 연장 — 금융사 조건대로(기본 만기일부터, 연장 전 원금 상환, 연장분 이율). 조건이 없거나 이미 연장했으면 개월 수를 물어 수동 연장.
+ *  이미 은행에서 연장해 둔 것도 이 버튼으로 기록한다 (먼저 갚은 원금은 실제 금액으로 고칠 수 있다). 성공하면 true */
+export async function extendLoan(app, l) {
+  const lender = app.lenders.find(x => x.id === l.lender_id), c = 연장조건(l, lender);
+  let m, 상환 = 0;
+  if (c.가능) {
+    if (c.상환필요) {
+      const v = window.prompt(`${lender.name} ${c.개월}개월 연장 (연장 시작 ${c.시작일})\n연장 전에 갚은 원금 (조건: ${Number(lender.ext_repay_pct)}% = ${won(c.상환필요)}원)`, String(c.상환필요));
+      if (v == null) return false;
+      상환 = Number(String(v).replace(/\D/g, "")) || 0;
+    } else if (!window.confirm(`${lender.name} 조건으로 ${c.개월}개월 연장합니다. (연장 시작 ${c.시작일})`)) return false;
+    m = c.개월;
+  } else {
+    m = Number(String(window.prompt(`${lender?.name || ""}: 금융사 연장 조건이 없거나 이미 연장했습니다.\n${l.months}개월 → 몇 개월 연장할까요? (수동)`, "") || "").replace(/\D/g, ""));
+    if (!m) return false;
+  }
+  const s = 대출상태(l, today());
+  return !!(await run(() => q(app.db.from("car_loans").update({ months: l.months + m, extended_months: (l.extended_months || 0) + m,
+    ext_start: l.ext_start || s.기본만기, ext_rate: c.가능 ? c.이율 : l.ext_rate, principal_repaid: Number(l.principal_repaid || 0) + 상환,
+    memo: [l.memo, `${today()} ${m}개월 연장${상환 ? ` (원금 ${won(상환)} 상환)` : ""}`].filter(Boolean).join(" / ") }).eq("id", l.id)), `${m}개월 연장했습니다`));
+}
+
 /** 대출 한 건의 '다음 할 일' */
 export function 할일(l, lender, t) {
   const s = 대출상태(l, t), c = 연장조건(l, lender);
@@ -30,7 +52,9 @@ export function 할일(l, lender, t) {
 
 export function LenderOverview({ app }) {
   const [d, setD] = useState(null);
-  useEffect(() => { run(async () => setD(await loadAll(app.db))); }, []);
+  const load = () => run(async () => setD(await loadAll(app.db)));
+  useEffect(() => { load(); }, []);
+  const ext = async (e, l) => { e.stopPropagation(); if (await extendLoan(app, l)) load(); };
   if (!d) return html`<${Loading} />`;
   const t = today();
   const car = Object.fromEntries(d.cars.filter(c => !c.deleted_at).map(c => [c.id, c]));
@@ -47,7 +71,7 @@ export function LenderOverview({ app }) {
       <div class="stat"><span>오늘까지 쌓인 이자</span><b>${won(이자)}</b><small>실행일부터 일할</small></div>
       <div class=${"stat" + (급함 ? " warn" : "")}><span>연장·상환 챙길 것 (2주 안)</span><b>${급함}건</b></div>
     </div>
-    ${lenders.map(x => {
+    ${lenders.filter(x => cnt(x.id) || n(x.credit_limit)).map(x => {
       const mine = act.filter(l => l.lender_id === x.id).sort((a, b) => 대출상태(a, t).만기.localeCompare(대출상태(b, t).만기));
       const used = mine.reduce((s, l) => s + n(l.amount) - n(l.principal_repaid), 0) + n(x.existing_amount), lim = n(x.credit_limit);
       return html`<div class="card lender">
@@ -56,14 +80,18 @@ export function LenderOverview({ app }) {
           <button class="btn sm" onClick=${() => go(`/loans/lender/${x.id}`)}>조건 설정</button></div>
         <p class="note" style="margin-top:0">${조건요약(x)}${x.rule_memo ? ` — ${x.rule_memo}` : ""}</p>
         ${!mine.length ? html`<p class="muted small">진행중 대출 없음</p>` : html`<div class="table-wrap"><table class="grid click">
-          <thead><tr><th>차량</th><th class="r">대출(잔액)</th><th>실행일</th><th>단계</th><th>만기</th><th class="r">이율</th><th class="r">오늘까지 이자</th><th class="r">지금 갚으면 해지수수료</th><th>다음 할 일</th></tr></thead>
+          <thead><tr><th>차량</th><th class="r">대출(잔액)</th><th>실행일</th><th>단계</th><th>만기</th><th class="r">이율</th><th class="r">오늘까지 이자</th><th class="r">지금 갚으면 해지수수료</th><th>다음 할 일</th><th></th></tr></thead>
           <tbody>${mine.map(l => { const s = 대출상태(l, t), h = 할일(l, x, t), c = car[l.car_id];
             return html`<tr onClick=${() => go(`/car/${c.id}/loans`)}><td><b>${c.plate}</b> <span class="small">${c.car_name}</span></td>
               ${W(s.원금잔액)}<td>${l.start_date}</td><td>${s.단계}</td><td>${s.만기}</td>
               <td class="r">${s.연장됨 && l.ext_rate != null ? `${Number(l.ext_rate)}%` : `${Number(l.lender_rate ?? 0)}%`}</td>
-              ${W(재고금융이자(l, l.start_date, t))}${W(해지수수료(l, x, t))}<td><span class=${"badge " + h.tone}>${h.text}</span></td></tr>`; })}</tbody></table></div>`}
+              ${W(재고금융이자(l, l.start_date, t))}${W(해지수수료(l, x, t))}<td><span class=${"badge " + h.tone}>${h.text}</span></td>
+              <td>${app.profile.role !== "dealer" && html`<button class="btn sm" onClick=${e => ext(e, l)}>연장</button>`}</td></tr>`; })}</tbody></table></div>`}
       </div>`;
     })}
+    ${(rest => rest.length > 0 && html`<div class="card"><h3>대출 없는 금융사</h3><table class="st"><tbody>${rest.map(x => html`<tr>
+      <th>${x.name}${!x.active ? html` <span class="badge gray">사용 안 함</span>` : ""}</th><td class="note">${조건요약(x)}${x.rule_memo ? ` — ${x.rule_memo}` : ""}</td>
+      <td class="r"><button class="btn sm" onClick=${() => go(`/loans/lender/${x.id}`)}>조건 설정</button></td></tr>`)}</tbody></table></div>`)(lenders.filter(x => !cnt(x.id) && !n(x.credit_limit)))}
     <p class="note">이자는 실행일부터 오늘까지 일할(연장 구간은 먼저 갚은 원금을 뺀 잔액 × 연장분 이율)입니다. 금융사 조건은 '조건 설정'에서 바꾸고, 새로 실행하는 대출부터 적용됩니다.</p>`;
 }
 

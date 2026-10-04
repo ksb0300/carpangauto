@@ -57,7 +57,7 @@ export function CarList({ app, query }) {
     ${!shown.length ? html`<${Empty}>${rows.length ? "조건에 맞는 차량이 없습니다." : "등록된 차량이 없습니다."}<//>` : html`
     <div class="table-wrap"><table class="grid click">
       <thead><tr>
-        <th>제시일</th><th>번호판</th><th>차명</th><th>딜러</th><th class="r">제시금액</th><th class="r">상품화비</th>
+        <th>매입일</th><th>번호판</th><th>차명</th><th>매입담당</th><th class="r">매입가</th><th class="r">상품화비</th>
         <th class="r">재고금융</th><th class="r">매도금액</th><th>매도일</th><th>정산</th>
       </tr></thead>
       <tbody>${shown.map(r => html`<tr onClick=${() => go("/car/" + r.id)}>

@@ -33,11 +33,11 @@ function Ops({ app }) {
       <${Field} label="엔카믿고 매도비" hint="판매유형이 엔카믿고일 때"><${Money} value=${f.sale_fee_encar} onInput=${set("sale_fee_encar")} /><//>
       <${Field} label="딜러 정산 13.3% 처리" hint=${f.settle_method === "일괄" ? "마진에서 13.3% 일률 적용" : "10% 예수부가세 처리 후 나머지에서 3.3%"}>
         <${Seg} value=${f.settle_method} onChange=${set("settle_method")} options=${["일괄", "분할"]} /><//>
-      <${Field} label="현금영수증 발행형태" hint="차량 → 매출증빙에서 발행대기를 만들 때"><${Seg} value=${f.cash_issue_form} onChange=${set("cash_issue_form")} options=${[["건별", "차량대금·매도비·보험료 각각"], ["합산", "합산 1장"]]} /><//>
+      <${Field} label="현금영수증 발행형태" hint="차량 → 매출증빙에서 발행대기를 만들 때"><${Seg} value=${f.cash_issue_form} onChange=${set("cash_issue_form")} options=${[["건별", "건별 (각각)"], ["합산", "합산 1장"]]} /><//>
     </div>
     <h3>매입처 · 매입수수료</h3>
     <p class="note">차량 등록 때 매입처를 고르면 수수료가 상품화비용에 '매입수수료'로 자동으로 들어갑니다 (0원이면 안 들어감).</p>
-    ${(f.purchase_channels || []).map((c, i) => html`<div class="row line">
+    ${(f.purchase_channels || []).map((c, i) => html`<div class="row line channel-row">
       <input placeholder="매입처" value=${c.name} onInput=${e => set("purchase_channels")(f.purchase_channels.map((x, j) => j === i ? { ...x, name: e.target.value } : x))} />
       <${Money} value=${c.fee} onInput=${v => set("purchase_channels")(f.purchase_channels.map((x, j) => j === i ? { ...x, fee: v } : x))} />
       <button type="button" class="btn sm ghost" onClick=${() => set("purchase_channels")(f.purchase_channels.filter((_, j) => j !== i))}>✕</button></div>`)}
@@ -52,7 +52,7 @@ function Dealers({ app }) {
     <div class="bar"><h3>대표·딜러 (매입담당)</h3><span class="grow"></span><button class="btn primary" onClick=${() => setEdit({ name: "", kind: "사업자", active: true, partner: false })}>+ 추가</button></div>
     ${edit && html`<${DealerForm} app=${app} d=${edit} onDone=${() => setEdit(null)} />`}
     <div class="table-wrap"><table class="grid click"><thead><tr><th>이름</th><th>역할</th><th>구분</th><th>주민번호</th><th>사업자번호</th><th>연락처</th><th>계좌</th><th>상태</th></tr></thead>
-      <tbody>${app.dealers.map(d => html`<tr onClick=${() => setEdit(d)}><td><b>${d.name}</b></td><td>${d.partner ? html`<span class="badge blue">공동대표</span>` : "딜러"}</td><td>${d.kind}</td><td>${d.ssn_masked || "-"}</td>
+      <tbody>${app.dealers.map(d => html`<tr onClick=${() => setEdit(d)}><td><b>${d.name}</b></td><td>${d.joint ? html`<span class="badge blue">공동매입</span>` : d.partner ? html`<span class="badge blue">공동대표</span>` : "딜러"}</td><td>${d.kind}</td><td>${d.ssn_masked || "-"}</td>
         <td>${d.biz_no || "-"}</td><td>${d.phone || "-"}</td><td>${d.bank ? `${d.bank} ${d.account_no || ""}` : "-"}</td>
         <td>${d.active ? "사용" : html`<span class="muted">중지</span>`}</td></tr>`)}</tbody></table></div>
     <p class="note"><b>공동대표</b> 차는 상사매입비·원천징수·딜러 정산 없이 차량 손익이 본인 실적이 됩니다(회사 수익은 대표 수로 똑같이 나눔).
@@ -188,7 +188,7 @@ function Accounts({ app }) {
         <td><input value=${r.name} onInput=${e => upd(i, "name", e.target.value)} /></td>
         <td class="small">${u.email || "-"}</td>
         <td><${Select} value=${r.role} onChange=${v => upd(i, "role", v)} options=${ROLES} /></td>
-        <td>${r.role === "admin" ? html`<${Select} value=${r.dealer_id} onChange=${v => upd(i, "dealer_id", v)} empty="선택" options=${app.dealers.filter(d => d.partner).map(d => [d.id, d.name])} />` : "-"}</td>
+        <td>${r.role === "admin" ? html`<${Select} value=${r.dealer_id} onChange=${v => upd(i, "dealer_id", v)} empty="선택" options=${app.dealers.filter(d => d.partner && !d.joint).map(d => [d.id, d.name])} />` : "-"}</td>
         <td class="small">${u.disabled ? html`<span class="badge red">중지</span>` : u.must_change ? html`<span class="badge amber">임시 비밀번호</span>` : html`<span class="badge green">사용</span>`}
           ${u.last_sign_in_at && html`<br /><span class="muted">${u.last_sign_in_at.slice(0, 16).replace("T", " ")}</span>`}</td>
         <td class="nowrap"><button class="btn sm" disabled=${me && r.role !== "admin"} onClick=${() => save(r)}>저장</button>
@@ -210,7 +210,7 @@ function NewAccount({ app, init, onDone }) {
     <${Field} label="이름" req><input value=${f.name} onInput=${set("name")} /><//>
     <${Field} label="역할" hint="공동대표: 상사매입비·원천징수 없음, 손익이 본인 실적"><${Seg} value=${f.partner ? "공동대표" : "딜러"} onChange=${v => setF(p => ({ ...p, partner: v === "공동대표" }))} options=${["공동대표", "딜러"]} /><//>
     <${Field} label="역할"><${Select} value=${f.role} onChange=${set("role")} options=${ROLES} /><//>
-    ${f.role === "admin" && html`<${Field} label="본인(대표)" hint="대시보드 '내 실적'에 쓰입니다"><${Select} value=${f.dealer_id} onChange=${set("dealer_id")} empty="선택" options=${app.dealers.filter(d => d.partner).map(d => [d.id, d.name])} /><//>`}
+    ${f.role === "admin" && html`<${Field} label="본인(대표)" hint="대시보드 '내 실적'에 쓰입니다"><${Select} value=${f.dealer_id} onChange=${set("dealer_id")} empty="선택" options=${app.dealers.filter(d => d.partner && !d.joint).map(d => [d.id, d.name])} /><//>`}
     <${Field} label="임시 비밀번호" hint="첫 로그인 때 본인이 바꿉니다"><input autocomplete="off" value=${f.password} onInput=${set("password")} /><//>
   </div><div class="actions"><button type="button" class="btn ghost" onClick=${() => onDone(null)}>닫기</button><button class="btn primary">만들기</button></div></form>`;
 }

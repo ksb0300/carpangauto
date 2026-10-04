@@ -7,7 +7,7 @@ import { EntryForm } from "./ledger.js";
 import { 미납이자, 대출이자 } from "../calc.js";
 import { monthRange } from "../ui.js";
 
-const OFFICE_TABS = [["partners", "대표별 실적"], ["share", "수익 배분"], ["withholding", "딜러원천징수현황"], ["total", "딜러별종합현황"], ["monthly-dealer", "딜러월별 수익"],
+const OFFICE_TABS = [["partners", "대표별 실적"], ["withholding", "딜러원천징수현황"], ["total", "딜러별종합현황"], ["monthly-dealer", "딜러월별 수익"],
   ["revenue", "상사매출관리"], ["expense", "상사매입관리"], ["operation", "상사운영보고서"], ["vat", "부가세"], ["purchases", "매입장"], ["summary", "종합현황"]];
 const DEALER_TABS = [["monthly-dealer", "내 월별 수익"], ["total", "내 종합현황"]];
 const DEFAULT_MODE = { vat: "분기", operation: "연", withholding: "월", "monthly-dealer": "연", partners: "월", share: "월" };
@@ -280,10 +280,10 @@ function Partners({ app, data, period }) {
   const shown = cars.filter(r => !who || r.dealer_id === who);
   const csv = () => downloadCsv(`대표별실적_${period.from}_${period.to}`, [["대표", "매입대수", "매입금액", "매도대수", "매도금액", "차량손익", "알선수익", "손익 합", "대당손익", "손실대수", "평균판매일", "재고대수", "재고금액", "평균재고일", "90일+재고", "손익비중%"],
     ...rows.map(r => [r.이름, r.매입대수, r.매입금액, r.매도대수, r.매도금액, r.차량손익, r.알선수익, r.손익, r.대당손익, r.손실대수, r.평균판매일, r.재고대수, r.재고금액, r.평균재고일, r.장기재고, r.비중 ?? ""]),
-    [], ["매도일", "대표", "차량번호", "차명", "매도금액", "제시금액", "상품화비", "이자", "손익", "판매일수"],
+    [], ["매도일", "대표", "차량번호", "차명", "매도금액", "매입가", "상품화비", "이자", "손익", "판매일수"],
     ...cars.map(r => [r.sale.sale_date, name(app, r.dealer_id), r.car.plate, r.car.car_name, r.sale.sale_amount, r.제시.금액, r.C.금액, r.이자, r.손익, r.재고일])]);
   if (!rows.length) return html`<${Empty}>공동대표가 없습니다. 환경설정 → 대표·딜러에서 역할을 '공동대표'로 지정하세요.<//>`;
-  return html`<div class="bar"><span class="muted small">매입은 제시일, 매도·손익은 매도일 기준 · 재고는 ${t} 현재 · 손익은 부가세 빼지 않음</span><span class="grow"></span><button class="btn" onClick=${csv}>엑셀(CSV)</button></div>
+  return html`<div class="bar"><span class="muted small">매입은 매입일, 매도·손익은 매도일 기준 · 재고는 ${t} 현재 · 손익은 부가세 빼지 않음</span><span class="grow"></span><button class="btn" onClick=${csv}>엑셀(CSV)</button></div>
     <div class="stat-grid">${rows.map(r => html`<a class=${"stat" + (who === r.dealer_id ? " on" : "")} onClick=${() => setWho(who === r.dealer_id ? null : r.dealer_id)}>
       <span>${r.이름}</span><b class=${r.손익 < 0 ? "red" : ""}>${won(r.손익)}</b>
       <small>매도 ${r.매도대수}대${r.알선건수 ? ` · 알선 ${r.알선건수}` : ""} · 대당 ${won(r.대당손익)}${r.비중 != null ? ` · ${r.비중}%` : ""}</small></a>`)}</div>
@@ -297,18 +297,18 @@ function Partners({ app, data, period }) {
           <td class="r">${sum("손실대수")}</td><td></td><td class="r">${sum("재고대수")}</td>${W(sum("재고금액"))}<td></td><td class="r">${sum("장기재고")}</td></tr></tbody></table></div>
     <div class="card"><div class="bar"><h3>매도 차량별 손익${who ? ` — ${name(app, who)}` : ""}</h3><span class="grow"></span>${who && html`<button class="btn sm ghost" onClick=${() => setWho(null)}>전체 보기</button>`}</div>
       ${!shown.length ? html`<p class="muted">이 기간 매도한 대표 차가 없습니다.</p>` : html`<div class="table-wrap"><table class="grid click">
-        <thead><tr><th>매도일</th><th>대표</th><th>차량</th><th class="r">매도금액</th><th class="r">제시금액</th><th class="r">상품화비</th><th class="r">이자</th><th class="r">손익</th><th class="r">판매일수</th></tr></thead>
+        <thead><tr><th>매도일</th><th>대표</th><th>차량</th><th class="r">매도금액</th><th class="r">매입가</th><th class="r">상품화비</th><th class="r">이자</th><th class="r">손익</th><th class="r">판매일수</th></tr></thead>
         <tbody>${shown.map(r => html`<tr onClick=${() => (location.hash = `/car/${r.car.id}/settle`)}><td>${r.sale.sale_date}</td><td>${name(app, r.dealer_id)}</td>
           <td><b>${r.car.plate}</b> <span class="small">${r.car.car_name}</span></td>${W(r.sale.sale_amount)}${W(r.제시.금액)}${W(r.C.금액)}${W(r.이자)}
           ${W(r.손익, r.손익 < 0 ? "red" : "blue")}<td class="r">${r.재고일}일</td></tr>`)}</tbody></table></div>`}</div>
-    <p class="note">차량손익 = 매도금액 + 상사매도비 + 할부금융 수익 − 제시금액 − 상품화비용 − 재고금융 이자 (부가세는 빼지 않음, 성능보험료는 손님 부담이라 제외). 실적 비교용이며, 회사 수익은 '수익 배분'에서 대표 수로 똑같이 나눕니다.</p>`;
+    <p class="note">차량손익 = 매도금액 + 상사매도비 + 할부금융 수익 − 매입가 − 상품화비용 − 재고금융 이자 (부가세는 빼지 않음, 성능보험료는 손님 부담이라 제외). 실적 비교용이며, 회사 수익은 '수익 배분'에서 대표 수로 똑같이 나눕니다.</p>`;
 }
 
 /** 수익 배분 — 회사 순이익을 공동대표 수로 똑같이 나눈다 */
 function Share({ app, data, period }) {
   const t = [period.to, today()].sort()[0];
   const b = 수익배분(data, period.from, period.to, t);
-  const partners = app.dealers.filter(d => d.partner && d.active);
+  const partners = app.dealers.filter(d => d.partner && !d.joint && d.active);
   const 실적 = Object.fromEntries(대표별실적(data, period.from, period.to, t).map(r => [r.dealer_id, r.손익]));
   const label = { 대표차량손익: "대표 차량 손익", 상사매도비: "상사매도비 (딜러 차)", 상사매입비: "상사매입비 (딜러 차)", 할부금융수익: "할부금융 수익 (딜러 차)",
     딜러이자: "딜러 이자 수입", 캐피탈이자: "재고금융 이자 (딜러 차)", 알선몫: "타상사 알선 상사몫", 기타매출: "기타 매출(장부)" };

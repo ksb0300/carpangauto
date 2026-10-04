@@ -7,21 +7,25 @@ import { planLines } from "./tab-docs.js";
 import { TrendChart } from "./reports.js";
 import { 미납이자 } from "../calc.js";
 import { monthRange } from "../ui.js";
-import { inspState, ALERT_DAYS } from "./tab-insp.js";
-import { 할일 } from "./lenders.js";
+import { inspState, ALERT_DAYS, renewInsp } from "./tab-insp.js";
+import { 할일, extendLoan } from "./lenders.js";
+import { news } from "../pb.js";
 
 export function Dashboard({ app }) {
   const [d, setD] = useState(null);
   const [edit, setEdit] = useState(false);
-  useEffect(() => { run(async () => {
+  const [draft, setDraft] = useState(null);       // 편집 중 배치
+  const [drag, setDrag] = useState(null);         // 끌고 있는 위젯
+  const load = () => run(async () => {
     const [all, docs, unmatched, insp] = await Promise.all([
       loadAll(app.db),
       q(app.db.from("issue_docs").select("id,status,amount,car_id,doc_type,buyer_id,source")),
       q(app.db.from("bank_txs").select("id").is("match_kind", null)),
-      q(app.db.from("car_inspections").select("car_id,recept_date,expire_date").order("recept_date", { ascending: false })),
+      q(app.db.from("car_inspections").select("id,car_id,recept_date,expire_date,renewed_on").order("recept_date", { ascending: false })),
     ]);
     setD({ ...all, allDocs: docs, docs: docs.filter(x => ["대기", "실패"].includes(x.status)), unmatched, insp });
-  }); }, []);
+  });
+  useEffect(() => { load(); }, []);
   if (!d) return html`<${Loading} />`;
 
   const t = today(), m = monthRange(t.slice(0, 7));
@@ -38,7 +42,7 @@ export function Dashboard({ app }) {
   const 장기 = live.filter(c => c.status === "재고" && (Date.parse(t) - Date.parse(c.purchase_date)) / 864e5 >= 90);
   // 성능점검: 재고 차마다 가장 최근 점검이 90일 지났거나 만료된 것
   const 최근점검 = {}; for (const i of d.insp) 최근점검[i.car_id] ??= i;
-  const 성능 = live.filter(c => c.status === "재고" && 최근점검[c.id]).map(c => ({ c, s: inspState(최근점검[c.id], t) }))
+  const 성능 = live.filter(c => c.status === "재고" && 최근점검[c.id]).map(c => ({ c, i: 최근점검[c.id], s: inspState(최근점검[c.id], t) }))
     .filter(x => x.s.경과 >= ALERT_DAYS || x.s.tone === "red").sort((a, b) => b.s.경과 - a.s.경과);
   const 성능만료 = 성능.filter(x => x.s.tone === "red");
   const 실패 = d.docs.filter(x => x.status === "실패").length;
@@ -47,6 +51,7 @@ export function Dashboard({ app }) {
   const cnt = id => act.filter(l => l.lender_id === id).length;
   const lenders = d.lenders.filter(l => (l.active && Number(l.credit_limit)) || cnt(l.id)).sort((a, b) => used(b.id) - used(a.id));
   const 정보없음 = !app.settings.biz_no;
+  const hasDealer = app.dealers.some(x => x.active && !x.partner);      // 딜러가 있을 때만 '딜러 정산 지급' 칸
 
   // 똑순이 대시보드: 현금영수증·세금계산서 미발행 리스트 (매도했는데 그 증빙이 아직 발행 안 된 것)
   const dealerOf = id => app.dealers.find(x => x.id === id);
@@ -95,8 +100,8 @@ export function Dashboard({ app }) {
     partners: { title: "이번 달 공동대표 실적", size: "full", show: !!배분, render: () => card("이번 달 공동대표 실적", html`<div class="stat-grid">
         ${대표들.map(r => html`<a class=${"stat" + (r === 나 ? " on" : "")} href="#/reports/partners"><span>${r.이름}${r === 나 ? " (나)" : ""}</span>
           <b class=${r.손익 < 0 ? "red" : ""}>${won(r.손익)}</b><small>매입 ${r.매입대수} · 매도 ${r.매도대수} · 재고 ${r.재고대수}대${r.장기재고 ? ` (90일+ ${r.장기재고})` : ""}</small></a>`)}
-        <a class="stat" href="#/reports/share"><span>회사 순이익 → 1인 배분</span><b class=${배분.순이익 < 0 ? "red" : "blue"}>${won(배분.인당)}</b><small>순이익 ${won(배분.순이익)} ÷ ${배분.대표수}명</small></a></div>`,
-      html`<a class="btn sm" href="#/reports/partners">대표별 실적</a><a class="btn sm" href="#/reports/share">수익 배분</a>`) },
+        <a class="stat" href="#/reports/partners"><span>회사 순이익 → 1인 배분</span><b class=${배분.순이익 < 0 ? "red" : "blue"}>${won(배분.인당)}</b><small>순이익 ${won(배분.순이익)} ÷ ${배분.대표수}명</small></a></div>`,
+      html`<a class="btn sm" href="#/reports/partners">대표별 실적</a>`) },
     todo: { title: "확인할 것", size: "full", render: () => card("확인할 것", !todo.length ? html`<p class="muted">밀린 일이 없습니다.</p>` : html`<ul class="todo">${todo.map(x => html`<li>
         <span class=${"badge " + (x.tone === "bad" ? "red" : "amber")}>${x.tone === "bad" ? "급함" : "확인"}</span><a href=${x.href}>${x.text}</a></li>`)}</ul>`) },
     month: { title: "이번 달 숫자", size: "full", render: () => html`<div><h3>이번 달</h3><div class="stat-grid">
@@ -104,13 +109,15 @@ export function Dashboard({ app }) {
       <a class="stat" href="#/reports/summary"><span>이번 달 매입 / 매도</span><b>${s.매입.대수} / ${s.매도.대수}대</b><small>매도 ${won(s.매도.금액)}원</small></a>
       <a class="stat" href="#/reports/summary"><span>이번 달 회사 수익</span><b class=${s.수익합계 < 0 ? "red" : ""}>${won(s.수익합계)}</b><small>운영이익 ${won(s.운영이익)}</small></a>
       <a class="stat" href="#/loans"><span>재고금융 진행중</span><b>${won(s.재고.재고금융)}</b><small>${act.length}건</small></a>
-      <a class="stat" href="#/settlements"><span>이번 달 딜러 정산 지급</span><b>${won(s.정산.실지급)}</b><small>${s.정산.건수}건 · 원천징수 ${won(s.정산.세액)}</small></a></div></div>` },
+${hasDealer && html`      <a class="stat" href="#/settlements"><span>이번 달 딜러 정산 지급</span><b>${won(s.정산.실지급)}</b><small>${s.정산.건수}건 · 원천징수 ${won(s.정산.세액)}</small></a>`}</div></div>` },
     loans_todo: { title: "재고금융 연장·상환 챙길 것", size: "half", render: () => card("재고금융 연장·상환 챙길 것",
-      차표(챙길.map(x => ({ ...x, c: car[x.l.car_id] })), ["차량", "금융사", "대출", "할 일"],
-        x => html`<td><b>${x.c.plate}</b></td><td>${d.lenders.find(l => l.id === x.l.lender_id)?.name}</td><td class="r">${won(x.l.amount)}</td><td><span class=${"badge " + x.h.tone}>${x.h.text}</span></td>`, "loans"),
+      차표(챙길.map(x => ({ ...x, c: car[x.l.car_id] })), ["차량", "금융사", "대출", "할 일", ""],
+        x => html`<td><b>${x.c.plate}</b></td><td>${d.lenders.find(l => l.id === x.l.lender_id)?.name}</td><td class="r">${won(x.l.amount)}</td><td><span class=${"badge " + x.h.tone}>${x.h.text}</span></td>
+          <td><button class="btn sm" onClick=${async e => { e.stopPropagation(); if (await extendLoan(app, x.l)) load(); }}>연장</button></td>`, "loans"),
       html`<a class="btn sm" href="#/loans/lenders">금융사별 현황</a>`) },
     insp: { title: "성능점검 90일 지난 재고", size: "half", render: () => card(`성능점검 ${ALERT_DAYS}일 지난 재고`,
-      차표(성능, ["차량", "경과", "상태"], x => html`<td><b>${x.c.plate}</b> <span class="small">${x.c.car_name}</span></td><td class="r">${x.s.경과}일</td><td><span class=${"badge " + x.s.tone}>${x.s.text}</span></td>`)) },
+      차표(성능, ["차량", "경과", "상태", ""], x => html`<td><b>${x.c.plate}</b> <span class="small">${x.c.car_name}</span></td><td class="r">${x.s.경과}일</td><td><span class=${"badge " + x.s.tone}>${x.s.text}</span></td>
+        <td><button class="btn sm" onClick=${async e => { e.stopPropagation(); if (await renewInsp(app, x.i)) load(); }}>연장</button></td>`)) },
     stock_old: { title: "90일 넘은 재고", size: "half", render: () => card("90일 넘은 재고",
       차표(장기.map(c => ({ c, 일: Math.round((Date.parse(t) - Date.parse(c.purchase_date)) / 864e5) })).sort((a, b) => b.일 - a.일), ["차량", "매입가", "재고일"],
         x => html`<td><b>${x.c.plate}</b> <span class="small">${x.c.car_name}</span></td><td class="r">${won(x.c.purchase_amount)}</td><td class="r red">${x.일}일</td>`)) },
@@ -122,6 +129,7 @@ export function Dashboard({ app }) {
           <td class="r">${x.월이자 ? won(x.월이자) : html`<span class="muted" title="캐피탈이율 미입력">-</span>`}</td><td>${x.납입예정일}</td></tr>`)}</tbody></table></div>`,
       html`<a class="btn sm" href="#/loans/interest">이자납입 리스트</a>`) },
     trend: { title: "최근 12개월 매입·매도 추이", size: "half", render: () => card("최근 12개월 매입 · 매도 추이", html`<${TrendChart} rows=${추이} a=${{ key: "제시", label: "매입(대)" }} b=${{ key: "매도", label: "매도(대)" }} />`) },
+    news: { title: "중고차 뉴스", size: "half", render: () => html`<${NewsWidget} app=${app} />` },
     lenders: { title: "재고금융 한도 현황", size: "full", render: () => card("재고금융 한도 현황", !lenders.length ? html`<p class="muted">진행중 재고금융이 없습니다.</p>`
       : html`<table class="st"><tbody>${lenders.map(l => {
       const u = used(l.id) + Number(l.existing_amount || 0), lim = Number(l.credit_limit), pct = lim ? Math.round(u / lim * 100) : 0;
@@ -132,38 +140,70 @@ export function Dashboard({ app }) {
       html`<a class="btn sm" href="#/loans/lenders">금융사별 현황</a>`) },
   };
   const layout = normalize(app.profile.dashboard);
+  const rows = edit ? draft : layout;
+  const shown = rows.filter(w => w.on && WIDGETS[w.id] && WIDGETS[w.id].show !== false);
+  const hidden = rows.filter(w => !w.on && WIDGETS[w.id]);
+  const startEdit = () => { setDraft(layout.map(w => ({ ...w }))); setEdit(true); };
+  // 끌어서 놓기: 끌고 있는 위젯을 놓는 자리 위젯 앞으로 (지나가는 동안 바로 자리 바뀜)
+  const moveTo = (id, target) => setDraft(r => {
+    if (id === target) return r;
+    const x = r.filter(w => w.id !== id), i = x.findIndex(w => w.id === target), me = r.find(w => w.id === id);
+    const from = r.findIndex(w => w.id === id), to = r.findIndex(w => w.id === target);
+    x.splice(from < to ? i + 1 : i, 0, me); return x;
+  });
+  const step = (id, d) => setDraft(r => {
+    const vis = r.filter(w => w.on), k = vis.findIndex(w => w.id === id), other = vis[k + d];
+    if (!other) return r;
+    const x = [...r], i = x.findIndex(w => w.id === id), j = x.findIndex(w => w.id === other.id); [x[i], x[j]] = [x[j], x[i]]; return x;
+  });
+  const toggle = (id, on) => setDraft(r => r.map(w => w.id === id ? { ...w, on } : w));
+  const save = async list => {
+    const ok = await run(async () => { await q(app.db.rpc("set_dashboard", { p_layout: list })); await app.reload(); return true; }, "대시보드를 저장했습니다");
+    if (ok) setEdit(false);
+  };
 
   return html`<div class="bar"><h2>대시보드</h2><span class="muted">${t} · ${app.settings.company_name}</span><span class="grow"></span>
-      <button class="btn sm ghost" onClick=${() => setEdit(!edit)}>${edit ? "편집 닫기" : "위젯 편집"}</button></div>
-    ${edit && html`<${DashEditor} app=${app} layout=${layout} widgets=${WIDGETS} onDone=${() => setEdit(false)} />`}
-    <div class="dash-grid">${layout.filter(w => w.on && WIDGETS[w.id] && WIDGETS[w.id].show !== false)
-      .map(w => html`<div class=${WIDGETS[w.id].size === "full" ? "full" : ""} key=${w.id}>${WIDGETS[w.id].render()}</div>`)}</div>`;
+      ${!edit ? html`<button class="btn sm ghost" onClick=${startEdit}>위젯 편집</button>` : html`
+        <span class="muted small">위젯을 끌어서 옮기세요 (휴대폰은 ↑↓)</span>
+        <button class="btn sm ghost" onClick=${() => save(null)}>기본값으로</button>
+        <button class="btn sm ghost" onClick=${() => setEdit(false)}>취소</button>
+        <button class="btn sm primary" onClick=${() => save(draft)}>저장</button>`}</div>
+    ${edit && hidden.length > 0 && html`<div class="card dash-tray"><span class="muted small">숨긴 위젯 — 눌러서 다시 보이기</span>
+      ${hidden.map(w => html`<button class="btn sm" onClick=${() => toggle(w.id, true)}>+ ${WIDGETS[w.id].title}</button>`)}</div>`}
+    <div class=${"dash-grid" + (edit ? " editing" : "")}>${shown.map((w, k) => html`<div key=${w.id}
+        class=${[WIDGETS[w.id].size === "full" ? "full" : "", edit ? "dash-item" : "", drag === w.id ? "dragging" : ""].join(" ")}
+        draggable=${edit} onDragStart=${e => { if (!edit) return; setDrag(w.id); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", w.id); }}
+        onDragEnter=${e => { if (edit && drag && drag !== w.id) { e.preventDefault(); moveTo(drag, w.id); } }}
+        onDragOver=${e => edit && e.preventDefault()} onDrop=${e => e.preventDefault()} onDragEnd=${() => setDrag(null)}>
+      ${edit && html`<div class="dash-handle"><span>⠿ ${WIDGETS[w.id].title}</span><span class="grow"></span>
+        <button class="btn sm ghost" disabled=${k === 0} onClick=${() => step(w.id, -1)}>↑</button>
+        <button class="btn sm ghost" disabled=${k === shown.length - 1} onClick=${() => step(w.id, 1)}>↓</button>
+        <button class="btn sm ghost" onClick=${() => toggle(w.id, false)}>숨기기</button></div>`}
+      ${WIDGETS[w.id].render()}</div>`)}</div>`;
 }
 
 // 기본 배치 (새 위젯은 여기 추가하면 기존 계정 배치 끝에 꺼진 채로 붙는다)
-const DEFAULT = ["partners", "todo", "month", "loans_todo", "insp", "cash", "tax", "interest", "trend", "stock_old", "lenders"];
+const DEFAULT = ["partners", "todo", "month", "loans_todo", "insp", "news", "cash", "tax", "interest", "trend", "stock_old", "lenders"];
 const DEFAULT_OFF = new Set(["stock_old"]);
 function normalize(saved) {
   const list = Array.isArray(saved) ? saved.filter(w => DEFAULT.includes(w.id)) : DEFAULT.map(id => ({ id, on: !DEFAULT_OFF.has(id) }));
-  for (const id of DEFAULT) if (!list.some(w => w.id === id)) list.push({ id, on: false });
+  for (const id of DEFAULT) if (!list.some(w => w.id === id)) list.push({ id, on: !DEFAULT_OFF.has(id) });   // 새로 생긴 위젯은 켜진 채로 끝에
   return list;
 }
 
-function DashEditor({ app, layout, widgets, onDone }) {
-  const [rows, setRows] = useState(layout);
-  const move = (i, d) => setRows(r => { const x = [...r], j = i + d; if (j < 0 || j >= x.length) return r; [x[i], x[j]] = [x[j], x[i]]; return x; });
-  const save = async list => {
-    const ok = await run(async () => { await q(app.db.rpc("set_dashboard", { p_layout: list })); await app.reload(); return true; }, "대시보드를 저장했습니다");
-    if (ok) onDone();
-  };
-  return html`<div class="card dash-edit">
-    <div class="bar"><h3>위젯 편집</h3><span class="muted small">켜고 끄고, ↑↓로 순서를 바꾼 뒤 저장 — 내 계정에만 적용됩니다</span><span class="grow"></span>
-      <button class="btn sm ghost" onClick=${() => save(null)}>기본값으로</button><button class="btn sm primary" onClick=${() => save(rows)}>저장</button></div>
-    ${rows.map((w, i) => html`<div class="row line">
-      <label class="check"><input type="checkbox" checked=${w.on} onChange=${e => setRows(r => r.map((x, j) => j === i ? { ...x, on: e.target.checked } : x))} />
-        ${widgets[w.id].title}${widgets[w.id].size === "half" ? html` <span class="muted small">(반 칸)</span>` : ""}</label>
-      <span class="grow"></span>
-      <button type="button" class="btn sm ghost" disabled=${i === 0} onClick=${() => move(i, -1)}>↑</button>
-      <button type="button" class="btn sm ghost" disabled=${i === rows.length - 1} onClick=${() => move(i, 1)}>↓</button></div>`)}
+// 중고차 뉴스 — 서버 함수 'news' 가 구글 뉴스 RSS 를 읽어 준다 (30분 캐시)
+const NEWS_Q = ["중고차", "중고차 수출", "수입차", "자동차 금융"];
+function NewsWidget({ app }) {
+  const [q, setQ] = useState(NEWS_Q[0]);
+  const [items, setItems] = useState(null);
+  const [err, setErr] = useState(null);
+  useEffect(() => { setItems(null); setErr(null); news(app.db, q).then(setItems).catch(e => setErr(e.message)); }, [q]);
+  const ago = iso => { const m = Math.round((Date.now() - Date.parse(iso)) / 60000);
+    return m < 60 ? `${Math.max(1, m)}분 전` : m < 1440 ? `${Math.round(m / 60)}시간 전` : `${Math.round(m / 1440)}일 전`; };
+  return html`<div class="card news"><div class="bar"><h3>중고차 뉴스</h3><span class="grow"></span>
+      <select value=${q} onChange=${e => setQ(e.target.value)}>${NEWS_Q.map(x => html`<option value=${x}>${x}</option>`)}</select></div>
+    ${err ? html`<p class="muted small">뉴스를 불러오지 못했습니다: ${err}</p>` : !items ? html`<p class="muted small">불러오는 중…</p>`
+      : !items.length ? html`<p class="muted">기사가 없습니다.</p>` : html`<ul class="newslist">${items.slice(0, 8).map(n => html`<li>
+        <a href=${n.link} target="_blank" rel="noopener">${n.title}</a><small class="muted">${n.source}${n.source ? " · " : ""}${ago(n.date)}</small></li>`)}</ul>`}
   </div>`;
 }
