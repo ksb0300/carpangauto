@@ -44,7 +44,8 @@ export function SaleTab({ app, car, sale, buyers, settlement, reload, locked, of
 
 function SaleForm({ app, car, sale, buyers, onDone }) {
   const [f, setF] = useState(sale ? { ...sale } : {
-    sale_date: today(), dealer_id: car.dealer_id, other_dealer: false, sale_type: "내수판매", sale_amount: 0,
+    sale_date: today(), dealer_id: car.dealer_id, other_dealer: false, sale_type: "내수판매",
+    sale_amount: car.list_price ? Math.max(0, Number(car.list_price) - Number(app.settings.sale_fee || 0)) : 0,   // 리스트에 넣은 판매가(매도비 포함) − 매도비
     plate_out: car.plate, sale_fee: app.settings.sale_fee, perf_insurance: 0, memo: "", broker_dealer_id: null,
     installment_amount: 0, installment_rate: 0 });
   const [bs, setBs] = useState(buyers.length ? buyers.map(b => ({ ...b, ssn: "" })) : [newBuyer(100)]);

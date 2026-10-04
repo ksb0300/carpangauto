@@ -132,7 +132,7 @@ export function PurchasesPage({ app }) {
     ${!rows.length ? html`<${Empty}>조건에 맞는 차량이 없습니다.<//>` : html`<div class="table-wrap"><table class="grid click carlist">
       <thead><tr><th>매입일</th><th>차량번호</th><th>매입담당</th><th>차량명</th><th class="r">매입가</th>
         <th class="r" title="취득세·광고비·수수료·성능비 등 + 재고이자(매입일부터 오늘·매도일까지)">재반비용</th><th class="r" title="수리비 + 도색광택 + 탁송유류">상품화비용</th>
-        <th class="r" title="매입가 + 재반비용 + 상품화비용">총원가</th><th class="r">판매가(매도비포함)</th><th class="r">마진</th><th class="r">재고일</th><th>정산</th></tr></thead>
+        <th class="r" title="매입가 + 재반비용 + 상품화비용">총원가</th><th class="r">판매가(매도비포함)</th><th class="r">마진</th><th class="r">재고일</th><th>매도·정산</th></tr></thead>
       <tbody>${rows.map(c => { const x = calc(c); return html`<tr key=${c.id} onClick=${() => go("/car/" + c.id)}><td>${c.purchase_date}</td>
         <td><b>${c.plate}</b></td><td onClick=${e => office && e.stopPropagation()}>${office ? html`<${OwnerPick} app=${app} car=${c} onDone=${reload} />` : dealer[c.dealer_id] || "-"}</td>
         <td class="ellipsis">${c.car_name}</td>${W(c.purchase_amount)}
@@ -140,8 +140,9 @@ export function PurchasesPage({ app }) {
         <td class="r" onClick=${e => e.stopPropagation()}>${c.sale ? html`<span title="매도금액 + 매도비">${won(x.판매가)}</span>`
           : office ? html`<${Money} value=${x.판매가 ?? 0} placeholder="입력" onInput=${v => typePrice(c, v)} onKeyDown=${e => e.key === "Enter" && e.target.blur()} />` : (x.판매가 ? won(x.판매가) : "-")}</td>
         <td class=${"r " + (x.마진 == null ? "muted" : x.마진 < 0 ? "red" : "blue")}>${x.마진 == null ? "-" : won(x.마진)}</td>
-        <td class="r">${c.status === "재고" ? days(c.purchase_date) : ""}</td><td>${settleBadge(c)}</td></tr>`; })}</tbody></table></div>`}
-    <p class="note">재반비용 = 취득세·광고비·수수료·성능비 등 + 재고이자 · 상품화비용 = 수리비 + 도색광택 + 탁송유류 · 총원가 = 매입가 + 재반비용 + 상품화비용 · 마진 = 판매가 − 총원가. 판매가는 칸에 바로 넣으면 저장되고(매도된 차는 실제 매도금액 + 매도비), 칸 위에 마우스를 올리면 내역이 보입니다.</p>`;
+        <td class="r">${c.status === "재고" ? days(c.purchase_date) : ""}</td>
+        <td onClick=${e => e.stopPropagation()}>${c.status === "재고" && office ? html`<button class="btn sm primary" title="매도 등록 — 저장하면 매도차량으로 넘어갑니다" onClick=${() => go("/car/" + c.id + "/sale")}>매도</button>` : settleBadge(c)}</td></tr>`; })}</tbody></table></div>`}
+    <p class="note">[매도]를 누르면 그 차의 매도 등록으로 가고, 저장하면 매도차량으로 넘어갑니다. 재반비용 = 취득세·광고비·수수료·성능비 등 + 재고이자 · 상품화비용 = 수리비 + 도색광택 + 탁송유류 · 총원가 = 매입가 + 재반비용 + 상품화비용 · 마진 = 판매가 − 총원가. 판매가는 칸에 바로 넣으면 저장되고(매도된 차는 실제 매도금액 + 매도비), 칸 위에 마우스를 올리면 내역이 보입니다.</p>`;
 }
 
 // ───────────────────────── 상품화비용 (차량별 / 비용별) ─────────────────────────
