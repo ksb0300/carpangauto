@@ -204,6 +204,6 @@ function NewsWidget({ app }) {
       <select value=${q} onChange=${e => setQ(e.target.value)}>${NEWS_Q.map(x => html`<option value=${x}>${x}</option>`)}</select></div>
     ${err ? html`<p class="muted small">뉴스를 불러오지 못했습니다: ${err}</p>` : !items ? html`<p class="muted small">불러오는 중…</p>`
       : !items.length ? html`<p class="muted">기사가 없습니다.</p>` : html`<ul class="newslist">${items.slice(0, 8).map(n => html`<li>
-        <a href=${n.link} target="_blank" rel="noopener">${n.title}</a><small class="muted">${n.source}${n.source ? " · " : ""}${ago(n.date)}</small></li>`)}</ul>`}
+        <a href=${n.link} target="_blank" rel="noopener">${n.title}</a><small class="muted">${n.source}${n.source && n.date ? " · " : ""}${n.date ? ago(n.date) : ""}</small></li>`)}</ul>`}
   </div>`;
 }
