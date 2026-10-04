@@ -36,7 +36,7 @@
 var 웹앱주소 = "https://script.google.com/macros/s/AKfycbyJWw4vetW67C9zqc57C4ktTwnMgTTflS4znWK9rtXOovrTXibS9-_ew3d11hkD755C/exec";
 
 document.getElementById("doc").innerHTML = 웹앱주소
-  ? '<iframe src="' + 웹앱주소 + '" title="비사업용 사실확인서"></iframe>'
+  ? '<iframe src="' + 웹앱주소 + '?embed=1" title="비사업용 사실확인서"></iframe>'
   : '<div class="setup"><b>연결 준비 중입니다</b>서명 페이지 주소가 아직 등록되지 않았습니다.</div>';
 </script>
 </body>
