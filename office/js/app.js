@@ -77,7 +77,7 @@ function Shell({ app, children, path }) {
   const { profile, db } = app;
   const office = profile.role !== "dealer";
   const nav = office
-    ? [["/dashboard", "대시보드"], ["/purchases", "리스트"], ["/loans", "재고금융"], ["/sales", "매도차량"],
+    ? [["/purchases", "리스트"], ["/loans", "재고금융"], ["/sales", "매도차량"],
        ["/settlements", "정산내역"], ["/issue", "매출관리"], ["/brokerage", "타상사알선"], ["/bank", "통장입출금"], ["/reports", "종합업무현황"], ["/stats", "통계"], ["/settings", "환경설정"]]
     : [["/purchases", "내 제시차량"], ["/sales", "매도차량"], ["/settlements", "정산내역"], ["/brokerage", "알선"], ["/reports", "내 실적"]];
   return html`<div class="shell">

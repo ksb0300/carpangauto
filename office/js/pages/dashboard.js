@@ -38,6 +38,11 @@ export function Dashboard({ app }) {
   const act = d.loans.filter(l => l.status === "진행중" && car[l.car_id]);
   // 금융사 조건(기본만기·연장 가능 여부)으로 2주 안에 연장하거나 갚아야 할 것
   const 챙길 = act.map(l => ({ l, h: 할일(l, d.lenders.find(x => x.id === l.lender_id), t) })).filter(x => ["red", "amber"].includes(x.h.tone));
+  const 현금차 = live.filter(c => c.status === "재고" && !act.some(l => l.car_id === c.id)).map(c => {
+    const done = d.loans.filter(l => l.car_id === c.id && l.status === "상환완료").sort((a, b) => String(b.repaid_date).localeCompare(String(a.repaid_date)))[0];
+    return { c, 사유: done ? `상환완료 ${done.repaid_date || ""} · ${d.lenders.find(x => x.id === done.lender_id)?.name || ""}` : "재고금융 없음",
+             일: Math.round((Date.parse(t) - Date.parse(c.purchase_date)) / 864e5) };
+  }).sort((a, b) => b.일 - a.일);
   const 미납합 = act.reduce((a, l) => a + 미납이자({ 대출금액: l.amount, 딜러이율: l.dealer_rate, 개월: l.months, 실행일: l.start_date, 납입이자누계: pay(l.id) }, t), 0);
   const 장기 = live.filter(c => c.status === "재고" && (Date.parse(t) - Date.parse(c.purchase_date)) / 864e5 >= 90);
   // 성능점검: 재고 차마다 가장 최근 점검이 90일 지났거나 만료된 것
@@ -115,6 +120,9 @@ ${hasDealer && html`      <a class="stat" href="#/settlements"><span>이번 달 
         x => html`<td><b>${x.c.plate}</b></td><td>${d.lenders.find(l => l.id === x.l.lender_id)?.name}</td><td class="r">${won(x.l.amount)}</td><td><span class=${"badge " + x.h.tone}>${x.h.text}</span></td>
           <td><${LoanAction} app=${app} l=${x.l} lender=${d.lenders.find(l => l.id === x.l.lender_id)} onDone=${load} /></td>`, "loans"),
       html`<a class="btn sm" href="#/loans/lenders">금융사별 현황</a>`) },
+    cash_cars: { title: "현금 차량 리스트", size: "half", render: () => card(`현금 차량 리스트 — ${현금차.length}대 · ${won(현금차.reduce((a, x) => a + Number(x.c.purchase_amount), 0))}원`,
+      차표(현금차, ["차량", "매입가", "재고일", "사유"], x => html`<td><b>${x.c.plate}</b> <span class="small">${x.c.car_name}</span></td><td class="r">${won(x.c.purchase_amount)}</td>
+        <td class="r">${x.일}일</td><td class="small">${x.사유}</td>`), html`<a class="btn sm" href="#/purchases">리스트</a>`) },
     insp: { title: "성능점검 90일 지난 재고", size: "half", render: () => card(`성능점검 ${ALERT_DAYS}일 지난 재고`,
       차표(성능, ["차량", "경과", "상태", ""], x => html`<td><b>${x.c.plate}</b> <span class="small">${x.c.car_name}</span></td><td class="r">${x.s.경과}일</td><td><span class=${"badge " + x.s.tone}>${x.s.text}</span></td>
         <td><button class="btn sm" onClick=${async e => { e.stopPropagation(); if (await renewInsp(app, x.i)) load(); }}>연장</button></td>`)) },
@@ -183,7 +191,7 @@ ${hasDealer && html`      <a class="stat" href="#/settlements"><span>이번 달 
 }
 
 // 기본 배치 (새 위젯은 여기 추가하면 기존 계정 배치 끝에 꺼진 채로 붙는다)
-const DEFAULT = ["partners", "todo", "month", "loans_todo", "insp", "news", "cash", "tax", "interest", "trend", "stock_old", "lenders"];
+const DEFAULT = ["partners", "todo", "month", "loans_todo", "cash_cars", "insp", "news", "cash", "tax", "interest", "trend", "stock_old", "lenders"];
 const DEFAULT_OFF = new Set(["stock_old"]);
 function normalize(saved) {
   const list = Array.isArray(saved) ? saved.filter(w => DEFAULT.includes(w.id)) : DEFAULT.map(id => ({ id, on: !DEFAULT_OFF.has(id) }));

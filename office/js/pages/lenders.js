@@ -65,7 +65,7 @@ export function LoanAction({ app, l, lender, onDone }) {
   const go_ = async (e, f) => { e.stopPropagation(); if (await f(app, l)) onDone(); };
   const 연장 = html`<button class="btn sm" onClick=${e => go_(e, extendLoan)}>연장</button>`;
   const 상환 = html`<button class="btn sm primary" onClick=${e => go_(e, repayLoan)}>상환</button>`;
-  if (연장조건(l, lender).가능) return 연장;                         // 조건대로 아직 연장 전
+  if (연장조건(l, lender).가능) return 대출상태(l, today()).남은일 < 0 ? html`<span class="btnrow">${연장}${상환}</span>` : 연장;   // 아직 연장 전 (기본 만기 지났으면 둘 다)
   if (!(Number(lender?.ext_months) > 0)) return html`<span class="btnrow">${연장}${상환}</span>`;   // 조건 미입력 금융사: 둘 다
   return 상환;                                                       // 이미 연장 → 최종 만기, 상환만
 }
@@ -77,7 +77,9 @@ export function 할일(l, lender, t) {
   if (l.status !== "진행중") return { text: "상환완료", tone: "gray" };
   if (조건없음 && s.남은일 < 0) return { text: `만기 ${-s.남은일}일 지남 — 연장 또는 상환`, tone: "red" };
   if (조건없음 && s.남은일 <= 14) return { text: `D-${s.남은일} 만기 — 연장 또는 상환`, tone: "amber" };
-  if (s.남은일 < 0) return { text: `만기 ${-s.남은일}일 지남 — 상환하세요`, tone: "red" };
+  // 기본 만기는 지났는데 연장 기록이 없음 — 은행에서 이미 연장했으면 '연장'으로 기록, 아니면 상환
+  if (s.남은일 < 0 && c.가능) return { text: `기본 만기 ${-s.남은일}일 지남 — 연장했으면 '연장' 기록, 아니면 상환`, tone: "red" };
+  if (s.남은일 < 0) return { text: `최종 만기 ${-s.남은일}일 지남 — 전액 상환하세요`, tone: "red" };
   if (c.가능 && s.남은일 <= 14) return { text: `D-${s.남은일} 연장 필요${c.상환필요 ? ` — 원금 ${won(c.상환필요)} 먼저 상환` : ""}`, tone: "amber" };
   if (!c.가능 && s.남은일 <= 14) return { text: `D-${s.남은일} 최종 만기 — 상환 준비`, tone: s.남은일 <= 7 ? "red" : "amber" };
   return { text: `${s.단계} · D-${s.남은일}`, tone: "green" };
