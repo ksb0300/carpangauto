@@ -84,8 +84,10 @@ const Sum = ({ rows }) => html`<div class="table-wrap"><table class="grid sumtab
 function OwnerPick({ app, car, onDone }) {
   const pick = async v => {
     if (!v || v === car.dealer_id) return;
-    if (car.settle?.finalized) return toast("정산(손익) 확정된 차는 담당을 바꿀 수 없습니다. 확정을 먼저 해제하세요.", "err");
     const to = app.dealers.find(x => x.id === v);
+    // 대표끼리(공동매입 포함)는 손익 계산이 같아 확정된 차도 바꿀 수 있다. 딜러로 바뀌면 정산 방식이 달라져 확정 해제가 먼저
+    if (car.settle?.finalized && !(car.settle.mode === "대표" && to?.partner))
+      return toast("정산(손익) 확정된 차는 딜러로 바꿀 수 없습니다. 확정을 먼저 해제하세요.", "err");
     const fee = to?.partner ? 0 : app.settings.purchase_fee;
     await run(() => q(app.db.from("cars").update({ dealer_id: v, purchase_fee: fee }).eq("id", car.id)), `${car.plate} → ${to?.name}`);
     onDone();
@@ -275,7 +277,9 @@ function LoansList({ app, tab }) {
 // ───────────────────────── 매도차량 리스트 ─────────────────────────
 export function SalesPage({ app }) {
   const [d] = useBook(app);
-  const [f, setF] = useState(initF("매도일", "매도일"));
+  // 기본은 최근 1개월 매도분만 — '기간'을 끄거나 바꾸면 전체·원하는 기간
+  const [f, setF] = useState(() => { const t = today(), d = new Date(t + "T00:00:00Z"); d.setUTCMonth(d.getUTCMonth() - 1);
+    return { ...initF("매도일", "매도일"), useDate: true, period: { ...initPeriod("직접"), mode: "직접", from: d.toISOString().slice(0, 10), to: t } }; });
   const [pick, setPick] = useState(false);
   const office = app.profile.role !== "dealer";
   const dealer = Object.fromEntries(app.dealers.map(x => [x.id, x.name]));

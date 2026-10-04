@@ -229,4 +229,9 @@ a.stat { color: inherit; } a.stat:hover { border-color: var(--pri); }
 .newslist li:last-child { border-bottom: 0; } .newslist a { color: var(--ink); } .newslist a:hover { color: var(--pri); text-decoration: underline; }
 .news .bar select { width: auto; }
 .btnrow { display: inline-flex; gap: 4px; white-space: nowrap; }
-.carlist td input.money { width: 120px; padding: 4px 8px; text-align: right; }
+.carlist td input.money { width: 110px; padding: 4px 8px; text-align: right; }
+/* 차량 리스트는 칸이 많아 넓은 화면에선 페이지 폭을 넓히고, 칸 여백·차명 폭을 줄여 오른쪽이 안 잘리게 */
+.page:has(table.carlist) { max-width: 1680px; }
+.carlist th, .carlist td { padding-left: 8px; padding-right: 8px; white-space: nowrap; }
+.carlist td.ellipsis { max-width: 200px; }
+.carlist td select { max-width: 120px; padding-top: 4px; padding-bottom: 4px; }
