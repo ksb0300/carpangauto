@@ -229,3 +229,4 @@ a.stat { color: inherit; } a.stat:hover { border-color: var(--pri); }
 .newslist li:last-child { border-bottom: 0; } .newslist a { color: var(--ink); } .newslist a:hover { color: var(--pri); text-decoration: underline; }
 .news .bar select { width: auto; }
 .btnrow { display: inline-flex; gap: 4px; white-space: nowrap; }
+.carlist td input.money { width: 120px; padding: 4px 8px; text-align: right; }

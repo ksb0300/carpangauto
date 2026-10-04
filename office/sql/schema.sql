@@ -1067,3 +1067,9 @@ select '공동매입', '사업자', true, true where not exists (select 1 from d
 -- 성능점검 연장(재점검) 표시: 연장한 날부터 90일을 다시 센다 (그 전엔 만료 임박 목록에서 빠짐)
 alter table car_inspections add column renewed_on date;
 comment on column car_inspections.renewed_on is '성능점검 연장(재점검)한 날 — 경과일은 이 날부터, expire_date 도 같이 늘린다';
+
+
+-- 20261004000003_list_price.sql
+-- 리스트에서 바로 넣는 판매가(매도비 포함) — 마진 = 판매가 − 총원가(매입가 + 재반비용 + 상품화비용)
+alter table cars add column list_price bigint;
+comment on column cars.list_price is '판매가(매도비 포함) — 리스트에서 바로 입력, 마진 계산용';
