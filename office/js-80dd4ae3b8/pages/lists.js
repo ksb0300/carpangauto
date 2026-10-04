@@ -62,10 +62,13 @@ function Filters({ app, f, setF, dateKeys, sortKeys, extra }) {
     <${Seg} value=${f.dir} onChange=${v => setF(p => ({ ...p, dir: v }))} options=${[["desc", "내림차순"], ["asc", "오름차순"]]} />
   </div>`;
 }
-// 검색어는 차에 들어갔다 돌아와도 남게 (화면별로, 이 창을 닫기 전까지). 지우면 전체 목록
+// 검색어는 차 화면(#/car/…)에 들어갔다 돌아올 때만 남는다. 메뉴로 다른 화면에 다녀오면 초기화
+let prevHash = "", curHash = location.hash;
+addEventListener("hashchange", () => { prevHash = curHash; curHash = location.hash; });   // 화면 전환(App)보다 먼저 등록된다
 const qKey = () => "list-q:" + (location.hash.slice(1).split("?")[0].split("/")[1] || "");
 const saveQ = v => { try { sessionStorage.setItem(qKey(), v); } catch {} };
-const loadQ = () => { try { return sessionStorage.getItem(qKey()) || ""; } catch { return ""; } };
+// (useState 초기값 식은 매 렌더마다 계산되니 여기서 지우지 않고 읽기만)
+const loadQ = () => { try { return prevHash.startsWith("#/car/") ? sessionStorage.getItem(qKey()) || "" : ""; } catch { return ""; } };
 const initF = (dateKey, sort) => ({ q: loadQ(), dealer: null, dateKey, useDate: false, period: initPeriod("월"), sort, dir: "desc" });
 const match = (f, c, date) => (!f.q || (c.plate + (c.plate_before || "") + c.car_name).replace(/\s/g, "").includes(f.q.replace(/\s/g, "")))
   && (!f.dealer || c.dealer_id === f.dealer || c.sale?.dealer_id === f.dealer)
@@ -229,11 +232,43 @@ export function LoansPage({ app, tab = "lenders" }) {
   if (tab === "lenders") return html`<div class="bar"><h2>재고금융관리</h2></div>
     <${SubTabs} base="/loans" tabs=${loanTabs(app)} cur=${tab} />
     <${LenderOverview} app=${app} />`;
+  if (tab === "installment") return html`<${InstallmentPerf} app=${app} />`;
   return html`<${LoansList} app=${app} tab=${tab} />`;
 }
 // '이자납입 리스트'는 딜러에게 받는 이자라 딜러가 있을 때만
-const loanTabs = app => [["lenders", "금융사별 현황"], ["list", "재고금융 리스트"],
+const loanTabs = app => [["lenders", "금융사별 현황"], ["list", "재고금융 리스트"], ["installment", "할부실적"],
   ...(app.dealers.some(x => x.active && !x.partner) ? [["interest", "이자납입 리스트"]] : [])];
+
+/** 할부실적 — 캐피탈사마다 할부를 얼마나 넣어 줬나 (수익이 아니라 할부금액이 핵심). 매도일 기준 */
+function InstallmentPerf({ app }) {
+  const [d] = useBook(app);
+  const [period, setPeriod] = useState(() => initPeriod("월"));
+  if (!d) return html`<${Loading} />`;
+  const dealer = Object.fromEntries(app.dealers.map(x => [x.id, x.name]));
+  const rows = d.cars.filter(c => c.sale && n(c.sale.installment_amount) > 0 && c.sale.sale_date >= period.from && c.sale.sale_date <= period.to)
+    .sort((a, b) => b.sale.sale_date.localeCompare(a.sale.sale_date));
+  const by = {};
+  for (const c of rows) { const k = c.sale.installment_company || "(캐피탈사 미입력)"; const g = by[k] ||= { k, n: 0, amt: 0, fee: 0, inc: 0 };
+    g.n++; g.amt += n(c.sale.installment_amount); g.fee += n(c.sale.installment_fee); g.inc += n(c.sale.installment_income); }
+  const groups = Object.values(by).sort((a, b) => b.amt - a.amt), total = groups.reduce((t, g) => t + g.amt, 0);
+  const csv = () => downloadCsv("할부실적", [["매도일", "차량번호", "차량명", "캐피탈사", "할부금액", "할부피(%)", "수수료", "수익(원천징수 후)", "매도담당"],
+    ...rows.map(c => [c.sale.sale_date, c.plate, c.car_name, c.sale.installment_company || "", c.sale.installment_amount, Number(c.sale.installment_rate), c.sale.installment_fee, c.sale.installment_income, dealer[c.sale.dealer_id || c.dealer_id] || ""])]);
+  return html`<div class="bar"><h2>재고금융관리</h2></div>
+    <${SubTabs} base="/loans" tabs=${loanTabs(app)} cur="installment" />
+    <div class="bar"><${Period} value=${period} onChange=${setPeriod} /><span class="muted small">매도일 기준 · 매도 화면 '할부 내용'에서 넣은 것</span><span class="grow"></span>
+      <button class="btn" onClick=${csv}>다운로드</button></div>
+    ${!rows.length ? html`<${Empty}>이 기간에 할부로 판 차가 없습니다.<//>` : html`
+    <div class="table-wrap"><table class="grid"><thead><tr><th>캐피탈사</th><th class="r">건수</th><th class="r">할부금액</th><th>비중</th><th class="r">평균 할부피</th><th class="r">수익(원천징수 후)</th></tr></thead>
+      <tbody>${groups.map(g => html`<tr><td><b>${g.k}</b></td><td class="r">${g.n}건</td><td class="r"><b>${won(g.amt)}</b></td>
+        <td style="min-width:160px"><div class="statbar"><i style=${`width:${total ? Math.round(g.amt / total * 100) : 0}%`}></i></div></td>
+        <td class="r">${g.amt ? (g.fee / g.amt * 100).toFixed(2) : "0"}%</td><td class="r">${won(g.inc)}</td></tr>`)}
+        <tr class="em"><th>합계</th><td class="r">${rows.length}건</td><td class="r"><b>${won(total)}</b></td><td></td><td></td><td class="r">${won(groups.reduce((t, g) => t + g.inc, 0))}</td></tr></tbody></table></div>
+    <div class="table-wrap"><table class="grid click"><thead><tr><th>매도일</th><th>차량번호</th><th>차량명</th><th>캐피탈사</th><th class="r">할부금액</th><th class="r">할부피</th><th class="r">수익</th><th>매도담당</th></tr></thead>
+      <tbody>${rows.map(c => html`<tr onClick=${() => go("/car/" + c.id + "/sale")}><td>${c.sale.sale_date}</td><td><b>${c.plate}</b></td><td class="ellipsis">${c.car_name}</td>
+        <td>${c.sale.installment_company || html`<span class="muted">미입력</span>`}</td>${W(c.sale.installment_amount)}<td class="r">${Number(c.sale.installment_rate)}%</td>${W(c.sale.installment_income)}
+        <td>${dealer[c.sale.dealer_id || c.dealer_id] || "-"}</td></tr>`)}</tbody></table></div>`}
+    <p class="note">할부실적은 번 돈보다 캐피탈사마다 할부를 얼마나 넣어 줬는지가 중요해서 할부금액 순으로 보여 줍니다. 대장에서 옮긴 과거 판매는 할부금액·캐피탈사 기록이 없어 여기 안 나옵니다(할부 수익만 손익에 들어가 있음).</p>`;
+}
 
 function LoansList({ app, tab }) {
   const [d, reload] = useBook(app);
@@ -300,21 +335,26 @@ export function SalesPage({ app }) {
   const dealer = Object.fromEntries(app.dealers.map(x => [x.id, x.name]));
   if (!d) return html`<${Loading} />`;
   const rows = d.cars.filter(c => c.sale && match(f, c, c.sale.sale_date)).sort(sorter(f, (c, s) => ({ 매도일: c.sale.sale_date, 매도금액: n(c.sale.sale_amount), 매입일: c.purchase_date }[s])));
+  // 총마진 = 매도금액 + 매도비 + 추가수익(할부수익 + 정산 기타매출) − (매입가 + 비용 전체 + 재고이자) — 차량 리스트 마진과 같은 식
+  const yr = c => c.model_year ? String(c.model_year).slice(0, 4) : "";
+  const 마진 = c => n(c.sale.sale_amount) + n(c.sale.sale_fee) + n(c.sale.installment_income) + (c.settle?.other_revenue || []).reduce((t, x) => t + n(x.금액), 0)
+    - n(c.purchase_amount) - c.상품화 - c.재고이자;
   const tot = k => rows.reduce((t, c) => t + n(k(c)), 0);
   return html`<div class="bar"><h2>매도차량 리스트</h2><span class="grow"></span>
-      <button class="btn" onClick=${() => downloadCsv("매도차량", [["매입일", "차량번호", "판매유형", "고객명", "매도담당", "알선딜러", "매입가", "재고금융금액", "총납입이자", "상품화비용", "매도금액", "상사매도비", "성능보험료", "매도일", "매출발행일", "정산일"],
-        ...rows.map(c => [c.purchase_date, c.plate, c.sale.sale_type, c.buyers[0]?.name, dealer[c.sale.dealer_id || c.dealer_id], dealer[c.sale.broker_dealer_id] || "", c.purchase_amount, c.재고금융전체, c.재고이자, c.상품화,
-          c.sale.sale_amount, c.sale.sale_fee, c.sale.perf_insurance, c.sale.sale_date, c.매출발행일, c.settle?.settle_date])])}>다운로드</button>
+      <button class="btn" onClick=${() => downloadCsv("매도차량", [["매입일", "차량번호", "차명", "연식", "키로수", "판매유형", "매도담당", "알선딜러", "매입가", "재고금융금액", "총납입이자", "상품화비용", "매도금액", "상사매도비", "성능보험료", "매도일", "총마진", "매출발행일", "정산일"],
+        ...rows.map(c => [c.purchase_date, c.plate, c.car_name, yr(c), c.mileage ?? "", c.sale.sale_type, dealer[c.sale.dealer_id || c.dealer_id], dealer[c.sale.broker_dealer_id] || "", c.purchase_amount, c.재고금융전체, c.재고이자, c.상품화,
+          c.sale.sale_amount, c.sale.sale_fee, c.sale.perf_insurance, c.sale.sale_date, 마진(c), c.매출발행일, c.settle?.settle_date])])}>다운로드</button>
       ${office && html`<button class="btn primary" onClick=${() => setPick(true)}>매도차량 등록</button>`}</div>
     ${pick && html`<${CarPick} cars=${d.cars.filter(c => c.status === "재고")} label="매도 등록" tab="sale" onClose=${() => setPick(false)} />`}
     <${Filters} app=${app} f=${f} setF=${setF} dateKeys=${["매도일"]} sortKeys=${["매도일", "매도금액", "매입일"]} />
-    <${Sum} rows=${[{ cells: ["합계", "건수", "매입가", "재고금융", "총납입이자", "매도금액", "상사매도비", "성능보험료"], em: true },
-      { cells: ["", rows.length + "대", tot(c => c.purchase_amount), tot(c => c.재고금융전체), tot(c => c.재고이자), tot(c => c.sale.sale_amount), tot(c => c.sale.sale_fee), tot(c => c.sale.perf_insurance)] }]} />
-    ${!rows.length ? html`<${Empty}>조건에 맞는 매도 차량이 없습니다.<//>` : html`<div class="table-wrap"><table class="grid click">
-      <thead><tr><th>매입일</th><th>차량번호</th><th>판매유형</th><th>고객명</th><th>매도담당</th><th class="r">매입가</th><th class="r">재고금융</th><th class="r" title="매입일부터 매도일(상환일)까지 자동계산">총납입이자</th>
-        <th class="r">상품화비용</th><th class="r">매도금액</th><th class="r">상사매도비</th><th class="r">성능보험료</th><th>매도일</th><th>(일부)매출발행일</th><th>(임시)정산일</th></tr></thead>
-      <tbody>${rows.map(c => html`<tr onClick=${() => go(`/car/${c.id}/sale`)}><td>${c.purchase_date}</td><td><b>${c.plate}</b></td><td>${c.sale.sale_type}</td>
-        <td>${c.buyers[0]?.name || "-"}${c.buyers.length > 1 ? ` 외 ${c.buyers.length - 1}` : ""}</td><td>${dealer[c.sale.dealer_id || c.dealer_id] || "-"}${c.sale.broker_dealer_id ? html`<br /><span class="muted small">알선 ${dealer[c.sale.broker_dealer_id]}</span>` : ""}</td>
+    <${Sum} rows=${[{ cells: ["합계", "건수", "매입가", "재고금융", "총납입이자", "매도금액", "상사매도비", "성능보험료", "총마진"], em: true },
+      { cells: ["", rows.length + "대", tot(c => c.purchase_amount), tot(c => c.재고금융전체), tot(c => c.재고이자), tot(c => c.sale.sale_amount), tot(c => c.sale.sale_fee), tot(c => c.sale.perf_insurance), tot(마진)] }]} />
+    ${!rows.length ? html`<${Empty}>조건에 맞는 매도 차량이 없습니다.<//>` : html`<div class="table-wrap"><table class="grid click carlist">
+      <thead><tr><th>매입일</th><th>차량번호</th><th>차명</th><th>연식</th><th class="r">키로수</th><th>판매유형</th><th>매도담당</th><th class="r">매입가</th><th class="r">재고금융</th><th class="r" title="매입일부터 매도일(상환일)까지 자동계산">총납입이자</th>
+        <th class="r">상품화비용</th><th class="r">매도금액</th><th class="r">상사매도비</th><th class="r">성능보험료</th><th>매도일</th><th class="r" title="매도금액 + 매도비 + 추가수익(할부수익·기타매출) − 매입가 − 비용 − 재고이자">총마진</th><th>(일부)매출발행일</th><th>(임시)정산일</th></tr></thead>
+      <tbody>${rows.map(c => html`<tr onClick=${() => go(`/car/${c.id}/sale`)}><td>${c.purchase_date}</td><td><b>${c.plate}</b></td>
+        <td class="ellipsis" title=${c.car_name}>${c.car_name}</td><td>${yr(c) || "-"}</td><td class="r">${c.mileage != null ? won(c.mileage) : "-"}</td><td>${c.sale.sale_type}</td>
+        <td>${dealer[c.sale.dealer_id || c.dealer_id] || "-"}${c.sale.broker_dealer_id ? html`<br /><span class="muted small">알선 ${dealer[c.sale.broker_dealer_id]}</span>` : ""}</td>
         ${W(c.purchase_amount)}${W(c.재고금융전체)}${W(c.재고이자)}${W(c.상품화)}${W(c.sale.sale_amount)}${W(c.sale.sale_fee)}${W(c.sale.perf_insurance)}
-        <td>${c.sale.sale_date}</td><td>${c.매출발행일}</td><td>${c.settle ? html`${c.settle.settle_date}${!c.settle.finalized && html` <span class="badge amber">임시</span>`}` : ""}</td></tr>`)}</tbody></table></div>`}`;
+        <td>${c.sale.sale_date}</td><td class=${"r " + (마진(c) < 0 ? "red" : "blue")}><b>${won(마진(c))}</b></td><td>${c.매출발행일}</td><td>${c.settle ? html`${c.settle.settle_date}${!c.settle.finalized && html` <span class="badge amber">임시</span>`}` : ""}</td></tr>`)}</tbody></table></div>`}`;
 }
