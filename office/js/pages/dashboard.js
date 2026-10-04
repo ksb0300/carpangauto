@@ -8,7 +8,7 @@ import { TrendChart } from "./reports.js";
 import { 미납이자 } from "../calc.js";
 import { monthRange } from "../ui.js";
 import { inspState, ALERT_DAYS, renewInsp } from "./tab-insp.js";
-import { 할일, extendLoan } from "./lenders.js";
+import { 할일, LoanAction } from "./lenders.js";
 import { news } from "../pb.js";
 
 export function Dashboard({ app }) {
@@ -113,7 +113,7 @@ ${hasDealer && html`      <a class="stat" href="#/settlements"><span>이번 달 
     loans_todo: { title: "재고금융 연장·상환 챙길 것", size: "half", render: () => card("재고금융 연장·상환 챙길 것",
       차표(챙길.map(x => ({ ...x, c: car[x.l.car_id] })), ["차량", "금융사", "대출", "할 일", ""],
         x => html`<td><b>${x.c.plate}</b></td><td>${d.lenders.find(l => l.id === x.l.lender_id)?.name}</td><td class="r">${won(x.l.amount)}</td><td><span class=${"badge " + x.h.tone}>${x.h.text}</span></td>
-          <td><button class="btn sm" onClick=${async e => { e.stopPropagation(); if (await extendLoan(app, x.l)) load(); }}>연장</button></td>`, "loans"),
+          <td><${LoanAction} app=${app} l=${x.l} lender=${d.lenders.find(l => l.id === x.l.lender_id)} onDone=${load} /></td>`, "loans"),
       html`<a class="btn sm" href="#/loans/lenders">금융사별 현황</a>`) },
     insp: { title: "성능점검 90일 지난 재고", size: "half", render: () => card(`성능점검 ${ALERT_DAYS}일 지난 재고`,
       차표(성능, ["차량", "경과", "상태", ""], x => html`<td><b>${x.c.plate}</b> <span class="small">${x.c.car_name}</span></td><td class="r">${x.s.경과}일</td><td><span class=${"badge " + x.s.tone}>${x.s.text}</span></td>

@@ -1,5 +1,5 @@
 // 재고금융관리 → 금융사별 현황 · 금융사 조건 설정. 금융사마다 기본기간·연장·이율·연장 조건·상환해지수수료가 다르다.
-import { html, useState, useEffect, Money, Field, Seg, Loading, Empty, run, won, go, today, W } from "../ui.js";
+import { html, useState, useEffect, Money, Field, Seg, Loading, Empty, run, won, go, today, W, toast } from "../ui.js";
 import { q } from "../db.js";
 import { loadAll } from "./report-data.js";
 import { 대출상태, 연장조건, 재고금융이자, 해지수수료 } from "../calc.js";
@@ -30,8 +30,12 @@ export async function extendLoan(app, l) {
       상환 = Number(String(v).replace(/\D/g, "")) || 0;
     } else if (!window.confirm(`${lender.name} 조건으로 ${c.개월}개월 연장합니다. (연장 시작 ${c.시작일})`)) return false;
     m = c.개월;
+  } else if (Number(lender?.ext_months) > 0) {
+    // 연장 조건이 있는 금융사(부산은행·JB우리 등)는 한 번 연장하면 최종 만기 — 그 뒤엔 전액 상환뿐
+    toast(`${lender.name}: 이미 연장해 최종 만기(총 ${Number(lender.base_months) + Number(lender.ext_months)}개월)입니다. 더 연장할 수 없고 전액 상환해야 합니다.`, "err");
+    return false;
   } else {
-    m = Number(String(window.prompt(`${lender?.name || ""}: 금융사 연장 조건이 없거나 이미 연장했습니다.\n${l.months}개월 → 몇 개월 연장할까요? (수동)`, "") || "").replace(/\D/g, ""));
+    m = Number(String(window.prompt(`${lender?.name || ""}: 금융사 연장 조건이 아직 없습니다 (조건 설정에서 넣을 수 있음).\n${l.months}개월 → 몇 개월 연장할까요? (수동)`, "") || "").replace(/\D/g, ""));
     if (!m) return false;
   }
   const s = 대출상태(l, today());
@@ -40,10 +44,39 @@ export async function extendLoan(app, l) {
     memo: [l.memo, `${today()} ${m}개월 연장${상환 ? ` (원금 ${won(상환)} 상환)` : ""}`].filter(Boolean).join(" / ") }).eq("id", l.id)), `${m}개월 연장했습니다`));
 }
 
+/** 연장 버튼을 보여줄지 — 금융사 조건으로 아직 연장 전이거나, 조건이 없는 금융사(수동) */
+export const canExtend = (l, lender) => l.status === "진행중" && (연장조건(l, lender).가능 || !(Number(lender?.ext_months) > 0));
+
+/** 상환 — 상환일을 받아 상환완료 처리, 금융사 해지수수료(설정돼 있으면)도 기록. 성공하면 true */
+export async function repayLoan(app, l) {
+  const lender = app.lenders.find(x => x.id === l.lender_id);
+  const v = window.prompt(`${lender?.name || ""} ${won(대출상태(l, today()).원금잔액)}원 상환일 (YYYY-MM-DD)`, today());
+  if (!v) return false;
+  const d = v.trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) { toast("날짜를 YYYY-MM-DD 로 넣어 주세요.", "err"); return false; }
+  const fee = 해지수수료(l, lender, d);
+  if (fee && !window.confirm(`상환해지수수료 ${won(fee)}원 (${lender.repay_fee_method} ${Number(lender.repay_fee_pct)}%) — 상환완료 처리할까요?`)) return false;
+  return !!(await run(() => q(app.db.from("car_loans").update({ status: "상환완료", repaid_date: d, repay_fee: fee || null }).eq("id", l.id)), "상환완료 처리했습니다"));
+}
+
+/** 목록용 버튼: 연장할 수 있으면 '연장', 이미 연장했거나(최종 만기) 연장이 없으면 '상환' */
+export function LoanAction({ app, l, lender, onDone }) {
+  if (l.status !== "진행중" || app.profile.role === "dealer") return null;
+  const go_ = async (e, f) => { e.stopPropagation(); if (await f(app, l)) onDone(); };
+  const 연장 = html`<button class="btn sm" onClick=${e => go_(e, extendLoan)}>연장</button>`;
+  const 상환 = html`<button class="btn sm primary" onClick=${e => go_(e, repayLoan)}>상환</button>`;
+  if (연장조건(l, lender).가능) return 연장;                         // 조건대로 아직 연장 전
+  if (!(Number(lender?.ext_months) > 0)) return html`<span class="btnrow">${연장}${상환}</span>`;   // 조건 미입력 금융사: 둘 다
+  return 상환;                                                       // 이미 연장 → 최종 만기, 상환만
+}
+
 /** 대출 한 건의 '다음 할 일' */
 export function 할일(l, lender, t) {
   const s = 대출상태(l, t), c = 연장조건(l, lender);
+  const 조건없음 = !(Number(lender?.ext_months) > 0);       // 연장 조건을 아직 안 넣은 금융사 (KB국민·신한 등)
   if (l.status !== "진행중") return { text: "상환완료", tone: "gray" };
+  if (조건없음 && s.남은일 < 0) return { text: `만기 ${-s.남은일}일 지남 — 연장 또는 상환`, tone: "red" };
+  if (조건없음 && s.남은일 <= 14) return { text: `D-${s.남은일} 만기 — 연장 또는 상환`, tone: "amber" };
   if (s.남은일 < 0) return { text: `만기 ${-s.남은일}일 지남 — 상환하세요`, tone: "red" };
   if (c.가능 && s.남은일 <= 14) return { text: `D-${s.남은일} 연장 필요${c.상환필요 ? ` — 원금 ${won(c.상환필요)} 먼저 상환` : ""}`, tone: "amber" };
   if (!c.가능 && s.남은일 <= 14) return { text: `D-${s.남은일} 최종 만기 — 상환 준비`, tone: s.남은일 <= 7 ? "red" : "amber" };
@@ -86,7 +119,7 @@ export function LenderOverview({ app }) {
               ${W(s.원금잔액)}<td>${l.start_date}</td><td>${s.단계}</td><td>${s.만기}</td>
               <td class="r">${s.연장됨 && l.ext_rate != null ? `${Number(l.ext_rate)}%` : `${Number(l.lender_rate ?? 0)}%`}</td>
               ${W(재고금융이자(l, l.start_date, t))}${W(해지수수료(l, x, t))}<td><span class=${"badge " + h.tone}>${h.text}</span></td>
-              <td>${app.profile.role !== "dealer" && html`<button class="btn sm" onClick=${e => ext(e, l)}>연장</button>`}</td></tr>`; })}</tbody></table></div>`}
+              <td><${LoanAction} app=${app} l=${l} lender=${x} onDone=${load} /></td></tr>`; })}</tbody></table></div>`}
       </div>`;
     })}
     ${(rest => rest.length > 0 && html`<div class="card"><h3>대출 없는 금융사</h3><table class="st"><tbody>${rest.map(x => html`<tr>

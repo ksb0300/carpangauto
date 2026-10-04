@@ -1,7 +1,7 @@
 import { html, useState, useEffect, Money, Field, Select, Seg, run, won, today, toast } from "../ui.js";
 import { q } from "../db.js";
 import { 대출이자, 미납이자, 대출상태, 연장조건, 해지수수료, 재고금융이자 } from "../calc.js";
-import { 조건요약, 할일, extendLoan } from "./lenders.js";
+import { 조건요약, 할일, extendLoan, canExtend } from "./lenders.js";
 
 const MONTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 24, 36];
 const addMonths = (d, m) => { const x = new Date(d + "T00:00:00Z"); x.setUTCMonth(x.getUTCMonth() + Number(m)); return x.toISOString().slice(0, 10); };
@@ -73,7 +73,7 @@ export function LoansTab({ app, car, loans, reload, locked, office }) {
         ${l.memo && html`<div class="muted small">메모: ${l.memo}</div>`}
         ${edit && html`<div class="actions">
           <button class="btn sm" disabled=${done} onClick=${() => pay(l)}>이자납입</button>
-          <button class="btn sm" disabled=${done} title=${c.가능 ? `${c.개월}개월 연장${c.상환필요 ? ` · 원금 ${won(c.상환필요)} 상환` : ""}` : "금융사 조건상 연장 불가 — 수동 연장"} onClick=${() => extend(l)}>연장</button>
+          <button class="btn sm" disabled=${done || !canExtend(l, lender)} title=${c.가능 ? `${c.개월}개월 연장${c.상환필요 ? ` · 원금 ${won(c.상환필요)} 상환` : ""}` : "금융사 조건상 연장 불가 — 수동 연장"} onClick=${() => extend(l)}>연장</button>
           ${done ? html`<button class="btn sm" onClick=${() => setStatus(l, "진행중")}>상환완료 취소</button>`
                  : html`<button class="btn sm" onClick=${() => setStatus(l, "상환완료")}>상환완료</button>`}
           <button class="btn sm danger" disabled=${done} title=${done ? "상환완료를 먼저 취소하세요" : ""} onClick=${() => remove(l)}>삭제</button>

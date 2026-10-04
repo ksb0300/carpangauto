@@ -5,7 +5,7 @@ import { q } from "../db.js";
 import { loadAll } from "./report-data.js";
 import { 부가세분리, 대출이자, 미납이자, 재고금융이자 } from "../calc.js";
 import { settleBadge } from "./cars.js";
-import { LenderOverview, 할일, extendLoan } from "./lenders.js";
+import { LenderOverview, 할일, LoanAction } from "./lenders.js";
 import { 대출상태 } from "../calc.js";
 
 const n = v => Math.round(Number(v) || 0);
@@ -242,7 +242,7 @@ function LoansList({ app, tab }) {
       <tbody>${loans.map(l => html`<tr onClick=${() => go(`/car/${l.car.id}/loans`)}><td><b>${l.car.plate}</b></td><td>${dealer[l.car.dealer_id] || "-"}</td>
         <td>${lender[l.lender_id]}</td>${W(l.잔액)}<td>${l.start_date}</td><td class="r">${l.months}개월</td>
         <td class=${l.status === "진행중" && l.만기 < today() ? "red" : ""}>${l.만기}</td><td><span class=${"badge " + l.할일.tone}>${l.할일.text}</span></td>${W(l.캐피탈일이자)}${W(l.이자)}${hasDealer && W(l.미납, "red")}
-        <td>${office && l.status === "진행중" && html`<button class="btn sm" onClick=${async e => { e.stopPropagation(); if (await extendLoan(app, l)) reload(); }}>연장</button>`}</td></tr>`)}</tbody>
+        <td><${LoanAction} app=${app} l=${l} lender=${d.lenders.find(x => x.id === l.lender_id)} onDone=${reload} /></td></tr>`)}</tbody>
       <tfoot><tr><td colspan="3">${loans.length}건</td><td class="r">${won(sum("잔액"))}</td><td colspan="4"></td><td class="r">${won(sum("캐피탈일이자"))}</td>
         <td class="r">${won(sum("이자"))}</td>${hasDealer && html`<td class="r">${won(sum("미납"))}</td>`}<td></td></tr></tfoot></table></div>`}
     <${LenderLimits} d=${d} />`;

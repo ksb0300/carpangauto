@@ -228,3 +228,4 @@ a.stat { color: inherit; } a.stat:hover { border-color: var(--pri); }
 .newslist { list-style: none; margin: 0; padding: 0; } .newslist li { padding: 7px 0; border-bottom: 1px solid var(--line2); display: flex; flex-direction: column; gap: 2px; }
 .newslist li:last-child { border-bottom: 0; } .newslist a { color: var(--ink); } .newslist a:hover { color: var(--pri); text-decoration: underline; }
 .news .bar select { width: auto; }
+.btnrow { display: inline-flex; gap: 4px; white-space: nowrap; }
