@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#2a1d45">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="티어원견적서">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="tierone-logo.png">
+    <title>TierONE 차량 견적서</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6.26.0/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', 'Noto Sans KR', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #eef2f7 0%, #dce3ed 100%);
+            min-height: 100vh;
+            padding: 16px;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* 헤더 */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 18px;
+            padding: 22px 24px;
+            background: linear-gradient(135deg, #2a1d45 0%, #5b3a93 50%, #2a1d45 100%);
+            border-radius: 16px 16px 0 0;
+            color: white;
+            box-shadow: 0 4px 15px rgba(42, 29, 69, 0.3);
+        }
+        .header .logo-wrap {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            overflow: hidden;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .header .logo-wrap img {
+            width: 56px;
+            height: 56px;
+            object-fit: contain;
+        }
+        .header-text h1 {
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: 1px;
+        }
+        .header-text p {
+            font-size: 13px;
+            opacity: 0.8;
+            margin-top: 2px;
+        }
+
+        /* 메인 레이아웃 */
+        .main-wrapper {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .content-layout {
+            display: flex;
+            gap: 0;
+        }
+
+        /* 좌측: 견적서 */
+        .quote-section {
+            flex: 1;
+            padding: 28px;
+            border-right: 1px solid #eee;
+        }
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #2a1d45;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #5b3a93;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .section-icon {
+            width: 28px;
+            height: 28px;
+            background: #5b3a93;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        /* 계좌 안내 */
+        .bank-info {
+            margin-top: 24px;
+            padding: 18px;
+            background: linear-gradient(135deg, #f0f4f8, #e8edf3);
+            border-radius: 12px;
+            border: 2px solid #5b3a93;
+        }
+        .bank-info h3 {
+            font-size: 15px;
+            color: #2a1d45;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #c8d0dc;
+        }
+        .bank-detail {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 6px;
+        }
+        .bank-name {
+            background: #5b3a93;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 700;
+        }
+        .bank-account {
+            font-size: 18px;
+            font-weight: 800;
+            color: #2a1d45;
+            letter-spacing: 0.5px;
+        }
+        .bank-holder {
+            font-size: 14px;
+            color: #5a6a7a;
+            font-weight: 600;
+        }
+
+        /* 우측: 계산기 패널 */
+        .calc-section {
+            width: 400px;
+            min-width: 360px;
+            padding: 0;
+            background: #f8f9fb;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 탭 스타일 */
+        .tab-bar {
+            display: flex;
+            background: #e8ecf2;
+            border-bottom: 1px solid #ddd;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 14px 8px;
+            border: none;
+            background: transparent;
+            font-size: 15px;
+            font-weight: 700;
+            color: #8e99a9;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .tab-btn.active {
+            background: #f8f9fb;
+            color: #5b3a93;
+        }
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #5b3a93;
+        }
+        .tab-btn:not(.active):hover {
+            background: #dde2ea;
+        }
+        .tab-content {
+            padding: 24px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        /* 폼 스타일 */
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            font-size: 14px;
+            color: #34495e;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px 14px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            background: white;
+            -webkit-appearance: none;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #5b3a93;
+            box-shadow: 0 0 0 3px rgba(44, 62, 107, 0.1);
+        }
+        .input-suffix {
+            position: relative;
+        }
+        .input-suffix input {
+            padding-right: 40px;
+        }
+        .input-suffix .suffix {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #95a5a6;
+            font-size: 14px;
+            font-weight: 500;
+            pointer-events: none;
+        }
+        .form-row {
+            display: flex;
+            gap: 12px;
+        }
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        /* 견적 결과 */
+        .result-card {
+            margin-top: 20px;
+            padding: 20px;
+            background: linear-gradient(135deg, #f8f9fb 0%, #fff 100%);
+            border-radius: 12px;
+            border: 1px solid #e2e6ed;
+        }
+        .result-card h3 {
+            font-size: 17px;
+            color: #2a1d45;
+            margin-bottom: 14px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            font-size: 15px;
+            color: #495057;
+        }
+        .result-row .label {
+            color: #6c757d;
+        }
+        .result-row .value {
+            font-weight: 600;
+            color: #2a1d45;
+        }
+        .result-row.sub-note {
+            font-size: 12px;
+            color: #adb5bd;
+            padding: 0 0 8px 0;
+            justify-content: flex-end;
+        }
+        .result-divider {
+            border: none;
+            border-top: 2px dashed #dee2e6;
+            margin: 8px 0;
+        }
+        .result-total {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 0 4px;
+            font-size: 20px;
+            font-weight: 800;
+        }
+        .result-total .label {
+            color: #2a1d45;
+        }
+        .result-total .value {
+            color: #5b3a93;
+        }
+
+        /* 할부/리스 결과 */
+        .loan-result {
+            margin-top: 16px;
+            padding: 18px;
+            background: white;
+            border-radius: 12px;
+            border: 2px solid #5b3a93;
+        }
+        .loan-result h3 {
+            font-size: 16px;
+            color: #5b3a93;
+            margin-bottom: 12px;
+        }
+        .loan-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: 14px;
+            color: #495057;
+        }
+        .loan-row .value {
+            font-weight: 600;
+        }
+        .loan-highlight {
+            margin-top: 12px;
+            padding: 14px;
+            background: linear-gradient(135deg, #2a1d45, #5b3a93);
+            border-radius: 10px;
+            text-align: center;
+            color: white;
+        }
+        .loan-highlight.lease-color {
+            background: linear-gradient(135deg, #1a6b5a, #27ae60);
+        }
+        .loan-highlight .monthly-label {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+        .loan-highlight .monthly-amount {
+            font-size: 26px;
+            font-weight: 800;
+            margin-top: 4px;
+        }
+        .loan-highlight .monthly-unit {
+            font-size: 14px;
+            font-weight: 400;
+        }
+
+        .lease-border {
+            border-color: #27ae60;
+        }
+        .lease-border h3 {
+            color: #1a6b5a;
+        }
+
+        /* 계산 버튼 */
+        .calc-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #2a1d45, #5b3a93);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.2s;
+            margin-top: 8px;
+        }
+        .calc-btn:active {
+            transform: scale(0.98);
+        }
+        .calc-btn:hover {
+            box-shadow: 0 4px 12px rgba(42, 29, 69, 0.4);
+        }
+        .apply-btns {
+            display: flex;
+            gap: 8px;
+            margin-top: 14px;
+        }
+        .apply-btns .calc-btn {
+            margin-top: 0;
+            font-size: 13px;
+            padding: 10px 8px;
+        }
+        .apply-btns .calc-btn.lease-btn {
+            background: linear-gradient(135deg, #1a6b5a, #27ae60);
+        }
+
+        /* 푸터 */
+        .footer {
+            text-align: center;
+            padding: 16px;
+            background: #f8f9fb;
+            border-top: 1px solid #eee;
+            font-size: 12px;
+            color: #adb5bd;
+        }
+
+        /* 스케줄 테이블 */
+        .schedule-toggle {
+            width: 100%;
+            padding: 10px;
+            background: #f0f2f5;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #495057;
+            cursor: pointer;
+            margin-top: 12px;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        .schedule-toggle:hover {
+            background: #e2e6ea;
+        }
+        .schedule-table {
+            width: 100%;
+            margin-top: 12px;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+        .schedule-table th {
+            background: #5b3a93;
+            color: white;
+            padding: 8px 4px;
+            text-align: center;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+        .schedule-table th.lease-th {
+            background: #1a6b5a;
+        }
+        .schedule-table td {
+            padding: 6px 4px;
+            text-align: right;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .schedule-table tr:nth-child(even) {
+            background: #fafafa;
+        }
+        .schedule-scroll {
+            max-height: 300px;
+            overflow-y: auto;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+
+        /* 리스 타입 선택 */
+        .lease-type-bar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .lease-type-btn {
+            flex: 1;
+            padding: 10px 6px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: white;
+            font-size: 13px;
+            font-weight: 600;
+            color: #7f8c8d;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        .lease-type-btn.active {
+            border-color: #27ae60;
+            color: #1a6b5a;
+            background: #e8f8f0;
+        }
+
+        /* 반응형 - 태블릿 세로 */
+        @media (max-width: 900px) {
+            .content-layout {
+                flex-direction: column;
+            }
+            .quote-section {
+                border-right: none;
+                border-bottom: 1px solid #eee;
+            }
+            .calc-section {
+                width: 100%;
+                min-width: auto;
+            }
+        }
+
+        /* 인쇄 스타일 */
+        @media print {
+            body { background: white; padding: 0; }
+            .main-wrapper { box-shadow: none; }
+            .calc-btn, .schedule-toggle, .tab-bar, .apply-btns { display: none; }
+        }
+
+        /* 초기화 버튼 */
+        .reset-btn {
+            background: #f1f3f5; color: #495057; border: 1px solid #dee2e6;
+            border-radius: 8px; padding: 8px 11px; font-size: 13px;
+            cursor: pointer; font-weight: 600; transition: all 0.2s;
+        }
+        .reset-btn:hover { background: #e9ecef; }
+
+        /* 감면 체크박스 영역 */
+        .exempt-row {
+            display: flex; align-items: center; gap: 10px;
+            margin-bottom: 12px; flex-wrap: wrap;
+        }
+        .exempt-checkbox { width: 18px; height: 18px; cursor: pointer; accent-color: #3498db; }
+        .exempt-label { font-size: 14px; font-weight: 600; color: #2c3e50; cursor: pointer; }
+        .exempt-info-btn {
+            background: none; border: 1px solid #3498db; color: #3498db;
+            border-radius: 50%; width: 20px; height: 20px; font-size: 11px;
+            font-weight: 700; cursor: pointer; line-height: 1; padding: 0;
+        }
+        .exempt-input-wrap { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+        .exempt-input-wrap input { flex: 1; }
+        .exempt-options-wrap {
+            background: #f0f4f8;
+            border-radius: 10px;
+            padding: 8px;
+            margin-bottom: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .exempt-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: white;
+            border-radius: 8px;
+            border: 2px solid #e8ecf0;
+            padding: 10px 12px;
+            transition: border-color 0.2s, background 0.2s;
+            cursor: pointer;
+        }
+        .exempt-option.active {
+            border-color: #3498db;
+            background: #eaf4fd;
+        }
+        .exempt-option-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #6c757d;
+            white-space: nowrap;
+            min-width: 90px;
+        }
+        .exempt-option.active .exempt-option-label { color: #1a6b9a; }
+        .exempt-option .input-suffix input { font-size: 14px; padding: 8px 36px 8px 10px; border-radius: 8px; border: 1.5px solid #e0e0e0; width: 100%; }
+        .exempt-option.active .input-suffix input { border-color: #3498db; background: white; }
+        .exempt-option .input-suffix input:disabled { background: #f5f7f9; color: #ccc; cursor: not-allowed; border-color: #e8ecf0; }
+
+        /* 팝업 모달 */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5); z-index: 1000;
+            display: flex; align-items: center; justify-content: center; padding: 20px;
+        }
+        .modal-box {
+            background: #fff; border-radius: 16px; padding: 28px;
+            max-width: 480px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .modal-box h3 { margin: 0 0 16px; font-size: 17px; color: #2c3e50; }
+        .modal-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .modal-table th {
+            background: #3498db; color: #fff; padding: 9px 12px;
+            text-align: left; font-weight: 600;
+        }
+        .modal-table td { padding: 9px 12px; border-bottom: 1px solid #f0f0f0; }
+        .modal-table tr:last-child td { border-bottom: none; }
+        .modal-table tr:nth-child(even) td { background: #f8f9fa; }
+        .modal-note { font-size: 12px; color: #888; margin-top: 12px; }
+        .modal-close {
+            display: block; width: 100%; margin-top: 18px; padding: 11px;
+            background: #3498db; color: #fff; border: none; border-radius: 10px;
+            font-size: 15px; font-weight: 700; cursor: pointer;
+        }
+        .modal-close:hover { background: #2980b9; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        function CarQuoteApp() {
+            // 견적서 상태
+            const [carPrice, setCarPrice] = React.useState('');
+            const [insurancePrice, setInsurancePrice] = React.useState('');
+            const [showBank, setShowBank] = React.useState(false);
+
+            // 차량번호 검색
+            // 차량 검색은 TierONE 업무관리 재고에서 (차량번호·차명·성능보험료만) — 예전 구글시트 대신
+            const APPS_SCRIPT_URL = 'https://fwqtyyjhfewpxihpaasu.supabase.co/functions/v1/quote';
+            const [searchKeyword, setSearchKeyword] = React.useState('');
+            const [searchResults, setSearchResults] = React.useState(null);
+            const [searchLoading, setSearchLoading] = React.useState(false);
+            const [selectedCar, setSelectedCar] = React.useState(null);
+
+            // 관리자 모드 (로고 3번 탭)
+            const [adminMode, setAdminMode] = React.useState(false);
+            const tapCount = React.useRef(0);
+            const tapTimer = React.useRef(null);
+
+            const handleLogoTap = () => {
+                tapCount.current += 1;
+                clearTimeout(tapTimer.current);
+                tapTimer.current = setTimeout(() => { tapCount.current = 0; }, 1000);
+                if (tapCount.current >= 3) {
+                    setAdminMode(!adminMode);
+                    tapCount.current = 0;
+                }
+            };
+
+            // 탭 상태
+            const [activeTab, setActiveTab] = React.useState('installment');
+
+            // 할부 계산기 상태
+            const [loanAmount, setLoanAmount] = React.useState('0');
+            const [interestRate, setInterestRate] = React.useState('0');
+            const [loanMonths, setLoanMonths] = React.useState('60');
+            const [showSchedule, setShowSchedule] = React.useState(false);
+
+            // 리스 계산기 상태
+            const [leaseType, setLeaseType] = React.useState('operating');
+            const [leaseCarPrice, setLeaseCarPrice] = React.useState('0');
+            const [leaseAdvance, setLeaseAdvance] = React.useState('0');
+            const [leaseResidual, setLeaseResidual] = React.useState('30');
+            const [leaseRate, setLeaseRate] = React.useState('9');
+            const [leaseMonths, setLeaseMonths] = React.useState('60');
+            const [showLeaseSchedule, setShowLeaseSchedule] = React.useState(false);
+            const [taxExempt, setTaxExempt] = React.useState(false);
+            const [exemptMode, setExemptMode] = React.useState(null); // 'amount' | 'percent' | 'transfer'
+            const [exemptAmount, setExemptAmount] = React.useState('');
+            const [exemptPercent, setExemptPercent] = React.useState('');
+            const [customTransferFee, setCustomTransferFee] = React.useState('');
+            const [showExemptModal, setShowExemptModal] = React.useState(false);
+
+            // 차량번호 검색 함수
+            // kw 를 주면 그 번호로 (업무관리 [견적서 만들기] → ?car=번호&price=판매가 로 열 때)
+            const searchCar = (kw) => {
+                kw = typeof kw === 'string' ? kw : searchKeyword;
+                if (!kw || kw.length < 2) {
+                    alert('최소 2자리 이상 입력해주세요');
+                    return;
+                }
+                setSearchLoading(true);
+                setSelectedCar(null);
+                fetch(APPS_SCRIPT_URL + '?q=' + encodeURIComponent(kw))
+                    .then(function(res) { return res.json(); })
+                    .then(function(data) {
+                        setSearchResults(data);
+                        if (data.length === 1) {
+                            setSelectedCar(data[0]);
+                            var ins = String(data[0].insurance).replace(/[^0-9]/g, '');
+                            setInsurancePrice(ins);
+                        }
+                        setSearchLoading(false);
+                    })
+                    .catch(function() {
+                        alert('검색 실패: 네트워크를 확인해주세요');
+                        setSearchResults(null);
+                        setSearchLoading(false);
+                    });
+            };
+
+            React.useEffect(() => {
+                const p = new URLSearchParams(location.search);
+                const car = (p.get('car') || '').trim(), price = (p.get('price') || '').replace(/[^0-9]/g, '');
+                if (price) setCarPrice(price);
+                if (car) { setSearchKeyword(car); searchCar(car); }
+            }, []);
+
+            const applyCar = (car) => {
+                setSelectedCar(car);
+                const ins = String(car.insurance).replace(/[^0-9]/g, '');
+                setInsurancePrice(ins);
+            };
+
+            // 견적 상수
+            const FIXED_SALE_FEE = 440000;
+            const TRANSFER_RATE = 0.075;
+
+            // 견적 계산
+            const calculateQuote = () => {
+                const price = Number(carPrice);
+                if (!price) return null;
+                const rawTransferFee = Math.floor(price * TRANSFER_RATE);
+                const transferFee = !taxExempt || !exemptMode ? rawTransferFee
+                    : exemptMode === 'amount' ? Math.max(0, rawTransferFee - (Number(exemptAmount) || 0))
+                    : exemptMode === 'percent' ? Math.floor(rawTransferFee * (1 - (Number(exemptPercent) || 0) / 100))
+                    : (Number(customTransferFee) || 0);
+                const insurance = Number(insurancePrice) || 0;
+                const total = price + FIXED_SALE_FEE + transferFee + insurance;
+                return { carPrice: price, saleFee: FIXED_SALE_FEE, transferFee, insurance, total };
+            };
+
+            // 원리금균등상환 계산 (할부)
+            const calculateLoan = () => {
+                const P = Number(loanAmount);
+                const annualRate = Number(interestRate);
+                const n = Number(loanMonths);
+                if (!P || !annualRate || !n) return null;
+
+                const r = annualRate / 100 / 12;
+                const monthly = P * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1);
+                const totalPayment = monthly * n;
+                const totalInterest = totalPayment - P;
+
+                let balance = P;
+                const schedule = [];
+                for (let i = 1; i <= n; i++) {
+                    const interest = balance * r;
+                    const principal = monthly - interest;
+                    balance -= principal;
+                    schedule.push({
+                        month: i,
+                        payment: monthly,
+                        principal,
+                        interest,
+                        balance: Math.max(balance, 0)
+                    });
+                }
+                return { monthly, totalPayment, totalInterest, schedule };
+            };
+
+            // 리스 계산
+            const calculateLease = () => {
+                const carP = Number(leaseCarPrice);
+                const annualRate = Number(leaseRate);
+                const n = Number(leaseMonths);
+                if (!carP || !annualRate || !n) return null;
+
+                const advanceAmount = Number(leaseAdvance) || 0;
+                const residualAmount = leaseType === 'operating' ? carP * (Number(leaseResidual) / 100) : 0;
+                const rawTransferFee = carP * 0.075;
+                const transferFee = !taxExempt || !exemptMode ? rawTransferFee
+                    : exemptMode === 'amount' ? Math.max(0, rawTransferFee - (Number(exemptAmount) || 0))
+                    : exemptMode === 'percent' ? rawTransferFee * (1 - (Number(exemptPercent) || 0) / 100)
+                    : (Number(customTransferFee) || 0);
+                const leasePrincipal = carP - advanceAmount + transferFee;
+                const r = annualRate / 100 / 12;
+
+                const compoundFactor = Math.pow(1 + r, n);
+                const monthly = (leasePrincipal * compoundFactor - residualAmount) * r / (compoundFactor - 1);
+
+                const totalPayment = monthly * n + advanceAmount;
+                const totalInterest = totalPayment - (carP - residualAmount);
+
+                let balance = leasePrincipal;
+                const schedule = [];
+                for (let i = 1; i <= n; i++) {
+                    const interest = balance * r;
+                    const principal = monthly - interest;
+                    balance -= principal;
+                    schedule.push({
+                        month: i,
+                        payment: monthly,
+                        principal,
+                        interest,
+                        balance: Math.max(balance, 0)
+                    });
+                }
+
+                return {
+                    monthly,
+                    advanceAmount,
+                    residualAmount,
+                    leasePrincipal,
+                    totalPayment,
+                    totalInterest,
+                    schedule
+                };
+            };
+
+            const quoteResult = calculateQuote();
+            const loanResult = calculateLoan();
+            const leaseResult = calculateLease();
+
+            const handleReset = () => {
+                setCarPrice('');
+                setInsurancePrice('');
+                setSearchKeyword('');
+                setSearchResults(null);
+                setSelectedCar(null);
+                setLoanAmount('0');
+                setInterestRate('0');
+                setLoanMonths('60');
+                setLeaseCarPrice('0');
+                setLeaseAdvance('0');
+                setLeaseResidual('30');
+                setLeaseRate('9');
+                setLeaseMonths('60');
+                setTaxExempt(false);
+                setCustomTransferFee('');
+                setShowSchedule(false);
+                setShowLeaseSchedule(false);
+                setShowBank(false);
+                setActiveTab('installment');
+            };
+
+            const shareCanvas = (target, fileNamePrefix, title) => {
+                if (!target) return;
+                html2canvas(target, {scale: 2, useCORS: true, backgroundColor: '#eef2f7'}).then(function(canvas) {
+                    canvas.toBlob(function(blob) {
+                        var fileName = fileNamePrefix + '_' + new Date().toISOString().slice(0,10) + '.png';
+                        var file = new File([blob], fileName, {type: 'image/png'});
+                        if (navigator.share && navigator.canShare && navigator.canShare({files: [file]})) {
+                            navigator.share({files: [file], title: title});
+                        } else {
+                            var link = document.createElement('a');
+                            link.download = fileName;
+                            link.href = URL.createObjectURL(blob);
+                            link.click();
+                        }
+                    }, 'image/png');
+                });
+            };
+
+            const handleCaptureQuote = () => {
+                shareCanvas(document.querySelector('.quote-section'), '티어원_견적서', 'TierONE 견적서');
+            };
+            const handleCaptureCalc = () => {
+                shareCanvas(document.querySelector('.calc-section'), '티어원_할부견적', 'TierONE 할부 견적');
+            };
+
+            const applyToLoan = () => {
+                if (quoteResult) {
+                    setLoanAmount(String(quoteResult.total));
+                    setActiveTab('installment');
+                }
+            };
+            const applyToLease = () => {
+                if (quoteResult) {
+                    setLeaseCarPrice(String(quoteResult.carPrice));
+                    setActiveTab('lease');
+                }
+            };
+
+            const fmtWon = (num) => Math.round(num).toLocaleString();
+
+            return (
+                <div className="main-wrapper">
+
+                    {/* 취등록세 감면 팝업 모달 */}
+                    {showExemptModal && (
+                        <div className="modal-overlay" onClick={() => setShowExemptModal(false)}>
+                            <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+                                <h3>취득세 감면 대상 안내</h3>
+                                <table className="modal-table">
+                                    <thead>
+                                        <tr>
+                                            <th>구분</th>
+                                            <th>감면 내용</th>
+                                            <th>한도 / 구조</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr><td>전기차</td><td>취득세 감면</td><td><strong>140만원 공제</strong></td></tr>
+                                        <tr><td>다자녀 (3명 이상)</td><td>취득세 감면</td><td><strong>140만원 공제</strong></td></tr>
+                                        <tr><td>다자녀 (2명)</td><td>취득세 감면</td><td><strong>50% 감면</strong></td></tr>
+                                        <tr><td>경차</td><td>취득세 감면</td><td><strong>75만원 공제</strong></td></tr>
+                                        <tr><td>장애인</td><td>취득세 면제</td><td><strong>전액 면제</strong></td></tr>
+                                        <tr><td>국가유공자</td><td>취득세 면제</td><td><strong>전액 면제</strong></td></tr>
+                                    </tbody>
+                                </table>
+                                <p className="modal-note">※ 중복되는 경우 더 유리한 조건 1개만 적용됩니다.</p>
+                                <button className="modal-close" onClick={() => setShowExemptModal(false)}>확인</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 헤더 */}
+                    <div className="header">
+                        <div className="logo-wrap" onClick={handleLogoTap} style={{cursor: 'pointer'}}>
+                            <img src="tierone-logo.png" alt="TierONE 로고" />
+                        </div>
+                        <div className="header-text">
+                            <h1>TierONE 견적서</h1>
+                            <p>{adminMode ? '관리자 모드' : '신뢰할 수 있는 중고차 거래 파트너'}</p>
+                        </div>
+                    </div>
+
+                    <div className="content-layout">
+                        {/* 좌측: 견적서 */}
+                        <div className="quote-section">
+                            <div className="section-title">
+                                <div className="section-icon">$</div>
+                                차량 견적 계산
+                            </div>
+
+                            <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'12px'}}>
+                                <div className="exempt-row" style={{marginBottom:0}}>
+                                    <input
+                                        type="checkbox"
+                                        id="taxExempt"
+                                        className="exempt-checkbox"
+                                        checked={taxExempt}
+                                        onChange={(e) => { setTaxExempt(e.target.checked); if (!e.target.checked) { setExemptMode(null); setExemptAmount(''); setExemptPercent(''); setCustomTransferFee(''); } }}
+                                    />
+                                    <label htmlFor="taxExempt" className="exempt-label">취등록세 감면대상</label>
+                                    <button className="exempt-info-btn" onClick={() => setShowExemptModal(true)}>?</button>
+                                </div>
+                                <div style={{display:'flex', gap:'6px'}}>
+                                    <button className="reset-btn" onClick={handleCaptureQuote}>📤 공유</button>
+                                    <button className="reset-btn" onClick={handleReset}>↺ 초기화</button>
+                                </div>
+                            </div>
+
+                            {taxExempt && (
+                                <div className="exempt-options-wrap">
+                                    <div className={`exempt-option${exemptMode === 'amount' ? ' active' : ''}`}
+                                        onClick={() => setExemptMode(exemptMode === 'amount' ? null : 'amount')}>
+                                        <input type="checkbox" className="exempt-checkbox"
+                                            checked={exemptMode === 'amount'}
+                                            onChange={() => {}}
+                                        />
+                                        <span className="exempt-option-label">감면금액</span>
+                                        <div className="input-suffix" style={{flex:1}} onClick={(e) => e.stopPropagation()}>
+                                            <input type="number" value={exemptAmount}
+                                                onChange={(e) => setExemptAmount(e.target.value)}
+                                                placeholder="감면금액 입력"
+                                                disabled={exemptMode !== 'amount'}
+                                                inputMode="numeric"
+                                            />
+                                            <span className="suffix">원</span>
+                                        </div>
+                                    </div>
+                                    <div className={`exempt-option${exemptMode === 'percent' ? ' active' : ''}`}
+                                        onClick={() => setExemptMode(exemptMode === 'percent' ? null : 'percent')}>
+                                        <input type="checkbox" className="exempt-checkbox"
+                                            checked={exemptMode === 'percent'}
+                                            onChange={() => {}}
+                                        />
+                                        <span className="exempt-option-label">감면 퍼센트</span>
+                                        <div className="input-suffix" style={{flex:1}} onClick={(e) => e.stopPropagation()}>
+                                            <input type="number" value={exemptPercent}
+                                                onChange={(e) => setExemptPercent(e.target.value)}
+                                                placeholder="감면율 입력"
+                                                disabled={exemptMode !== 'percent'}
+                                                inputMode="numeric"
+                                            />
+                                            <span className="suffix">%</span>
+                                        </div>
+                                    </div>
+                                    <div className={`exempt-option${exemptMode === 'transfer' ? ' active' : ''}`}
+                                        onClick={() => setExemptMode(exemptMode === 'transfer' ? null : 'transfer')}>
+                                        <input type="checkbox" className="exempt-checkbox"
+                                            checked={exemptMode === 'transfer'}
+                                            onChange={() => {}}
+                                        />
+                                        <span className="exempt-option-label">이전비 직접입력</span>
+                                        <div className="input-suffix" style={{flex:1}} onClick={(e) => e.stopPropagation()}>
+                                            <input type="number" value={customTransferFee}
+                                                onChange={(e) => setCustomTransferFee(e.target.value)}
+                                                placeholder="이전비 금액 입력"
+                                                disabled={exemptMode !== 'transfer'}
+                                                inputMode="numeric"
+                                            />
+                                            <span className="suffix">원</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* 차량번호 검색 */}
+                            <div className="form-group" style={{background: '#f0f4f8', padding: '12px', borderRadius: '10px', marginBottom: '12px'}}>
+                                <label style={{fontSize: '13px', fontWeight: '700', color: '#2a1d45', marginBottom: '8px'}}>🔍 차량번호 검색</label>
+                                <div style={{display: 'flex', gap: '8px'}}>
+                                    <input
+                                        type="text"
+                                        value={searchKeyword}
+                                        onChange={(e) => setSearchKeyword(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && searchCar()}
+                                        placeholder="차량번호 뒤 4자리"
+                                        style={{flex: 1, padding: '10px 12px', border: '2px solid #d0d7e3', borderRadius: '8px', fontSize: '14px', outline: 'none'}}
+                                        inputMode="numeric"
+                                    />
+                                    <button
+                                        onClick={searchCar}
+                                        disabled={searchLoading}
+                                        style={{padding: '10px 18px', background: '#2a1d45', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', whiteSpace: 'nowrap'}}
+                                    >
+                                        {searchLoading ? '검색중...' : '검색'}
+                                    </button>
+                                </div>
+
+                                {/* 검색 결과 목록 */}
+                                {searchResults && searchResults.length > 1 && !selectedCar && (
+                                    <div style={{marginTop: '8px', maxHeight: '150px', overflowY: 'auto'}}>
+                                        {searchResults.map((car, idx) => (
+                                            <div
+                                                key={idx}
+                                                onClick={() => applyCar(car)}
+                                                style={{padding: '8px 12px', background: 'white', borderRadius: '6px', marginBottom: '4px', cursor: 'pointer', fontSize: '13px', border: '1px solid #e0e0e0'}}
+                                            >
+                                                <strong>{car.carNum}</strong> &nbsp; {car.carName} &nbsp; | &nbsp; 보험료: {Number(String(car.insurance).replace(/[^0-9]/g, '')).toLocaleString()}원
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* 선택된 차량 정보 */}
+                                {selectedCar && (
+                                    <div style={{marginTop: '8px', padding: '10px 12px', background: '#e8f0fe', borderRadius: '8px', fontSize: '13px', lineHeight: '1.8'}}>
+                                        <div><strong>차량번호:</strong> {selectedCar.carNum}</div>
+                                        <div><strong>차명:</strong> {selectedCar.carName}</div>
+                                        <div><strong>보험료:</strong> {Number(String(selectedCar.insurance).replace(/[^0-9]/g, '')).toLocaleString()}원</div>
+                                        <div style={{textAlign: 'right', marginTop: '4px', fontSize: '11px', color: '#27ae60', fontWeight: '700'}}>✔ 성능보증보험료에 적용됨</div>
+                                    </div>
+                                )}
+
+                                {/* 검색 결과 없음 */}
+                                {searchResults && searchResults.length === 0 && !searchLoading && (
+                                    <div style={{marginTop: '8px', fontSize: '12px', color: '#e74c3c'}}>검색 결과가 없습니다.</div>
+                                )}
+                            </div>
+
+                            <div className="form-group">
+                                <label>차량 가격</label>
+                                <div className="input-suffix">
+                                    <input
+                                        type="number"
+                                        value={carPrice}
+                                        onChange={(e) => setCarPrice(e.target.value)}
+                                        placeholder="차량 가격을 입력하세요"
+                                        inputMode="numeric"
+                                    />
+                                    <span className="suffix">원</span>
+                                </div>
+                            </div>
+
+                            <div className="form-group">
+                                <label>성능보증보험료</label>
+                                <div className="input-suffix">
+                                    <input
+                                        type="number"
+                                        value={insurancePrice}
+                                        onChange={(e) => setInsurancePrice(e.target.value)}
+                                        placeholder="성능보증보험료를 입력하세요"
+                                        inputMode="numeric"
+                                    />
+                                    <span className="suffix">원</span>
+                                </div>
+                            </div>
+
+                            {quoteResult && (
+                                <div className="result-card">
+                                    <h3>견적 상세내역</h3>
+                                    <div className="result-row">
+                                        <span className="label">차량가격</span>
+                                        <span className="value">{quoteResult.carPrice.toLocaleString()} 원</span>
+                                    </div>
+                                    <div className="result-row">
+                                        <span className="label">차량매도비</span>
+                                        <span className="value">{quoteResult.saleFee.toLocaleString()} 원</span>
+                                    </div>
+                                    <div className="result-row">
+                                        <span className="label">이전비 {taxExempt && exemptMode === 'amount' ? '(감면금액 차감)' : taxExempt && exemptMode === 'percent' ? `(${exemptPercent}% 감면)` : taxExempt && exemptMode === 'transfer' ? '(직접입력)' : '(7.5%)'}</span>
+                                        <span className="value">{quoteResult.transferFee.toLocaleString()} 원</span>
+                                    </div>
+                                    <div className="result-row">
+                                        <span className="label">성능보증보험료</span>
+                                        <span className="value">{quoteResult.insurance.toLocaleString()} 원</span>
+                                    </div>
+                                    <hr className="result-divider" />
+                                    <div className="result-total">
+                                        <span className="label">총 견적금액</span>
+                                        <span className="value">{quoteResult.total.toLocaleString()} 원</span>
+                                    </div>
+                                    <div className="apply-btns">
+                                        <button className="calc-btn" onClick={applyToLoan}>
+                                            할부 계산 →
+                                        </button>
+                                        <button className="calc-btn lease-btn" onClick={applyToLease}>
+                                            리스 계산 →
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            <button className="schedule-toggle" style={{marginTop: '24px'}} onClick={() => setShowBank(!showBank)}>
+                                {showBank ? '▲ 입금 계좌 안내 닫기' : '▼ 입금 계좌 안내'}
+                            </button>
+                            {showBank && (
+                                <div className="bank-info">
+                                    <div style={{marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px dashed #dee2e6'}}>
+                                        <div className="bank-detail">
+                                            <span className="bank-name" style={{background: '#c0392b'}}>부산은행</span>
+                                            <span className="bank-account">101-2094-4765-02</span>
+                                            <span style={{marginLeft: 'auto', fontWeight: '700', color: '#2a1d45'}}>{quoteResult ? fmtWon(quoteResult.carPrice + quoteResult.saleFee) + '원' : '-'}</span>
+                                        </div>
+                                        <div className="bank-holder">예금주: 티어원 김상혁</div>
+                                    </div>
+                                    <div>
+                                        <div className="bank-detail">
+                                            <span className="bank-name" style={{background: '#f5c500', color: '#3a1d00'}}>카카오뱅크</span>
+                                            <span className="bank-account">3333-16-9197273</span>
+                                            <span style={{marginLeft: 'auto', fontWeight: '700', color: '#2a1d45'}}>{quoteResult ? fmtWon(quoteResult.transferFee + quoteResult.insurance) + '원' : '-'}</span>
+                                        </div>
+                                        <div className="bank-holder">예금주: 김기택</div>
+                                    </div>
+                                </div>
+                            )}
+
+                        </div>
+
+                        {/* 우측: 할부/리스 탭 */}
+                        <div className="calc-section">
+                            <div className="tab-bar">
+                                <button
+                                    className={'tab-btn' + (activeTab === 'installment' ? ' active' : '')}
+                                    onClick={() => setActiveTab('installment')}
+                                >
+                                    할부 계산기
+                                </button>
+                                <button
+                                    className={'tab-btn' + (activeTab === 'lease' ? ' active' : '')}
+                                    onClick={() => setActiveTab('lease')}
+                                >
+                                    리스 계산기
+                                </button>
+                            </div>
+
+                            {/* ===== 할부 탭 ===== */}
+                            {activeTab === 'installment' && (
+                                <div className="tab-content">
+                                    <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: '16px'}}>
+                                        <p style={{fontSize: '13px', color: '#7f8c8d'}}>
+                                            원리금균등상환 방식
+                                        </p>
+                                        <button className="reset-btn" onClick={handleCaptureCalc}>📤 공유</button>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>할부 원금</label>
+                                        <div className="input-suffix">
+                                            <input
+                                                type="number"
+                                                value={loanAmount}
+                                                onChange={(e) => setLoanAmount(e.target.value)}
+                                                placeholder="할부 원금"
+                                                inputMode="numeric"
+                                            />
+                                            <span className="suffix">원</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="form-row">
+                                        <div className="form-group">
+                                            <label>연 이율</label>
+                                            <div className="input-suffix">
+                                                <input
+                                                    type="number"
+                                                    value={interestRate}
+                                                    onChange={(e) => setInterestRate(e.target.value)}
+                                                    placeholder="이율"
+                                                    inputMode="decimal"
+                                                    step="0.1"
+                                                />
+                                                <span className="suffix">%</span>
+                                            </div>
+                                        </div>
+                                        <div className="form-group">
+                                            <label>할부 기간</label>
+                                            <select
+                                                value={loanMonths}
+                                                onChange={(e) => setLoanMonths(e.target.value)}
+                                            >
+                                                <option value="12">12개월</option>
+                                                <option value="24">24개월</option>
+                                                <option value="36">36개월</option>
+                                                <option value="48">48개월</option>
+                                                <option value="60">60개월</option>
+                                                <option value="72">72개월</option>
+                                                <option value="84">84개월</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    {loanResult && (
+                                        <React.Fragment>
+                                            <div className="loan-highlight">
+                                                <div className="monthly-label">월 납입금액</div>
+                                                <div className="monthly-amount">
+                                                    {fmtWon(loanResult.monthly)}
+                                                    <span className="monthly-unit"> 원</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="loan-result">
+                                                <h3>할부 상세 정보</h3>
+                                                <div className="loan-row">
+                                                    <span>할부 원금</span>
+                                                    <span className="value">{Number(loanAmount).toLocaleString()} 원</span>
+                                                </div>
+                                                <div className="loan-row">
+                                                    <span>상환 방식</span>
+                                                    <span className="value">원리금균등상환</span>
+                                                </div>
+                                                <p style={{fontSize: '11px', color: '#adb5bd', marginTop: '10px', whiteSpace: 'nowrap'}}>※ 실제 금리 및 조건은 금융사별로 상이하며, 본 계산은 참고용입니다.</p>
+                                            </div>
+
+                                            <button
+                                                className="schedule-toggle"
+                                                onClick={() => setShowSchedule(!showSchedule)}
+                                            >
+                                                {showSchedule ? '▲ 상환 스케줄 닫기' : '▼ 상환 스케줄 보기'}
+                                            </button>
+
+                                            {showSchedule && (
+                                                <div className="schedule-scroll">
+                                                    <table className="schedule-table">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>회차</th>
+                                                                <th>월납입금</th>
+                                                                <th>원금</th>
+                                                                <th>이자</th>
+                                                                <th>잔금</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {loanResult.schedule.map((row) => (
+                                                                <tr key={row.month}>
+                                                                    <td style={{textAlign: 'center'}}>{row.month}</td>
+                                                                    <td>{fmtWon(row.payment)}</td>
+                                                                    <td>{fmtWon(row.principal)}</td>
+                                                                    <td>{fmtWon(row.interest)}</td>
+                                                                    <td>{fmtWon(row.balance)}</td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            )}
+                                        </React.Fragment>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* ===== 리스 탭 ===== */}
+                            {activeTab === 'lease' && (
+                                <div className="tab-content">
+                                    <div style={{display:'flex', justifyContent:'flex-end', marginBottom: '12px'}}>
+                                        <button className="reset-btn" onClick={handleCaptureCalc}>📤 공유</button>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>차량가격</label>
+                                        <div className="input-suffix">
+                                            <input
+                                                type="number"
+                                                value={leaseCarPrice}
+                                                onChange={(e) => setLeaseCarPrice(e.target.value)}
+                                                placeholder="차량가격"
+                                                inputMode="numeric"
+                                            />
+                                            <span className="suffix">원</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>선수금</label>
+                                        <div className="input-suffix">
+                                            <input
+                                                type="number"
+                                                value={leaseAdvance}
+                                                onChange={(e) => setLeaseAdvance(e.target.value)}
+                                                placeholder="선수금"
+                                                inputMode="numeric"
+                                            />
+                                            <span className="suffix">원</span>
+                                        </div>
+                                    </div>
+                                    {leaseType === 'operating' && (
+                                        <div className="form-group">
+                                            <label>잔존가치</label>
+                                            <div className="input-suffix">
+                                                <input
+                                                    type="number"
+                                                    value={leaseResidual}
+                                                    onChange={(e) => setLeaseResidual(e.target.value)}
+                                                    placeholder="잔존가치"
+                                                    inputMode="decimal"
+                                                    step="5"
+                                                />
+                                                <span className="suffix">%</span>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="form-row">
+                                        {adminMode && (
+                                            <div className="form-group">
+                                                <label>연 이율</label>
+                                                <div className="input-suffix">
+                                                    <input
+                                                        type="number"
+                                                        value={leaseRate}
+                                                        onChange={(e) => setLeaseRate(e.target.value)}
+                                                        placeholder="이율"
+                                                        inputMode="decimal"
+                                                        step="0.1"
+                                                        style={{borderColor: '#e74c3c', background: '#fff5f5'}}
+                                                    />
+                                                    <span className="suffix">%</span>
+                                                </div>
+                                            </div>
+                                        )}
+                                        <div className="form-group">
+                                            <label>리스 기간</label>
+                                            <select
+                                                value={leaseMonths}
+                                                onChange={(e) => setLeaseMonths(e.target.value)}
+                                            >
+                                                <option value="24">24개월</option>
+                                                <option value="36">36개월</option>
+                                                <option value="48">48개월</option>
+                                                <option value="60">60개월</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    {leaseResult && (
+                                        <React.Fragment>
+                                            <div className="loan-highlight lease-color">
+                                                <div className="monthly-label">월 리스료</div>
+                                                <div className="monthly-amount">
+                                                    {fmtWon(leaseResult.monthly)}
+                                                    <span className="monthly-unit"> 원</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="loan-result lease-border">
+                                                <h3>리스 상세 정보</h3>
+                                                <div className="loan-row">
+                                                    <span>차량가격</span>
+                                                    <span className="value">{Number(leaseCarPrice).toLocaleString()} 원</span>
+                                                </div>
+                                                <div className="loan-row">
+                                                    <span>선수금</span>
+                                                    <span className="value">{fmtWon(leaseResult.advanceAmount)} 원</span>
+                                                </div>
+                                                <div className="loan-row">
+                                                    <span>리스원금</span>
+                                                    <span className="value">{fmtWon(leaseResult.leasePrincipal)} 원</span>
+                                                </div>
+                                                {leaseType === 'operating' && (
+                                                    <div className="loan-row">
+                                                        <span>잔존가치 ({leaseResidual}%)</span>
+                                                        <span className="value">{fmtWon(leaseResult.residualAmount)} 원</span>
+                                                    </div>
+                                                )}
+                                                <p style={{fontSize: '11px', color: '#adb5bd', marginTop: '10px', whiteSpace: 'nowrap'}}>※ 실제 금리 및 조건은 금융사별로 상이하며, 본 계산은 참고용입니다.</p>
+                                            </div>
+
+                                            <button
+                                                className="schedule-toggle"
+                                                onClick={() => setShowLeaseSchedule(!showLeaseSchedule)}
+                                            >
+                                                {showLeaseSchedule ? '▲ 리스 스케줄 닫기' : '▼ 리스 스케줄 보기'}
+                                            </button>
+
+                                            {showLeaseSchedule && (
+                                                <div className="schedule-scroll">
+                                                    <table className="schedule-table">
+                                                        <thead>
+                                                            <tr>
+                                                                <th className="lease-th">회차</th>
+                                                                <th className="lease-th">월리스료</th>
+                                                                <th className="lease-th">원금</th>
+                                                                <th className="lease-th">이자</th>
+                                                                <th className="lease-th">잔액</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {leaseResult.schedule.map((row) => (
+                                                                <tr key={row.month}>
+                                                                    <td style={{textAlign: 'center'}}>{row.month}</td>
+                                                                    <td>{fmtWon(row.payment)}</td>
+                                                                    <td>{fmtWon(row.principal)}</td>
+                                                                    <td>{fmtWon(row.interest)}</td>
+                                                                    <td>{fmtWon(row.balance)}</td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            )}
+                                        </React.Fragment>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="footer">
+                        &copy; TierONE. 본 견적서는 참고용이며, 실제 금액은 상이할 수 있습니다.
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<CarQuoteApp />, document.getElementById('root'));
+    </script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js');
+        }
+    </script>
+</body>
+</html>

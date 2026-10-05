@@ -117,16 +117,17 @@ export function Dashboard({ app }) {
       <a class="stat" href="#/loans"><span>재고금융 진행중</span><b>${won(s.재고.재고금융)}</b><small>${act.length}건</small></a>
 ${hasDealer && html`      <a class="stat" href="#/settlements"><span>이번 달 딜러 정산 지급</span><b>${won(s.정산.실지급)}</b><small>${s.정산.건수}건 · 원천징수 ${won(s.정산.세액)}</small></a>`}</div></div>` },
     loans_todo: { title: "재고금융 연장·상환 챙길 것", size: "half", render: () => card("재고금융 연장·상환 챙길 것",
-      차표(챙길.map(x => ({ ...x, c: car[x.l.car_id] })), ["차량", "금융사", "대출", "할 일", ""],
-        x => html`<td><b>${x.c.plate}</b></td><td>${d.lenders.find(l => l.id === x.l.lender_id)?.name}</td><td class="r">${won(x.l.amount)}</td><td><span class=${"badge " + x.h.tone}>${x.h.text}</span></td>
-          <td><${LoanAction} app=${app} l=${x.l} lender=${d.lenders.find(l => l.id === x.l.lender_id)} onDone=${load} /></td>`, "loans"),
+      차표(챙길.map(x => ({ ...x, c: car[x.l.car_id] })), ["차량", "", "할 일", "금융사", "대출"],      // 버튼은 차량 바로 옆 — 위젯이 좁아도 안 가려지게
+        x => html`<td class="nowrap"><b>${x.c.plate}</b></td><td><${LoanAction} app=${app} l=${x.l} lender=${d.lenders.find(l => l.id === x.l.lender_id)} onDone=${load} /></td>
+          <td class="wrap"><span class=${"badge wrap " + x.h.tone}>${x.h.text}</span></td><td>${d.lenders.find(l => l.id === x.l.lender_id)?.name}</td><td class="r">${won(x.l.amount)}</td>`, "loans"),
       html`<a class="btn sm" href="#/loans/lenders">금융사별 현황</a>`) },
     cash_cars: { title: "현금 차량 리스트", size: "half", render: () => card(`현금 차량 리스트 — ${현금차.length}대 · ${won(현금차.reduce((a, x) => a + Number(x.c.purchase_amount), 0))}원`,
       차표(현금차, ["차량", "매입가", "재고일", "사유"], x => html`<td><b>${x.c.plate}</b> <span class="small">${x.c.car_name}</span></td><td class="r">${won(x.c.purchase_amount)}</td>
         <td class="r">${x.일}일</td><td class="small">${x.사유}</td>`), html`<a class="btn sm" href="#/purchases">리스트</a>`) },
     insp: { title: "성능점검 90일 지난 재고", size: "half", render: () => card(`성능점검 ${ALERT_DAYS}일 지난 재고`,
-      차표(성능, ["차량", "경과", "상태", ""], x => html`<td><b>${x.c.plate}</b> <span class="small">${x.c.car_name}</span></td><td class="r">${x.s.경과}일</td><td><span class=${"badge " + x.s.tone}>${x.s.text}</span></td>
-        <td><button class="btn sm" onClick=${async e => { e.stopPropagation(); if (await renewInsp(app, x.i)) load(); }}>연장</button></td>`)) },
+      차표(성능, ["차량", "", "경과", "상태"], x => html`<td class="wrap"><b>${x.c.plate}</b> <span class="small">${x.c.car_name}</span></td>
+        <td><button class="btn sm" onClick=${async e => { e.stopPropagation(); if (await renewInsp(app, x.i)) load(); }}>연장</button></td>
+        <td class="r nowrap">${x.s.경과}일</td><td class="wrap"><span class=${"badge wrap " + x.s.tone}>${x.s.text}</span></td>`)) },
     stock_old: { title: "90일 넘은 재고", size: "half", render: () => card("90일 넘은 재고",
       차표(장기.map(c => ({ c, 일: Math.round((Date.parse(t) - Date.parse(c.purchase_date)) / 864e5) })).sort((a, b) => b.일 - a.일), ["차량", "매입가", "재고일"],
         x => html`<td><b>${x.c.plate}</b> <span class="small">${x.c.car_name}</span></td><td class="r">${won(x.c.purchase_amount)}</td><td class="r red">${x.일}일</td>`)) },

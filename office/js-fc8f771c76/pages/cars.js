@@ -39,7 +39,7 @@ export function CarList({ app, query }) {
   const shown = useMemo(() => (rows || []).filter(r =>
     (tab === "전체" || r.status === tab) &&
     (!dealer || r.dealer_id === dealer) &&
-    검색맞음(text, r.plate, r.plate_before, r.car_name, r.brand, r.model, r.grade, r.fskey, r.vin)), [rows, tab, text, dealer]);
+    검색맞음(text, r.plate, r.plate_before, r.car_name, r.brand, r.model, r.grade, r.fskey)), [rows, tab, text, dealer]);
 
   if (!rows) return html`<${Loading} />`;
   const cnt = s => rows.filter(r => s === "전체" || r.status === s).length;

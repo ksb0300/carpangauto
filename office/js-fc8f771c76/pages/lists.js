@@ -70,10 +70,13 @@ const saveQ = v => { try { sessionStorage.setItem(qKey(), v); } catch {} };
 // (useState 초기값 식은 매 렌더마다 계산되니 여기서 지우지 않고 읽기만)
 const loadQ = () => { try { return prevHash.startsWith("#/car/") ? sessionStorage.getItem(qKey()) || "" : ""; } catch { return ""; } };
 const initF = (dateKey, sort) => ({ q: loadQ(), dealer: null, dateKey, useDate: false, period: initPeriod("월"), sort, dir: "desc" });
-const match = (f, c, date) => 검색맞음(f.q, c.plate, c.plate_before, c.car_name, c.brand, c.model, c.grade, c.fskey, c.vin)
+const match = (f, c, date) => 점수(f, c) > 0
   && (!f.dealer || c.dealer_id === f.dealer || c.sale?.dealer_id === f.dealer)
   && (!f.useDate || (date && date >= f.period.from && date <= f.period.to));
-const sorter = (f, get) => (a, b) => { const x = get(a, f.sort), y = get(b, f.sort); const r = x < y ? -1 : x > y ? 1 : 0; return f.dir === "asc" ? r : -r; };
+const 점수 = (f, c) => 검색맞음(f.q, c.plate, c.plate_before, c.car_name, c.brand, c.model, c.grade, c.fskey);
+// 검색어가 있으면 글자 그대로 맞는 차가 먼저, 소리만 비슷한 차(소나타→쏘나타)는 그 아래. 그 안에선 고른 정렬대로
+const sorter = (f, get) => (a, b) => { if (f.q) { const d = 점수(f, b) - 점수(f, a); if (d) return d; }
+  const x = get(a, f.sort), y = get(b, f.sort); const r = x < y ? -1 : x > y ? 1 : 0; return f.dir === "asc" ? r : -r; };
 
 /** 차를 골라 그 차의 탭으로 (상품화비용 등록·재고금융 등록·매도차량 등록) */
 function CarPick({ cars, label, tab, onClose }) {
@@ -117,11 +120,13 @@ export function PurchasesPage({ app }) {
   const 기본매도비 = n(app.settings.sale_fee);
   const calc = c => {
     const 재반 = c.재반항목 + c.재고이자, 총원가 = n(c.purchase_amount) + 재반 + c.상품화비;
-    const 판매가 = c.sale ? n(c.sale.sale_amount) : (price[c.id] ?? (c.list_price != null ? n(c.list_price) : null));
+    const 입력가 = price[c.id] ?? (c.list_price != null ? n(c.list_price) : null);
+    const 예상 = !c.sale && !입력가 && n(c.ad_price) > 0;          // 판매가를 안 넣었으면 엔카 광고가로 '예상'
+    const 판매가 = c.sale ? n(c.sale.sale_amount) : 입력가 || (예상 ? n(c.ad_price) : null);
     const 매도비 = c.sale ? n(c.sale.sale_fee) : 기본매도비;
     const 추가수익 = c.sale ? n(c.sale.installment_income) + (c.settle?.other_revenue || []).reduce((t, x) => t + n(x.금액), 0)
       : n(price["x" + c.id] ?? c.extra_income);
-    return { 재반, 총원가, 판매가, 매도비, 추가수익, 마진: 판매가 ? 판매가 + 매도비 + 추가수익 - 총원가 : null };
+    return { 재반, 총원가, 판매가, 매도비, 추가수익, 예상, 본전가: 총원가 - 매도비 - 추가수익, 마진: 판매가 ? 판매가 + 매도비 + 추가수익 - 총원가 : null };
   };
   const rows = useMemo(() => (d?.cars || []).filter(c => (f.status === "전체" || c.status === f.status) && match(f, c, dateOf(c)))
     .sort(sorter(f, (c, k) => ({ 매입일: c.purchase_date, 매입가: n(c.purchase_amount), 차량번호: c.plate, 재고일수: -days(c.purchase_date), 총원가: calc(c).총원가, 마진: calc(c).마진 ?? -1e15 }[k]))), [d, f, f.sort === "마진" ? price : null]);
@@ -154,11 +159,16 @@ export function PurchasesPage({ app }) {
         <td class="r" onClick=${e => e.stopPropagation()}>${c.sale ? (x.추가수익 ? html`<span title="할부수익 + 정산 기타매출">${won(x.추가수익)}</span>` : html`<span class="muted">-</span>`)
           : office ? html`<${Money} value=${price["x" + c.id] ?? c.extra_income ?? ""} placeholder="" style="width:84px" onInput=${v => typeField(c, "extra_income", "x" + c.id, v)} onKeyDown=${e => e.key === "Enter" && e.target.blur()} />` : (x.추가수익 ? won(x.추가수익) : "-")}</td>
         <td class="r" onClick=${e => e.stopPropagation()}>${c.sale ? html`<span title=${`매도금액 (매도비 ${won(x.매도비)} 별도)`}>${won(x.판매가)}</span>`
-          : office ? html`<${Money} value=${x.판매가 ?? 0} placeholder="입력" onInput=${v => typeField(c, "list_price", c.id, v)} onKeyDown=${e => e.key === "Enter" && e.target.blur()} />` : (x.판매가 ? won(x.판매가) : "-")}</td>
-        <td class=${"r " + (x.마진 == null ? "muted" : x.마진 < 0 ? "red" : "blue")} title=${x.마진 == null ? "" : `판매가 ${won(x.판매가)} + 매도비 ${won(x.매도비)} + 추가수익 ${won(x.추가수익)} − 총원가 ${won(x.총원가)}`}>${x.마진 == null ? "-" : won(x.마진)}</td>
+          : office ? html`<${Money} value=${x.예상 ? 0 : x.판매가 ?? 0} placeholder=${c.ad_price ? won(c.ad_price) : "입력"}
+              title=${c.ad_price ? `엔카 광고가 ${won(c.ad_price)}원 (${String(c.ad_price_at || "").slice(5, 10)} 확인) — 비워 두면 이 값으로 예상마진` : "엔카 광고가 없음"}
+              onInput=${v => typeField(c, "list_price", c.id, v)} onKeyDown=${e => e.key === "Enter" && e.target.blur()} />` : (x.판매가 ? won(x.판매가) : "-")}</td>
+        <td class=${"r " + (x.마진 == null ? "muted" : x.마진 < 0 ? "red" : "blue") + (x.예상 ? " est" : "")}
+          title=${(x.마진 == null ? "" : `${x.예상 ? "엔카 광고가" : "판매가"} ${won(x.판매가)} + 매도비 ${won(x.매도비)} + 추가수익 ${won(x.추가수익)} − 총원가 ${won(x.총원가)}
+`) + (c.sale ? "" : `본전가 ${won(x.본전가)}원 — 이 아래로 팔면 손해`)}>
+          ${x.마진 == null ? "-" : html`${x.예상 ? html`<small>예상 </small>` : ""}${won(x.마진)}`}</td>
         <td class="r">${c.status === "재고" ? days(c.purchase_date) : ""}</td>
         <td onClick=${e => e.stopPropagation()}>${c.status === "재고" && office ? html`<button class="btn sm primary" title="매도 등록 — 저장하면 매도차량으로 넘어갑니다" onClick=${() => go("/car/" + c.id + "/sale")}>매도</button>` : settleBadge(c)}</td></tr>`; })}</tbody></table></div>`}
-    <p class="note">[매도]를 누르면 그 차의 매도 등록으로 가고, 저장하면 매도차량으로 넘어갑니다. 재반비용 = 취득세·광고비·수수료·성능비 등 + 재고이자 · 상품화비용 = 수리비 + 도색광택 + 탁송유류 · 총원가 = 매입가 + 재반비용 + 상품화비용 · 판매가는 매도비를 뺀 차값 · 마진 = 판매가 + 매도비(기본 ${won(기본매도비)}) + 추가수익 − 총원가. 판매가·추가수익은 칸에 바로 넣으면 저장되고(매도된 차는 실제 값), 마진 위에 마우스를 올리면 계산 내역이 보입니다.</p>`;
+    <p class="note">[매도]를 누르면 그 차의 매도 등록으로 가고, 저장하면 매도차량으로 넘어갑니다. 재반비용 = 취득세·광고비·수수료·성능비 등 + 재고이자 · 상품화비용 = 수리비 + 도색광택 + 탁송유류 · 총원가 = 매입가 + 재반비용 + 상품화비용 · 판매가는 매도비를 뺀 차값 (비워 두면 엔카 광고가로 회색 '예상' 마진) · 마진 = 판매가 + 매도비(기본 ${won(기본매도비)}) + 추가수익 − 총원가 · 마진에 마우스를 올리면 본전가(이 아래로 팔면 손해)가 보입니다. 판매가·추가수익은 칸에 바로 넣으면 저장되고(매도된 차는 실제 값), 마진 위에 마우스를 올리면 계산 내역이 보입니다.</p>`;
 }
 
 // ───────────────────────── 상품화비용 (차량별 / 비용별) ─────────────────────────
