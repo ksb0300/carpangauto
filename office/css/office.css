@@ -275,3 +275,4 @@ a.stat { color: inherit; } a.stat:hover { border-color: var(--pri); }
 }
 /* 휴대폰: 메뉴줄이 옆으로 더 있다는 걸 보이게 오른쪽 끝을 흐리게 (끝까지 밀면 마지막 메뉴도 다 보이게 여백) */
 @media (max-width: 760px) { .top nav { -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent); mask-image: linear-gradient(90deg, #000 85%, transparent); padding-right: 40px; } }
+.table-wrap.plain { border: 0; background: none; margin-bottom: 0; }
