@@ -1,5 +1,5 @@
 // 정산내역 (똑순이 '정산내역'과 같은 칸): 검색기간(정산일·매도일·제시일), 정산금액 종합현황, 차주·알선딜러 지급액
-import { html, useState, useEffect, useMemo, Select, Seg, Loading, Empty, run, won, go, Period, initPeriod, downloadCsv, W } from "../ui.js";
+import { html, useState, useEffect, useMemo, Select, Seg, Loading, Empty, run, won, go, Period, initPeriod, downloadCsv, W, 검색맞음 } from "../ui.js";
 import { q } from "../db.js";
 
 export function Settlements({ app }) {
@@ -27,7 +27,7 @@ export function Settlements({ app }) {
     const d = dateOf(r), owner = r.sale?.dealer_id || r.car.dealer_id;
     return d >= period.from && d <= period.to && (only === "전체" || (only === "완료" ? r.finalized : !r.finalized))
       && (!dealerF || owner === dealerF || r.broker_dealer_id === dealerF)
-      && (!text || (r.car.plate + r.car.car_name).replace(/\s/g, "").includes(text.replace(/\s/g, "")));
+      && 검색맞음(text, r.car.plate, r.car.car_name);
   }).sort((a, b) => dateOf(b).localeCompare(dateOf(a))), [data, period.from, period.to, key, only, dealerF, text]);
   const sum = k => rows.reduce((t, r) => t + (Number(r[k]) || 0), 0);
 
