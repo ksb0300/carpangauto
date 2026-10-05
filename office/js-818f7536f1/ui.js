@@ -119,3 +119,21 @@ export const ask = msg => window.confirm(msg);
 
 /** 숫자 칸 공통: 0 은 흐리게 */
 export const W = (n, cls = "") => html`<td class=${"r " + cls}>${Number(n) ? won(n) : html`<span class="muted">0</span>`}</td>`;
+
+// ───────── 차량 검색 (대소문자·띄어쓰기·하이픈 무시, 여러 단어는 모두 들어가야, 한글·영문 브랜드 서로 찾기) ─────────
+const 검색정리 = v => String(v ?? "").toLowerCase().replace(/[^0-9a-z가-힣]/g, "");
+const 브랜드별칭 = [["벤츠", "benz mercedes 메르세데스"], ["bmw", "비엠 비엠더블유"], ["아우디", "audi"], ["폭스바겐", "volkswagen vw"], ["포르쉐", "porsche"],
+  ["테슬라", "tesla"], ["볼보", "volvo"], ["렉서스", "lexus"], ["토요타", "toyota 도요타"], ["미니", "mini"], ["랜드로버", "landrover 레인지로버"],
+  ["제네시스", "genesis"], ["현대", "hyundai"], ["기아", "kia"], ["쉐보레", "chevrolet 시보레"], ["르노", "renault"], ["kg모빌리티", "kgm 쌍용 ssangyong"]];
+// 모델 → 브랜드 (한 방향만: 'Model Y' 는 테슬라로도 찾히지만, 테슬라 차가 'model' 로 다 찾히진 않게)
+const 모델브랜드 = [[/model[3sxy]|모델[3sxy와이]/, "테슬라 tesla"], [/^eq[abces]|\|eq[abces]/, "벤츠 benz mercedes"], [/amg/, "벤츠 benz"]];
+/** q 를 띄어쓰기로 나눈 단어가 모두 fields 어딘가에 있으면 true */
+export function 검색맞음(q, ...fields) {
+  const words = String(q ?? "").split(/\s+/).map(검색정리).filter(Boolean);
+  if (!words.length) return true;
+  let hay = fields.map(검색정리).join("|");
+  hay += "|" + fields.map(f => String(f ?? "").replace(/\D/g, "")).filter(Boolean).join("|");   // 번호판 숫자만 쳐도 (1219496 → 121라9496)
+  for (const [re, more] of 모델브랜드) if (re.test(hay)) hay += "|" + more.split(" ").map(검색정리).join("|");
+  for (const [k, more] of 브랜드별칭) if (hay.includes(검색정리(k)) || more.split(" ").some(m => hay.includes(검색정리(m)))) hay += "|" + 검색정리(k) + "|" + more.split(" ").map(검색정리).join("|");
+  return words.every(w => hay.includes(w));
+}

@@ -1,6 +1,6 @@
 // 목록 화면: 리스트(재고·매도 차량) / 상품화비용(차량별·비용별) / 재고금융(리스트·이자납입) / 매도차량.
 // 공통: 차량번호 검색, 매입담당, 검색기간(기준일 선택), 정렬, 엑셀(CSV) 다운로드, 합계표, 등록 버튼.
-import { html, useState, useEffect, useMemo, Select, Seg, Loading, Empty, run, won, go, today, Period, initPeriod, SubTabs, downloadCsv, W, toast, Money } from "../ui.js";
+import { html, useState, useEffect, useMemo, Select, Seg, Loading, Empty, run, won, go, today, Period, initPeriod, SubTabs, downloadCsv, W, toast, Money, 검색맞음 } from "../ui.js";
 import { q } from "../db.js";
 import { loadAll } from "./report-data.js";
 import { 부가세분리, 대출이자, 미납이자, 재고금융이자 } from "../calc.js";
@@ -70,7 +70,7 @@ const saveQ = v => { try { sessionStorage.setItem(qKey(), v); } catch {} };
 // (useState 초기값 식은 매 렌더마다 계산되니 여기서 지우지 않고 읽기만)
 const loadQ = () => { try { return prevHash.startsWith("#/car/") ? sessionStorage.getItem(qKey()) || "" : ""; } catch { return ""; } };
 const initF = (dateKey, sort) => ({ q: loadQ(), dealer: null, dateKey, useDate: false, period: initPeriod("월"), sort, dir: "desc" });
-const match = (f, c, date) => (!f.q || (c.plate + (c.plate_before || "") + c.car_name).replace(/\s/g, "").includes(f.q.replace(/\s/g, "")))
+const match = (f, c, date) => 검색맞음(f.q, c.plate, c.plate_before, c.car_name, c.brand, c.model, c.grade, c.fskey)
   && (!f.dealer || c.dealer_id === f.dealer || c.sale?.dealer_id === f.dealer)
   && (!f.useDate || (date && date >= f.period.from && date <= f.period.to));
 const sorter = (f, get) => (a, b) => { const x = get(a, f.sort), y = get(b, f.sort); const r = x < y ? -1 : x > y ? 1 : 0; return f.dir === "asc" ? r : -r; };
@@ -152,7 +152,7 @@ export function PurchasesPage({ app }) {
         <td class="ellipsis">${c.car_name}</td>${W(c.purchase_amount)}
         <td class="r" title=${`비용 ${won(c.재반항목)} + 재고이자 ${won(c.재고이자)}`}>${won(x.재반)}</td>${W(c.상품화비)}<td class="r"><b>${won(x.총원가)}</b></td>
         <td class="r" onClick=${e => e.stopPropagation()}>${c.sale ? (x.추가수익 ? html`<span title="할부수익 + 정산 기타매출">${won(x.추가수익)}</span>` : html`<span class="muted">-</span>`)
-          : office ? html`<${Money} value=${price["x" + c.id] ?? c.extra_income ?? ""} placeholder="" onInput=${v => typeField(c, "extra_income", "x" + c.id, v)} onKeyDown=${e => e.key === "Enter" && e.target.blur()} />` : (x.추가수익 ? won(x.추가수익) : "-")}</td>
+          : office ? html`<${Money} value=${price["x" + c.id] ?? c.extra_income ?? ""} placeholder="" style="width:84px" onInput=${v => typeField(c, "extra_income", "x" + c.id, v)} onKeyDown=${e => e.key === "Enter" && e.target.blur()} />` : (x.추가수익 ? won(x.추가수익) : "-")}</td>
         <td class="r" onClick=${e => e.stopPropagation()}>${c.sale ? html`<span title=${`매도금액 (매도비 ${won(x.매도비)} 별도)`}>${won(x.판매가)}</span>`
           : office ? html`<${Money} value=${x.판매가 ?? 0} placeholder="입력" onInput=${v => typeField(c, "list_price", c.id, v)} onKeyDown=${e => e.key === "Enter" && e.target.blur()} />` : (x.판매가 ? won(x.판매가) : "-")}</td>
         <td class=${"r " + (x.마진 == null ? "muted" : x.마진 < 0 ? "red" : "blue")} title=${x.마진 == null ? "" : `판매가 ${won(x.판매가)} + 매도비 ${won(x.매도비)} + 추가수익 ${won(x.추가수익)} − 총원가 ${won(x.총원가)}`}>${x.마진 == null ? "-" : won(x.마진)}</td>
