@@ -127,13 +127,25 @@ const 브랜드별칭 = [["벤츠", "benz mercedes 메르세데스"], ["bmw", "�
   ["제네시스", "genesis"], ["현대", "hyundai"], ["기아", "kia"], ["쉐보레", "chevrolet 시보레"], ["르노", "renault"], ["kg모빌리티", "kgm 쌍용 ssangyong"]];
 // 모델 → 브랜드 (한 방향만: 'Model Y' 는 테슬라로도 찾히지만, 테슬라 차가 'model' 로 다 찾히진 않게)
 const 모델브랜드 = [[/model[3sxy]|모델[3sxy와이]/, "테슬라 tesla"], [/^eq[abces]|\|eq[abces]/, "벤츠 benz mercedes"], [/amg/, "벤츠 benz"]];
-/** q 를 띄어쓰기로 나눈 단어가 모두 fields 어딘가에 있으면 true */
+// 소리가 비슷하면 같은 글자로: 된소리→예사소리(쏘나타=소나타, 싼타페=산타페), ㅔ→ㅐ(레이=래이), ㅈ·ㅊ 뒤 ㅕ→ㅓ(그랜져=그랜저)
+const 초성 = "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ", 중성 = "ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ";
+const 예사 = { "ㄲ": "ㄱ", "ㄸ": "ㄷ", "ㅃ": "ㅂ", "ㅆ": "ㅅ", "ㅉ": "ㅈ" }, 모음 = { "ㅔ": "ㅐ", "ㅖ": "ㅒ", "ㅞ": "ㅙ", "ㅚ": "ㅙ" }, ㅈ뒤 = { "ㅕ": "ㅓ", "ㅑ": "ㅏ", "ㅛ": "ㅗ", "ㅠ": "ㅜ", "ㅒ": "ㅐ" };
+const 소리 = t => [...t].map(ch => {
+  const i = ch.charCodeAt(0) - 0xAC00;
+  if (i < 0 || i > 11171) return ch;
+  let c = 초성[Math.floor(i / 588)], v = 중성[Math.floor(i % 588 / 28)]; const j = i % 28;
+  c = 예사[c] || c; v = 모음[v] || v; if (c === "ㅈ" || c === "ㅊ") v = ㅈ뒤[v] || v;
+  return c + v + (j ? "·" + j : "");      // 받침은 번호로 (서로 비교만 하면 되니까)
+}).join("");
+/** 검색: 띄어쓰기로 나눈 단어가 모두 fields 어딘가에 있으면 2(글자 그대로) 또는 1(소리만 비슷 — 소나타→쏘나타), 없으면 0 */
 export function 검색맞음(q, ...fields) {
   const words = String(q ?? "").split(/\s+/).map(검색정리).filter(Boolean);
-  if (!words.length) return true;
+  if (!words.length) return 2;
   let hay = fields.map(검색정리).join("|");
   hay += "|" + fields.map(f => String(f ?? "").replace(/\D/g, "")).filter(Boolean).join("|");   // 번호판 숫자만 쳐도 (1219496 → 121라9496)
   for (const [re, more] of 모델브랜드) if (re.test(hay)) hay += "|" + more.split(" ").map(검색정리).join("|");
   for (const [k, more] of 브랜드별칭) if (hay.includes(검색정리(k)) || more.split(" ").some(m => hay.includes(검색정리(m)))) hay += "|" + 검색정리(k) + "|" + more.split(" ").map(검색정리).join("|");
-  return words.every(w => hay.includes(w));
+  if (words.every(w => hay.includes(w))) return 2;
+  const hs = 소리(hay);
+  return words.every(w => hs.includes(소리(w))) ? 1 : 0;
 }
