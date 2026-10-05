@@ -234,7 +234,7 @@ a.stat { color: inherit; } a.stat:hover { border-color: var(--pri); }
 .page:has(table.carlist) { max-width: 1680px; }
 .carlist th, .carlist td { padding-left: 8px; padding-right: 8px; white-space: nowrap; }
 .carlist td.ellipsis { max-width: 200px; }
-.carlist td select { max-width: 120px; padding-top: 4px; padding-bottom: 4px; }
+.carlist td select { width: 92px; max-width: 92px; padding: 4px 22px 4px 8px; background-position: right 6px center; }
 @media (max-width: 1500px) { .carlist th, .carlist td { font-size: 12px; padding-left: 4px; padding-right: 4px; } .carlist td.ellipsis { max-width: 112px; } }
 
 /* 서류(비사업용 사실확인서) — 화면에선 흰 종이처럼, 인쇄하면 확인서만 */

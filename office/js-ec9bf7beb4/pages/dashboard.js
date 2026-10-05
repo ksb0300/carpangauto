@@ -141,12 +141,12 @@ ${hasDealer && html`      <a class="stat" href="#/settlements"><span>이번 달 
     signs: { title: "새 서류 (비사업용 확인서)", size: "half", render: () => html`<${SignsWidget} app=${app} />` },
     news: { title: "중고차 뉴스", size: "half", render: () => html`<${NewsWidget} app=${app} />` },
     lenders: { title: "재고금융 한도 현황", size: "full", render: () => card("재고금융 한도 현황", !lenders.length ? html`<p class="muted">진행중 재고금융이 없습니다.</p>`
-      : html`<table class="st"><tbody>${lenders.map(l => {
+      : html`<div class="table-wrap plain"><table class="st"><tbody>${lenders.map(l => {
       const u = used(l.id) + Number(l.existing_amount || 0), lim = Number(l.credit_limit), pct = lim ? Math.round(u / lim * 100) : 0;
       return html`<tr><th>${l.name} <span class="muted small">${cnt(l.id)}건</span></th>
         <td>${lim ? html`<div class="bar-meter"><i class=${pct > 100 ? "over" : ""} style=${`width:${Math.min(100, pct)}%`}></i></div>` : html`<a class="muted small" href=${`#/loans/lender/${l.id}`}>한도 미입력 — 넣기</a>`}</td>
         <td class="r">${won(u)}${lim ? ` / ${won(lim)}` : ""}</td><td class=${"r" + (lim && lim - u < 0 ? " red" : "")}>${lim ? `잔여 ${won(lim - u)}` : ""}</td></tr>`; })}
-      <tr class="em"><th>합계</th><td></td><td class="r">${won(lenders.reduce((t, l) => t + used(l.id) + Number(l.existing_amount || 0), 0))}</td><td></td></tr></tbody></table>`,
+      <tr class="em"><th>합계</th><td></td><td class="r">${won(lenders.reduce((t, l) => t + used(l.id) + Number(l.existing_amount || 0), 0))}</td><td></td></tr></tbody></table></div>`,
       html`<a class="btn sm" href="#/loans/lenders">금융사별 현황</a>`) },
   };
   const layout = normalize(app.profile.dashboard);
