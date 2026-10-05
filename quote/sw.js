@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tierone-quote-v3';
+const CACHE_NAME = 'tierone-quote-v4';
 const urlsToCache = [
   './',
   './index.html',
