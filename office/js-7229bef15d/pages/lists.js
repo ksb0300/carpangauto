@@ -152,7 +152,7 @@ export function PurchasesPage({ app }) {
         <td class="ellipsis">${c.car_name}</td>${W(c.purchase_amount)}
         <td class="r" title=${`비용 ${won(c.재반항목)} + 재고이자 ${won(c.재고이자)}`}>${won(x.재반)}</td>${W(c.상품화비)}<td class="r"><b>${won(x.총원가)}</b></td>
         <td class="r" onClick=${e => e.stopPropagation()}>${c.sale ? (x.추가수익 ? html`<span title="할부수익 + 정산 기타매출">${won(x.추가수익)}</span>` : html`<span class="muted">-</span>`)
-          : office ? html`<${Money} value=${price["x" + c.id] ?? c.extra_income ?? ""} placeholder="" onInput=${v => typeField(c, "extra_income", "x" + c.id, v)} onKeyDown=${e => e.key === "Enter" && e.target.blur()} />` : (x.추가수익 ? won(x.추가수익) : "-")}</td>
+          : office ? html`<${Money} value=${price["x" + c.id] ?? c.extra_income ?? ""} placeholder="" style="width:84px" onInput=${v => typeField(c, "extra_income", "x" + c.id, v)} onKeyDown=${e => e.key === "Enter" && e.target.blur()} />` : (x.추가수익 ? won(x.추가수익) : "-")}</td>
         <td class="r" onClick=${e => e.stopPropagation()}>${c.sale ? html`<span title=${`매도금액 (매도비 ${won(x.매도비)} 별도)`}>${won(x.판매가)}</span>`
           : office ? html`<${Money} value=${x.판매가 ?? 0} placeholder="입력" onInput=${v => typeField(c, "list_price", c.id, v)} onKeyDown=${e => e.key === "Enter" && e.target.blur()} />` : (x.판매가 ? won(x.판매가) : "-")}</td>
         <td class=${"r " + (x.마진 == null ? "muted" : x.마진 < 0 ? "red" : "blue")} title=${x.마진 == null ? "" : `판매가 ${won(x.판매가)} + 매도비 ${won(x.매도비)} + 추가수익 ${won(x.추가수익)} − 총원가 ${won(x.총원가)}`}>${x.마진 == null ? "-" : won(x.마진)}</td>
