@@ -194,9 +194,9 @@ a.stat { color: inherit; } a.stat:hover { border-color: var(--pri); }
   box-shadow: 0 6px 20px rgba(0,0,0,.12); max-height: 320px; overflow: auto; padding: 4px; }
 .keylist button { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 7px 8px; border-radius: 6px; cursor: pointer; }
 .keylist button:hover { background: var(--line2, #f3f4f6); } .keylist button span { margin-left: 4px; } .keylist button small { display: block; }
-.dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; align-items: start; } .dash-grid > .full { grid-column: 1 / -1; }
+.dash-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 16px; align-items: start; } .dash-grid > * { min-width: 0; } .dash-grid > .full { grid-column: 1 / -1; }
 .dash-grid > div > .card, .dash-grid > div > div { margin-bottom: 16px; }
-@media (max-width: 900px) { .dash-grid { grid-template-columns: 1fr; } }
+@media (max-width: 900px) { .dash-grid { grid-template-columns: minmax(0, 1fr); } }
 .dash-edit .row.line { border-bottom: 1px solid var(--line2); padding: 4px 0; } .dash-edit .row.line > * { flex: 0 0 auto; } .dash-edit .grow { flex: 1; }
 /* 입력 칸 안의 선택 버튼(예/아니오 등)은 칸 너비를 똑같이 나눈다 */
 .field .seg { display: flex; } .field .seg button { flex: 1 1 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -262,3 +262,16 @@ a.stat { color: inherit; } a.stat:hover { border-color: var(--pri); }
   box-shadow: 0 12px 30px rgba(0,0,0,.35); display: flex; flex-direction: column; }
 .etc-menu a { color: #cbd0d8; padding: 8px 12px; border-radius: 7px; white-space: nowrap; }
 .etc-menu a:hover, .etc-menu a.on { background: #262a33; color: #fff; }
+
+/* 휴대폰(손가락): 작은 버튼·입력도 누르기 쉽게, 통계 카드는 두 줄로 */
+@media (pointer: coarse) {
+  .btn.sm { min-height: 34px; padding-top: 6px; padding-bottom: 6px; }
+  .carlist td select, .carlist td input.money { min-height: 34px; }
+}
+@media (max-width: 520px) {
+  .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stat b { font-size: 18px; } .stat small { font-size: 11.5px; }
+  .todo li { align-items: flex-start; } .todo li a { overflow-wrap: anywhere; }
+}
+/* 휴대폰: 메뉴줄이 옆으로 더 있다는 걸 보이게 오른쪽 끝을 흐리게 (끝까지 밀면 마지막 메뉴도 다 보이게 여백) */
+@media (max-width: 760px) { .top nav { -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent); mask-image: linear-gradient(90deg, #000 85%, transparent); padding-right: 40px; } }

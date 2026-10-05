@@ -79,12 +79,22 @@ function Shell({ app, children, path }) {
   const office = profile.role !== "dealer";
   const nav = office
     ? [["/purchases", "리스트"], ["/sales", "매도차량"], ["/loans", "재고금융"],
-       ["/settlements", "정산내역"], ["/issue", "매출관리"], ["/signs", "서류"], ["/brokerage", "타상사알선"], ["/bank", "통장입출금"], ["/reports", "종합업무현황"], ["/stats", "통계"], ["/settings", "환경설정"]]
+       ["/bank", "통장입출금"], ["/reports", "종합업무현황"], ["/stats", "통계"], ["/settings", "환경설정"]]
     : [["/purchases", "내 제시차량"], ["/sales", "매도차량"], ["/settlements", "정산내역"], ["/brokerage", "알선"], ["/reports", "내 실적"]];
+  // 지금 잘 안 쓰는 메뉴는 '기타'로 (사용자 2026-10-05) — 화면은 그대로 있다
+  const etc = office ? [["/settlements", "정산내역"], ["/issue", "매출관리"], ["/signs", "서류"], ["/brokerage", "타상사알선"]] : [];
+  const [etcAt, setEtcAt] = useState(null);       // 펼친 '기타' 메뉴 위치 (메뉴줄이 가로 스크롤이라 밖에 띄운다)
+  useEffect(() => { setEtcAt(null); }, [path]);
+  useEffect(() => { if (!etcAt) return; const close = () => setEtcAt(null); addEventListener("click", close); addEventListener("scroll", close, true);
+    return () => { removeEventListener("click", close); removeEventListener("scroll", close, true); }; }, [etcAt]);
   return html`<div class="shell">
     <header class="top">
       <a class="brand" href="#/">TierONE <span>업무관리</span></a>
-      <nav>${nav.map(([p, l]) => html`<a href=${"#" + p} class=${path.startsWith(p) || (p === "/purchases" && (path.startsWith("/car/") || path.startsWith("/cars"))) || (p === "/dashboard" && path === "/") ? "on" : ""}>${l}</a>`)}</nav>
+      <nav>${nav.map(([p, l]) => html`<a href=${"#" + p} class=${path.startsWith(p) || (p === "/purchases" && (path.startsWith("/car/") || path.startsWith("/cars"))) || (p === "/dashboard" && path === "/") ? "on" : ""}>${l}</a>`)}
+        ${etc.length > 0 && html`<a href="#" class=${etc.some(([p]) => path.startsWith(p)) ? "on" : ""} onClick=${e => { e.preventDefault(); e.stopPropagation();
+          const r = e.currentTarget.getBoundingClientRect(); setEtcAt(etcAt ? null : { left: r.left, top: r.bottom + 4 }); }}>기타 ▾</a>`}</nav>
+      ${etcAt && html`<div class="etc-menu" style=${`left:${Math.min(etcAt.left, innerWidth - 170)}px;top:${etcAt.top}px`}>
+        ${etc.map(([p, l]) => html`<a href=${"#" + p} class=${path.startsWith(p) ? "on" : ""}>${l}</a>`)}</div>`}
       <div class="me">
         ${DEMO && html`<span class="badge amber">데모</span>`}
         <a class="me-name" href="/" title="홈페이지(매물)로">홈페이지</a>
