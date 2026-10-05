@@ -256,3 +256,9 @@ a.stat { color: inherit; } a.stat:hover { border-color: var(--pri); }
   body:has(.sign-paper) .page > *:not(.sign-paper) { display: none !important; }
   .sign-paper { border: 0; border-radius: 0; max-width: none; margin: 0; }
 }
+
+/* 메뉴 '기타' 펼침 */
+.etc-menu { position: fixed; z-index: 30; min-width: 150px; background: #16181d; border: 1px solid #2b2f38; border-radius: 10px; padding: 6px;
+  box-shadow: 0 12px 30px rgba(0,0,0,.35); display: flex; flex-direction: column; }
+.etc-menu a { color: #cbd0d8; padding: 8px 12px; border-radius: 7px; white-space: nowrap; }
+.etc-menu a:hover, .etc-menu a.on { background: #262a33; color: #fff; }

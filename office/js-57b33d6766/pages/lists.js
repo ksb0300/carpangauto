@@ -351,7 +351,7 @@ export function SalesPage({ app }) {
       { cells: ["", rows.length + "대", tot(c => c.purchase_amount), tot(c => c.재고금융전체), tot(c => c.재고이자), tot(c => c.sale.sale_amount), tot(c => c.sale.sale_fee), tot(c => c.sale.perf_insurance), tot(마진)] }]} />
     ${!rows.length ? html`<${Empty}>조건에 맞는 매도 차량이 없습니다.<//>` : html`<div class="table-wrap"><table class="grid click carlist">
       <thead><tr><th>매입일</th><th>차량번호</th><th>차명</th><th>연식</th><th class="r">키로수</th><th>판매유형</th><th>매도담당</th><th class="r">매입가</th><th class="r">재고금융</th><th class="r" title="매입일부터 매도일(상환일)까지 자동계산">총납입이자</th>
-        <th class="r">상품화비용</th><th class="r">매도금액</th><th class="r">상사매도비</th><th class="r">성능보험료</th><th>매도일</th><th class="r" title="매도금액 + 매도비 + 추가수익(할부수익·기타매출) − 매입가 − 비용 − 재고이자">총마진</th><th>(일부)매출발행일</th><th>(임시)정산일</th></tr></thead>
+        <th class="r">상품화비용</th><th class="r">매도금액</th><th class="r">상사매도비</th><th class="r">성능보험료</th><th>매도일</th><th class="r" title="매도금액 + 매도비 + 추가수익(할부수익·기타매출) − 매입가 − 비용 − 재고이자">총마진</th><th title="(일부) 매출 발행일">매출발행</th><th title="(임시) 정산일">정산일</th></tr></thead>
       <tbody>${rows.map(c => html`<tr onClick=${() => go(`/car/${c.id}/sale`)}><td>${c.purchase_date}</td><td><b>${c.plate}</b></td>
         <td class="ellipsis" title=${c.car_name}>${c.car_name}</td><td>${yr(c) || "-"}</td><td class="r">${c.mileage != null ? won(c.mileage) : "-"}</td><td>${c.sale.sale_type}</td>
         <td>${dealer[c.sale.dealer_id || c.dealer_id] || "-"}${c.sale.broker_dealer_id ? html`<br /><span class="muted small">알선 ${dealer[c.sale.broker_dealer_id]}</span>` : ""}</td>
