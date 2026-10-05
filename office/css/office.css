@@ -234,7 +234,7 @@ a.stat { color: inherit; } a.stat:hover { border-color: var(--pri); }
 .page:has(table.carlist) { max-width: 1680px; }
 .carlist th, .carlist td { padding-left: 8px; padding-right: 8px; white-space: nowrap; }
 .carlist td.ellipsis { max-width: 200px; }
-.carlist td select { width: 92px; max-width: 92px; padding: 4px 22px 4px 8px; background-position: right 6px center; }
+.carlist td select { width: 78px; min-width: 0; max-width: 78px; padding: 3px 2px 3px 6px; font-size: 13px; }
 @media (max-width: 1500px) { .carlist th, .carlist td { font-size: 12px; padding-left: 4px; padding-right: 4px; } .carlist td.ellipsis { max-width: 112px; } }
 
 /* 서류(비사업용 사실확인서) — 화면에선 흰 종이처럼, 인쇄하면 확인서만 */
@@ -276,3 +276,14 @@ a.stat { color: inherit; } a.stat:hover { border-color: var(--pri); }
 /* 휴대폰: 메뉴줄이 옆으로 더 있다는 걸 보이게 오른쪽 끝을 흐리게 (끝까지 밀면 마지막 메뉴도 다 보이게 여백) */
 @media (max-width: 760px) { .top nav { -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent); mask-image: linear-gradient(90deg, #000 85%, transparent); padding-right: 40px; } }
 .table-wrap.plain { border: 0; background: none; margin-bottom: 0; }
+
+/* 엔카 광고가로 계산한 예상마진은 흐리게 */
+.carlist td.est { opacity: .6; font-style: italic; } .carlist td.est small { font-size: 11px; font-style: normal; }
+.carlist input.money::placeholder { color: #9aa3af; }
+.grid td.wrap { white-space: normal; min-width: 90px; } .badge.wrap { white-space: normal; display: inline-block; line-height: 1.35; }
+/* 월별 그래프 세로축 */
+.chart-wrap { position: relative; padding-left: 34px; }
+.chart-y { position: absolute; left: 0; top: 0; bottom: 0; width: 30px; }
+.chart-y span { position: absolute; right: 0; transform: translateY(-50%); font-size: 11px; color: var(--sub); line-height: 1; }
+.chart .gl { stroke: #e5e7eb; stroke-width: 1; vector-effect: non-scaling-stroke; }
+.chart-x { justify-content: space-between; padding-left: 34px; }

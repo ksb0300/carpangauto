@@ -1,4 +1,4 @@
-import { html, useState, useEffect, useMemo, won, go, Badge, Loading, Empty, Seg, Select, run } from "../ui.js";
+import { html, useState, useEffect, useMemo, won, go, Badge, Loading, Empty, Seg, Select, run, 검색맞음 } from "../ui.js";
 import { q } from "../db.js";
 
 /** 차량 목록 + 합계에 필요한 걸 한 번에 모은다 (수십~수백 대 규모라 화면에서 합친다) */
@@ -39,7 +39,7 @@ export function CarList({ app, query }) {
   const shown = useMemo(() => (rows || []).filter(r =>
     (tab === "전체" || r.status === tab) &&
     (!dealer || r.dealer_id === dealer) &&
-    (!text || (r.plate + " " + (r.plate_before || "") + " " + r.car_name).replace(/\s/g, "").includes(text.replace(/\s/g, "")))), [rows, tab, text, dealer]);
+    검색맞음(text, r.plate, r.plate_before, r.car_name, r.brand, r.model, r.grade, r.fskey)), [rows, tab, text, dealer]);
 
   if (!rows) return html`<${Loading} />`;
   const cnt = s => rows.filter(r => s === "전체" || r.status === s).length;

@@ -185,14 +185,20 @@ function Purchases({ app, data, period }) {
 
 
 // ───────────────────────── 똑순이 종합업무현황 화면들 (2026-10-01) ─────────────────────────
+// 막대 두 개(매입·매도) 월별 그래프. 세로축은 1·2·5 단위로 보기 좋게 끊고, 가로 보조선을 깐다 (막대에 손을 대면 정확한 값)
+const 눈금 = max => { const raw = max / 4, p = 10 ** Math.floor(Math.log10(raw || 1)); const step = [1, 2, 5, 10].map(x => x * p).find(x => x >= raw) || p;
+  return Array.from({ length: Math.ceil(max / step) + 1 }, (_, i) => i * step); };
 const Bar = ({ rows, a, b }) => {
-  const max = Math.max(1, ...rows.flatMap(r => [r[a.key], r[b.key]]));
-  const w = 100 / rows.length;
-  return html`<div><svg class="chart" viewBox="0 0 100 60" preserveAspectRatio="none">
-      ${rows.map((r, i) => html`<rect class="b1" x=${i * w + w * 0.15} width=${w * 0.32} y=${55 - r[a.key] / max * 50} height=${r[a.key] / max * 50} />
-        <rect class="b2" x=${i * w + w * 0.5} width=${w * 0.32} y=${55 - r[b.key] / max * 50} height=${r[b.key] / max * 50} />`)}
-    </svg>
-    <div class="row small muted" style="justify-content:space-between">${rows.map(r => html`<span>${r.label}</span>`)}</div>
+  const ticks = 눈금(Math.max(1, ...rows.flatMap(r => [r[a.key], r[b.key]]))), top = ticks.at(-1);
+  const w = 100 / rows.length, Y = v => 57 - v / top * 54;          // 그림 높이 60 중 3~57 을 쓴다
+  return html`<div><div class="chart-wrap">
+      <div class="chart-y">${ticks.map(t => html`<span style=${`top:${Y(t) / 60 * 100}%`}>${t.toLocaleString()}</span>`)}</div>
+      <svg class="chart" viewBox="0 0 100 60" preserveAspectRatio="none">
+        ${ticks.map(t => html`<line class="gl" x1="0" x2="100" y1=${Y(t)} y2=${Y(t)} />`)}
+        ${rows.map((r, i) => html`<rect class="b1" x=${i * w + w * 0.15} width=${w * 0.32} y=${Y(r[a.key])} height=${57 - Y(r[a.key])}><title>${r.label} ${a.label} ${r[a.key]}</title></rect>
+          <rect class="b2" x=${i * w + w * 0.5} width=${w * 0.32} y=${Y(r[b.key])} height=${57 - Y(r[b.key])}><title>${r.label} ${b.label} ${r[b.key]}</title></rect>`)}
+      </svg></div>
+    <div class="row small muted chart-x">${rows.map(r => html`<span>${r.label}</span>`)}</div>
     <div class="legend"><span><i style="background:#94a3b8"></i>${a.label}</span><span><i style="background:var(--pri)"></i>${b.label}</span></div></div>`;
 };
 export { Bar as TrendChart };

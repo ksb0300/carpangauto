@@ -1145,3 +1145,19 @@ alter table car_sales add column installment_company text;
 -- 매도 화면 캐피탈사 드롭다운 목록 (환경설정에서 고친다)
 alter table settings add column installment_companies jsonb not null default
   '["JB우리캐피탈","KB캐피탈","BNK캐피탈","현대캐피탈","하나캐피탈","신한카드","우리금융캐피탈","롯데캐피탈","DGB캐피탈","메리츠캐피탈","오케이캐피탈"]'::jsonb;
+
+
+-- 20261005000001_ad_price.sql
+-- 엔카 광고가: KAIWA 연동(13·18시)이 엔카 매물을 번호판으로 맞춰 넣는다. 리스트는 판매가를 안 넣은 차를 광고가로 '예상마진' 계산
+alter table cars add column ad_price bigint;            -- 원 (엔카는 만원 단위)
+alter table cars add column ad_price_at timestamptz;    -- 마지막으로 엔카에서 본 때 (광고 내리면 그대로 남고 이 시각이 멈춘다)
+-- 광고가가 바뀔 때마다 한 줄 (가격 인하 이력)
+create table car_ad_prices (
+  id       bigint generated always as identity primary key,
+  car_id   uuid not null references cars(id) on delete cascade,
+  price    bigint not null,
+  seen_at  timestamptz not null default now()
+);
+create index car_ad_prices_car on car_ad_prices (car_id, seen_at);
+alter table car_ad_prices enable row level security;
+create policy office_all on car_ad_prices for all to authenticated using (is_office()) with check (is_office());
