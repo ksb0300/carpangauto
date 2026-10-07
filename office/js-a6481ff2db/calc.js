@@ -192,9 +192,9 @@ export function 대표손익(p) {
   return { 매출, 제시, C, 이자, 부가세, 세전손익: 세전, 손익: 세전 };
 }
 
-/** 차 한 대의 캐피탈 이자 합 (대출 실행일 ~ 상환일, 상환 전이면 기준일까지) */
+/** 차 한 대의 재고금융 비용 합 — 이자(실행일 ~ 상환일, 상환 전이면 기준일까지) + 상환 때 낸 해지비용(저당해지비용·중도상환수수료) */
 export function 차량캐피탈이자(loans, 기준일) {
-  return (loans || []).reduce((t, l) => t + 재고금융이자(l, l.start_date, 기준일), 0);
+  return (loans || []).reduce((t, l) => t + 재고금융이자(l, l.start_date, 기준일) + (l.status === "상환완료" ? Number(l.repay_fee) || 0 : 0), 0);
 }
 
 // ───────────────────────── 재고금융 (금융사별 조건) ─────────────────────────
@@ -205,6 +205,19 @@ const 일수 = (a, b) => Math.round((Date.parse(b + "T00:00:00Z") - Date.parse(a
 /** 대출 구간: 기본(실행일 ~ 연장 전날, 원금 전액·기본 이율) + 연장(연장 시작 ~, 먼저 갚은 원금 뺀 잔액·연장 이율) */
 export function 대출구간(l) {
   const 끝 = l.repaid_date || null;
+  // 기간별 이율 (키움: 1~2개월 6.7% / 3~4개월 7.7% / 5~6개월 8.8%) — [[몇 개월까지, 연 %], …], 마지막 단계는 그 뒤로도 이어진다
+  const tiers = Array.isArray(l.rate_tiers) ? l.rate_tiers : null;
+  if (tiers?.length && !l.ext_start) {
+    const segs = []; let from = l.start_date;
+    for (const [i, [upto, rate]] of tiers.entries()) {
+      if (끝 && from > 끝) break;
+      const last = i === tiers.length - 1, edge = 전날(더하기월(l.start_date, upto));
+      const to = last ? 끝 : (끝 && 끝 < edge ? 끝 : edge);
+      segs.push({ from, to, 원금: Number(l.amount) || 0, 이율: rate });
+      from = 더하기월(l.start_date, upto);
+    }
+    return segs;
+  }
   if (!l.ext_start) return [{ from: l.start_date, to: 끝, 원금: Number(l.amount) || 0, 이율: l.lender_rate }];
   const segs = [{ from: l.start_date, to: 끝 && 끝 < l.ext_start ? 끝 : 전날(l.ext_start), 원금: Number(l.amount) || 0, 이율: l.lender_rate }];
   if (!끝 || 끝 >= l.ext_start)
@@ -244,6 +257,11 @@ export function 해지수수료(l, lender, 상환일) {
   if (방식 === "정률") return Math.round(잔액 * 율 / 100);
   const 전체 = 일수(l.start_date, s.만기), 남은 = Math.max(0, 일수(상환일, s.만기));
   return 전체 > 0 ? Math.round(잔액 * 율 / 100 * 남은 / 전체) : 0;
+}
+
+/** 상환할 때 드는 돈 = 상환해지수수료(중도상환) + 저당해지비용(금융사 설정, 보통 19,300원) */
+export function 상환비용(l, lender, 상환일) {
+  return 해지수수료(l, lender, 상환일) + (Number(lender?.release_fee) || 0);
 }
 
 /** 할부금융 수수료: 할부금액 × 할부피% − 원천징수(소득세 3%·지방세 0.3%, 각 10원 미만 절사). DB 트리거와 같은 계산 */

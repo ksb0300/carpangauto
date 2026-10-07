@@ -1161,3 +1161,61 @@ create table car_ad_prices (
 create index car_ad_prices_car on car_ad_prices (car_id, seen_at);
 alter table car_ad_prices enable row level security;
 create policy office_all on car_ad_prices for all to authenticated using (is_office()) with check (is_office());
+
+
+-- 20261007000001_lender_rates.sql
+-- 금융사 조건 갱신 (사용자 2026-10-07)
+--   부산은행·KB국민 7.4% (연장 7.4%), JB우리 7.2% (연장 7.2%, 연장 전 원금 9.5% 상환), 신한 모름(그대로),
+--   키움증권 기간별 이율: 1~2개월 6.7% / 3~4개월 7.7% / 5~6개월 8.8%
+--   저당해지비용 19,300원 — 재고금융을 잡은 모든 차가 상환할 때 낸다 (과거 상환분도 비용으로)
+alter table lenders add column release_fee bigint not null default 0;      -- 저당해지비용 (상환 때 한 번)
+alter table lenders add column rate_tiers jsonb;                            -- 기간별 이율 [[몇 개월까지, 연 %], …] (키움)
+alter table car_loans add column rate_tiers jsonb;                          -- 대출 실행 때 금융사 값을 복사
+
+update lenders set release_fee = 19300 where name in ('부산은행', 'JB우리', 'KB국민', '신한은행', '키움증권');
+update lenders set base_rate = 7.4, ext_rate = 7.4, ext_months = greatest(ext_months, 2) where name in ('부산은행', 'KB국민');
+update lenders set base_rate = 7.2, ext_rate = 7.2, ext_repay_pct = 9.5 where name = 'JB우리';
+update lenders set base_months = 6, ext_months = 0, base_rate = 6.7, ext_rate = null,
+  rate_tiers = '[[2, 6.7], [4, 7.7], [6, 8.8]]'::jsonb where name = '키움증권';
+
+-- 진행 중인 대출은 새 이율로 (상환한 대출의 이율은 그대로 — 과거 이율은 사용자 확인 후)
+update car_loans cl set lender_rate = 7.4, ext_rate = 7.4 from lenders l
+ where l.id = cl.lender_id and l.name in ('부산은행', 'KB국민') and cl.status = '진행중';
+update car_loans cl set lender_rate = 7.2, ext_rate = 7.2 from lenders l
+ where l.id = cl.lender_id and l.name = 'JB우리' and cl.status = '진행중';
+update car_loans cl set lender_rate = 6.7, ext_rate = null, rate_tiers = l.rate_tiers, base_months = 6, months = greatest(cl.months, 6) from lenders l
+ where l.id = cl.lender_id and l.name = '키움증권' and cl.status = '진행중';
+
+-- 이미 상환한 대출에도 저당해지비용 (상환완료 잠금을 잠시 풀고)
+alter table car_loans disable trigger car_loans_lock;
+update car_loans cl set repay_fee = coalesce(cl.repay_fee, 0) + l.release_fee from lenders l
+ where l.id = cl.lender_id and l.release_fee > 0 and cl.status = '상환완료' and coalesce(cl.repay_fee, 0) = 0;
+alter table car_loans enable trigger car_loans_lock;
+
+-- 정산(손익) 확정 때 자동 상환되는 대출에도 저당해지비용을 붙인다 (확정 해제하면 되돌림)
+create or replace function public.settlements_finalize() returns trigger
+language plpgsql security definer set search_path to 'public' as $function$
+begin
+  new.updated_at := now();
+  if new.finalized and not coalesce(old.finalized, false) then
+    new.finalized_at := now();
+    if new.loan_repay then
+      update car_loans cl set status = '상환완료', repaid_date = new.settle_date,
+             repay_fee = (select nullif(l.release_fee, 0) from lenders l where l.id = cl.lender_id)
+       where cl.car_id = new.car_id and cl.status = '진행중';
+    end if;
+  end if;
+  -- 확정 해제: 이 정산이 상환완료로 바꾼 대출을 되돌린다 (다시 정산할 때 재고금융 상계가 빠지지 않게)
+  if tg_op = 'UPDATE' and old.finalized and not new.finalized then
+    new.finalized_at := null;
+    if old.loan_repay then
+      update car_loans set status = '진행중', repaid_date = null, repay_fee = null
+       where car_id = new.car_id and status = '상환완료' and repaid_date = old.settle_date;
+    end if;
+  end if;
+  if tg_op = 'UPDATE' and old.finalized and new.finalized
+     and (new.detail is distinct from old.detail) then
+    raise exception '정산완료 상태에서는 금액을 바꿀 수 없습니다. 정산 확정을 먼저 해제하세요.';
+  end if;
+  return new;
+end $function$;
