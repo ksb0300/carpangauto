@@ -41,7 +41,7 @@ export function CarDetail({ app, id, tab }) {
   return html`
     <div class="car-head card">
       <div class="title">
-        <a class="back" href="#/cars">← 목록</a>
+        <a class="back" href="#/purchases" onClick=${e => { if (history.length > 1) { e.preventDefault(); history.back(); } }}>← 목록</a>
         <h2>${car.plate} <span>${car.car_name}</span></h2>
         <div class="tags">
           <${Badge} tone=${car.status === "매도" ? "blue" : "gray"}>${car.status}<//>
@@ -59,6 +59,7 @@ export function CarDetail({ app, id, tab }) {
           : html`<div><small>딜러 실지급</small><b class="blue">${won(settlement.payout)}</b></div>`)}
       </div>
     </div>
+    ${ctx.office && html`<${SendBox} app=${app} car=${car} sale=${sale} />`}
     <nav class="tabs">${TABS.filter(([k]) => k !== "files" || ctx.office).map(([k, l]) => html`<a class=${tab === k ? "on" : ""} href=${`#/car/${id}/${k}`}>${l}</a>`)}</nav>
     ${tab === "costs" ? html`<${CostsTab} key=${ver} ...${ctx} />`
       : tab === "loans" ? html`<${LoansTab} key=${ver} ...${ctx} />`
@@ -96,4 +97,56 @@ function InfoTab({ app, car, sale, office }) {
     <div class="kvgrid">${rows.map(([k, v]) => html`<div><span>${k}</span><b>${v || html`<i class="muted">-</i>`}</b></div>`)}</div>
   </div>
   <${InspectionCard} app=${app} car=${car} office=${office} />`;
+}
+
+/** 고객에게 보내기 — 손님이 "견적서·성능지 받을 수 있나요?" 할 때 폰에서 바로 (카톡·문자 공유창) */
+function SendBox({ app, car, sale }) {
+  const [pdf, setPdf] = useState(undefined);      // 성능점검기록부 파일 (미리 받아 둔다 — 공유창은 누른 직후에 열어야 해서)
+  const [imgs, setImgs] = useState(null);         // 성능지 두 쪽을 사진(JPG)으로
+  useEffect(() => { run(async () => {
+    const f = (await q(app.db.from("car_files").select("path,name").eq("car_id", car.id).eq("kind", "성능").order("created_at", { ascending: false }).limit(1)))[0];
+    if (!f) return setPdf(null);
+    const { data } = await app.db.storage.from("car-files").createSignedUrl(f.path, 3600);
+    const blob = data?.signedUrl ? await (await fetch(data.signedUrl)).blob() : null;
+    const file = blob ? new File([blob], `성능점검기록부_${car.plate}.pdf`, { type: "application/pdf" }) : null;
+    setPdf(file);
+    if (file) setImgs(await pdf사진(file, car.plate).catch(() => null));     // 카톡으로 사진 2장 보내기용 (미리 만들어 둔다)
+  }); }, [car.id]);
+  const price = sale ? Number(sale.sale_amount) : Number(car.list_price || car.ad_price || 0);
+  const quoteUrl = `${location.origin}/quote/?car=${encodeURIComponent(car.plate)}${price ? "&price=" + price : ""}`;
+  const encarUrl = car.encar_id ? `https://fem.encar.com/cars/detail/${car.encar_id}` : null;
+  const shareFiles = async (files, title) => {
+    if (navigator.canShare?.({ files })) { try { await navigator.share({ files, title }); } catch {} return; }
+    for (const f of files) { const a = document.createElement("a"); a.href = URL.createObjectURL(f); a.download = f.name; a.click(); }   // PC: 내려받기
+  };
+  const sharePdf = () => shareFiles([pdf], `${car.plate} 성능점검기록부`);
+  const shareLink = async (url, title) => {
+    if (navigator.share) { try { await navigator.share({ title, url }); return; } catch { return; } }
+    try { await navigator.clipboard.writeText(url); toast("링크를 복사했습니다 — 카톡에 붙여 넣으세요"); } catch { window.open(url, "_blank"); }
+  };
+  return html`<div class="card sendbox no-print"><b>고객에게 보내기</b>
+    <button class="btn" disabled=${!imgs} title="성능지 두 쪽을 사진 2장으로 — 카톡에서 바로 보입니다" onClick=${() => shareFiles(imgs, `${car.plate} 성능점검기록부`)}>${pdf === null ? "성능지 없음" : imgs ? `🖼 성능지 사진 보내기 (${imgs.length}장)` : "성능지 준비 중…"}</button>
+    <button class="btn" disabled=${!pdf} title=${pdf === null ? "KAIWA 성능점검기록부가 아직 없습니다" : "원본 PDF 파일"} onClick=${sharePdf}>📄 PDF로 보내기</button>
+    <a class="btn" href=${quoteUrl} target="_blank" rel="noopener" title=${price ? `${won(price)}원으로 견적서를 엽니다` : "가격 없이 엽니다"}>🧾 견적서 만들기</a>
+    ${encarUrl && html`<button class="btn" onClick=${() => shareLink(encarUrl, `${car.car_name} ${car.plate}`)}>🔗 엔카 광고 링크</button>`}
+  </div>`;
+}
+
+// 성능지 PDF 각 쪽을 JPG 사진으로 (pdf.js — 처음 한 번만 불러온다)
+let pdfjs;
+async function pdf사진(file, plate) {
+  if (!pdfjs) {
+    await new Promise((ok, bad) => { const sc = document.createElement("script"); sc.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"; sc.onload = ok; sc.onerror = bad; document.head.appendChild(sc); });
+    pdfjs = window.pdfjsLib; pdfjs.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  }
+  const doc = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise, out = [];
+  for (let i = 1; i <= doc.numPages; i++) {
+    const page = await doc.getPage(i), vp = page.getViewport({ scale: 2.2 });     // 가로 A4 → 약 1850×1300px (글씨 선명)
+    const c = document.createElement("canvas"); c.width = vp.width; c.height = vp.height;
+    const ctx = c.getContext("2d"); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height);
+    await page.render({ canvasContext: ctx, viewport: vp }).promise;
+    const blob = await new Promise(r => c.toBlob(r, "image/jpeg", 0.88));
+    out.push(new File([blob], `성능점검기록부_${plate}_${i}.jpg`, { type: "image/jpeg" }));
+  }
+  return out;
 }

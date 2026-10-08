@@ -7,7 +7,7 @@ import { 부가세분리, 예상취득세 } from "../calc.js";
 const EMPTY = {
   dealer_id: null, car_name: "", plate: "", purchase_date: today(), purchase_amount: 0, purchase_fee: 0, acq_tax: 0,
   evidence: "의제매입", purchase_channel: null, key_no: "", memo: "",
-  fskey: null, car_type: null, brand: null, model: null, grade: null, fuel: null,
+  fskey: null, car_type: null, brand: null, model: null, grade: null, fuel: null, encar_id: null,
 };
 const EDITABLE = Object.keys(EMPTY);   // 수정할 때도 이 칸들만 보낸다 (예전에 넣은 매도자 정보 등은 그대로 둔다)
 
@@ -99,6 +99,9 @@ export function CarForm({ app, id }) {
         <button type="button" class="btn sm" onClick=${() => { setTaxEdited(false); set("acq_tax")(autoTax); }}>자동계산</button></div><//>
       ${f.dealer_id && !partner && html`<${Field} label="상사매입비" hint="딜러 차 — 상품화비용으로 자동 반영"><${Money} value=${f.purchase_fee} onInput=${set("purchase_fee")} /><//>`}
       <${Field} label="Key번호"><input value=${f.key_no || ""} onInput=${setT("key_no")} /><//>
+      <${Field} label="엔카 매물 주소" hint=${f.encar_id ? `매물번호 ${f.encar_id} — 광고가를 매일 13·18시에 가져옵니다` : "엔카 매물 주소나 번호를 붙여 넣으세요 (보통은 자동으로 찾음)"}>
+        <input placeholder="https://fem.encar.com/cars/detail/…" value=${f.encar_id || ""}
+          onInput=${e => { const m = String(e.target.value).match(/(\d{6,})/); setF(p => ({ ...p, encar_id: m ? Number(m[1]) : null })); }} /><//>
       <${Field} label="메모" wide><input value=${f.memo || ""} onInput=${setT("memo")} /><//>
     </div>
     <p class="note">차대번호·연식·최초등록일·주행거리·연료·변속기는 성능점검(KAIWA)이 끝나면 자동으로 채워집니다.</p>

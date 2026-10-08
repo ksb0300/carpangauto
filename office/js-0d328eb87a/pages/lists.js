@@ -23,6 +23,7 @@ function useBook(app) {
     const all = await loadAll(app.db, { office: app.profile.role !== "dealer" });
     const docs = await (async () => { try { const { data } = await app.db.from("issue_docs").select("car_id,status,trade_date,doc_type"); return data || []; } catch { return []; } })();
     const by = (arr, k = "car_id") => arr.reduce((m, r) => ((m[r[k]] ||= []).push(r), m), {});
+    const lenderOf = Object.fromEntries(all.lenders.map(x => [x.id, x]));
     const cost = by(all.costs), loan = by(all.loans), pay = by(all.payments, "loan_id"), sale = Object.fromEntries(all.sales.map(s => [s.car_id, s]));
     const settle = Object.fromEntries(all.settlements.map(s => [s.car_id, s])), doc = by(docs);
     const buyer = by(all.buyers);
@@ -39,7 +40,10 @@ function useBook(app) {
         재고이자: ls.reduce((t, l) => t + 재고금융이자({ ...l, start_date: c.purchase_date < l.start_date ? c.purchase_date : l.start_date },
           c.purchase_date, l.repaid_date || sale[c.id]?.sale_date || today()), 0),
         상품화비: ks.filter(k => 비용구분(k.item) === "상품화").reduce((t, k) => t + n(k.amount), 0),
-        재반항목: ks.filter(k => 비용구분(k.item) === "재반").reduce((t, k) => t + n(k.amount), 0),
+        // 재반: 상품화 외 비용 + 저당해지비용(상환했으면 낸 금액, 아직이면 금융사 설정값으로 예상)
+        해지비용: ls.reduce((t, l) => t + (l.status === "상환완료" ? n(l.repay_fee) : n(lenderOf[l.lender_id]?.release_fee)), 0),
+        재반항목: ks.filter(k => 비용구분(k.item) === "재반").reduce((t, k) => t + n(k.amount), 0)
+          + ls.reduce((t, l) => t + (l.status === "상환완료" ? n(l.repay_fee) : n(lenderOf[l.lender_id]?.release_fee)), 0),
         sale: sale[c.id], settle: settle[c.id], buyers: buyer[c.id] || [], 매출발행일: issued[0] || "" };
     });
     setD({ ...all, cars });
@@ -155,7 +159,7 @@ export function PurchasesPage({ app }) {
       <tbody>${rows.map(c => { const x = calc(c); return html`<tr key=${c.id} onClick=${() => go("/car/" + c.id)}><td>${c.purchase_date}</td>
         <td><b>${c.plate}</b></td><td onClick=${e => office && e.stopPropagation()}>${office ? html`<${OwnerPick} app=${app} car=${c} onDone=${reload} />` : dealer[c.dealer_id] || "-"}</td>
         <td class="ellipsis">${c.car_name}</td>${W(c.purchase_amount)}
-        <td class="r" title=${`비용 ${won(c.재반항목)} + 재고이자 ${won(c.재고이자)}`}>${won(x.재반)}</td>${W(c.상품화비)}<td class="r"><b>${won(x.총원가)}</b></td>
+        <td class="r" title=${`비용 ${won(c.재반항목 - c.해지비용)} + 저당해지비용 ${won(c.해지비용)} + 재고이자 ${won(c.재고이자)}`}>${won(x.재반)}</td>${W(c.상품화비)}<td class="r"><b>${won(x.총원가)}</b></td>
         <td class="r" onClick=${e => e.stopPropagation()}>${c.sale ? (x.추가수익 ? html`<span title="할부수익 + 정산 기타매출">${won(x.추가수익)}</span>` : html`<span class="muted">-</span>`)
           : office ? html`<${Money} value=${price["x" + c.id] ?? c.extra_income ?? ""} placeholder="" style="width:84px" onInput=${v => typeField(c, "extra_income", "x" + c.id, v)} onKeyDown=${e => e.key === "Enter" && e.target.blur()} />` : (x.추가수익 ? won(x.추가수익) : "-")}</td>
         <td class="r" onClick=${e => e.stopPropagation()}>${c.sale ? html`<span title=${`매도금액 (매도비 ${won(x.매도비)} 별도)`}>${won(x.판매가)}</span>`
@@ -348,7 +352,7 @@ export function SalesPage({ app }) {
   // 총마진 = 매도금액 + 매도비 + 추가수익(할부수익 + 정산 기타매출) − (매입가 + 비용 전체 + 재고이자) — 차량 리스트 마진과 같은 식
   const yr = c => c.model_year ? String(c.model_year).slice(0, 4) : "";
   const 마진 = c => n(c.sale.sale_amount) + n(c.sale.sale_fee) + n(c.sale.installment_income) + (c.settle?.other_revenue || []).reduce((t, x) => t + n(x.금액), 0)
-    - n(c.purchase_amount) - c.상품화 - c.재고이자;
+    - n(c.purchase_amount) - c.상품화 - c.재고이자 - c.해지비용;
   const tot = k => rows.reduce((t, c) => t + n(k(c)), 0);
   return html`<div class="bar"><h2>매도차량 리스트</h2><span class="grow"></span>
       <button class="btn" onClick=${() => downloadCsv("매도차량", [["매입일", "차량번호", "차명", "연식", "키로수", "판매유형", "매도담당", "알선딜러", "매입가", "재고금융금액", "총납입이자", "상품화비용", "매도금액", "상사매도비", "성능보험료", "매도일", "총마진", "매출발행일", "정산일"],
