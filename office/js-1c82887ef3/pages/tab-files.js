@@ -2,7 +2,7 @@
 import { html, useState, useEffect, Select, run, toast, ask } from "../ui.js";
 import { q } from "../db.js";
 
-const KINDS = [["제시", "매입"], ["매도", "매도"], ["정산", "정산"], ["성능", "성능"], ["기타", "기타"]];   // 값은 그대로(DB), 화면엔 매입
+const KINDS = [["제시", "매입"], ["등록증", "등록증"], ["매도", "매도"], ["정산", "정산"], ["성능", "성능"], ["기타", "기타"]];   // 값은 그대로(DB), 화면엔 매입
 const MAX = 20 * 1024 * 1024;
 const safe = s => s.replace(/[^\w.\-가-힣]/g, "_").slice(-80);
 

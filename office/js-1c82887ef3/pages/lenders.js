@@ -2,19 +2,25 @@
 import { html, useState, useEffect, Money, Field, Seg, Loading, Empty, run, won, go, today, W, toast } from "../ui.js";
 import { q } from "../db.js";
 import { loadAll } from "./report-data.js";
-import { 대출상태, 연장조건, 재고금융이자, 해지수수료 } from "../calc.js";
+import { 대출상태, 연장조건, 재고금융이자, 해지수수료, 상환비용 } from "../calc.js";
 
 const n = v => Math.round(Number(v) || 0);
 
 /** 금융사 조건 한 줄 요약 */
+// 기간별 이율 글 ↔ 값: "2:6.7, 4:7.7, 6:8.8" ↔ [[2,6.7],[4,7.7],[6,8.8]]
+const 단계글 = t => Array.isArray(t) ? t.map(([m, r]) => `${m}:${r}`).join(", ") : "";
+const 단계읽기 = s => { const a = String(s || "").split(/[,\s]+/).map(x => x.split(":").map(Number)).filter(([m, r]) => m > 0 && r > 0).sort((a, b) => a[0] - b[0]); return a.length ? a : null; };
+
 export function 조건요약(x) {
   if (!x) return "";
   const parts = [`기본 ${x.base_months}개월`];
   if (Number(x.ext_months)) parts.push(`연장 ${x.ext_months}개월 (총 ${Number(x.base_months) + Number(x.ext_months)}개월)`);
   else parts.push("연장 없음");
-  if (x.base_rate != null) parts.push(x.ext_rate != null && Number(x.ext_rate) !== Number(x.base_rate) ? `이율 ${Number(x.base_rate)}% → 연장분 ${Number(x.ext_rate)}%` : `이율 ${Number(x.base_rate)}% 고정`);
+  if (Array.isArray(x.rate_tiers) && x.rate_tiers.length) parts.push("기간별 이율 " + x.rate_tiers.map(([m, r], i) => `${i ? x.rate_tiers[i - 1][0] + 1 : 1}~${m}개월 ${r}%`).join(" / "));
+  else if (x.base_rate != null) parts.push(x.ext_rate != null && Number(x.ext_rate) !== Number(x.base_rate) ? `이율 ${Number(x.base_rate)}% → 연장분 ${Number(x.ext_rate)}%` : `이율 ${Number(x.base_rate)}% 고정`);
   if (Number(x.ext_repay_pct)) parts.push(`연장 전 원금 ${Number(x.ext_repay_pct)}% 상환`);
-  parts.push(x.repay_fee_method === "없음" ? "해지수수료 없음(확인 중)" : `해지수수료 ${x.repay_fee_method} ${Number(x.repay_fee_pct)}%`);
+  parts.push(x.repay_fee_method === "없음" ? "중도상환수수료 없음" : `중도상환수수료 ${x.repay_fee_method} ${Number(x.repay_fee_pct)}%`);
+  if (Number(x.release_fee)) parts.push(`저당해지비용 ${won(x.release_fee)}원`);
   return parts.join(" · ");
 }
 
@@ -55,8 +61,8 @@ export async function repayLoan(app, l) {
   if (!v) return false;
   const d = v.trim();
   if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) { toast("날짜를 YYYY-MM-DD 로 넣어 주세요.", "err"); return false; }
-  const fee = 해지수수료(l, lender, d);
-  if (fee && !window.confirm(`상환해지수수료 ${won(fee)}원 (${lender.repay_fee_method} ${Number(lender.repay_fee_pct)}%) — 상환완료 처리할까요?`)) return false;
+  const fee = 상환비용(l, lender, d), 중도 = 해지수수료(l, lender, d);
+  if (fee && !window.confirm(`상환 비용 ${won(fee)}원 (저당해지비용 ${won(Number(lender?.release_fee) || 0)}${중도 ? ` + 중도상환수수료 ${won(중도)}` : ""}) — 상환완료 처리할까요?`)) return false;
   return !!(await run(() => q(app.db.from("car_loans").update({ status: "상환완료", repaid_date: d, repay_fee: fee || null }).eq("id", l.id)), "상환완료 처리했습니다"));
 }
 
@@ -115,12 +121,12 @@ export function LenderOverview({ app }) {
           <button class="btn sm" onClick=${() => go(`/loans/lender/${x.id}`)}>조건 설정</button></div>
         <p class="note" style="margin-top:0">${조건요약(x)}${x.rule_memo ? ` — ${x.rule_memo}` : ""}</p>
         ${!mine.length ? html`<p class="muted small">진행중 대출 없음</p>` : html`<div class="table-wrap"><table class="grid click">
-          <thead><tr><th>차량</th><th class="r">대출(잔액)</th><th>실행일</th><th>단계</th><th>만기</th><th class="r">이율</th><th class="r">오늘까지 이자</th><th class="r">지금 갚으면 해지수수료</th><th>다음 할 일</th><th></th></tr></thead>
+          <thead><tr><th>차량</th><th class="r">대출(잔액)</th><th>실행일</th><th>단계</th><th>만기</th><th class="r">이율</th><th class="r">오늘까지 이자</th><th class="r" title="중도상환수수료 + 저당해지비용">지금 갚으면 상환비용</th><th>다음 할 일</th><th></th></tr></thead>
           <tbody>${mine.map(l => { const s = 대출상태(l, t), h = 할일(l, x, t), c = car[l.car_id];
             return html`<tr onClick=${() => go(`/car/${c.id}/loans`)}><td><b>${c.plate}</b> <span class="small">${c.car_name}</span></td>
               ${W(s.원금잔액)}<td>${l.start_date}</td><td>${s.단계}</td><td>${s.만기}</td>
               <td class="r">${s.연장됨 && l.ext_rate != null ? `${Number(l.ext_rate)}%` : `${Number(l.lender_rate ?? 0)}%`}</td>
-              ${W(재고금융이자(l, l.start_date, t))}${W(해지수수료(l, x, t))}<td><span class=${"badge " + h.tone}>${h.text}</span></td>
+              ${W(재고금융이자(l, l.start_date, t))}${W(상환비용(l, x, t))}<td><span class=${"badge " + h.tone}>${h.text}</span></td>
               <td><${LoanAction} app=${app} l=${l} lender=${x} onDone=${load} /></td></tr>`; })}</tbody></table></div>`}
       </div>`;
     })}
@@ -142,7 +148,8 @@ export function LenderEdit({ app, id }) {
     const row = { name: f.name.trim(), credit_limit: n(f.credit_limit), existing_amount: n(f.existing_amount),
       interest_day: f.interest_day ? Number(f.interest_day) : null, active: f.active,
       base_months: Number(f.base_months) || 1, ext_months: Number(f.ext_months) || 0, base_rate: num(f.base_rate), ext_rate: num(f.ext_rate),
-      ext_repay_pct: Number(f.ext_repay_pct) || 0, repay_fee_method: f.repay_fee_method, repay_fee_pct: Number(f.repay_fee_pct) || 0, rule_memo: f.rule_memo || null };
+      ext_repay_pct: Number(f.ext_repay_pct) || 0, repay_fee_method: f.repay_fee_method, repay_fee_pct: Number(f.repay_fee_pct) || 0, rule_memo: f.rule_memo || null,
+      release_fee: n(f.release_fee), rate_tiers: 단계읽기(f.tiers_text ?? 단계글(f.rate_tiers)) };
     const ok = await run(async () => { await q(app.db.from("lenders").update(row).eq("id", id)); await app.reload(); return true; }, "저장했습니다");
     if (ok) go("/loans/lenders");
   };
@@ -157,13 +164,16 @@ export function LenderEdit({ app, id }) {
       <${Field} label="연장 가능 (개월)" hint="0이면 연장 불가"><input inputmode="numeric" value=${f.ext_months} onInput=${setT("ext_months")} /><//>
       <${Field} label="기본 이율 (연 %)"><input inputmode="decimal" value=${f.base_rate ?? ""} onInput=${setT("base_rate")} /><//>
       <${Field} label="연장분 이율 (연 %)" hint="비우면 기본 이율 그대로"><input inputmode="decimal" value=${f.ext_rate ?? ""} onInput=${setT("ext_rate")} /><//>
-      <${Field} label="연장 조건: 먼저 갚을 원금 (%)" hint="예) JB우리 10 — 0이면 조건 없음"><input inputmode="decimal" value=${f.ext_repay_pct ?? 0} onInput=${setT("ext_repay_pct")} /><//>
+      <${Field} label="연장 조건: 먼저 갚을 원금 (%)" hint="예) JB우리 9.5 — 0이면 조건 없음"><input inputmode="decimal" value=${f.ext_repay_pct ?? 0} onInput=${setT("ext_repay_pct")} /><//>
+      <${Field} label="기간별 이율" wide hint="기간에 따라 이율이 오르는 금융사만 (예: 키움 '2:6.7, 4:7.7, 6:8.8' = 1~2개월 6.7% · 3~4개월 7.7% · 5~6개월 8.8%). 비우면 위 기본 이율">
+        <input placeholder="2:6.7, 4:7.7, 6:8.8" value=${f.tiers_text ?? 단계글(f.rate_tiers)} onInput=${setT("tiers_text")} /><//>
     </div>
-    <h3>상환해지수수료</h3>
+    <h3>상환할 때 드는 돈</h3>
     <div class="fgrid">
       <${Field} label="방식" hint=${f.repay_fee_method === "일할" ? "잔액 × 율 × 남은일수 ÷ 전체일수" : f.repay_fee_method === "정률" ? "잔액 × 율" : "확인되면 바꾸세요"}>
         <${Seg} value=${f.repay_fee_method} onChange=${set("repay_fee_method")} options=${["없음", "정률", "일할"]} /><//>
       ${f.repay_fee_method !== "없음" && html`<${Field} label="수수료율 (%)"><input inputmode="decimal" value=${f.repay_fee_pct ?? 0} onInput=${setT("repay_fee_pct")} /><//>`}
+      <${Field} label="저당해지비용" hint="상환할 때마다 한 번 (보통 19,300원) — 차 손익에 비용으로 들어갑니다"><${Money} value=${f.release_fee} onInput=${set("release_fee")} /><//>
     </div>
     <h3>한도 · 기타</h3>
     <div class="fgrid">
