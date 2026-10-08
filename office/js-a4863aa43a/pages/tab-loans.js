@@ -1,6 +1,6 @@
 import { html, useState, useEffect, Money, Field, Select, Seg, run, won, today, toast } from "../ui.js";
 import { q } from "../db.js";
-import { 대출이자, 미납이자, 대출상태, 연장조건, 해지수수료, 재고금융이자 } from "../calc.js";
+import { 대출이자, 미납이자, 대출상태, 연장조건, 해지수수료, 상환비용, 재고금융이자 } from "../calc.js";
 import { 조건요약, 할일, extendLoan, canExtend } from "./lenders.js";
 
 const MONTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 24, 36];
@@ -22,8 +22,8 @@ export function LoansTab({ app, car, loans, reload, locked, office }) {
   };
   const setStatus = async (l, status) => {
     const lender = app.lenders.find(x => x.id === l.lender_id);
-    const fee = status === "상환완료" ? 해지수수료(l, lender, today()) : null;
-    if (fee && !confirm(`${lender.name} 상환해지수수료 ${won(fee)}원 (${lender.repay_fee_method} ${Number(lender.repay_fee_pct)}%)
+    const fee = status === "상환완료" ? 상환비용(l, lender, today()) || null : null;
+    if (fee && !confirm(`${lender.name} 상환 비용 ${won(fee)}원 (저당해지비용 ${won(Number(lender.release_fee) || 0)}${해지수수료(l, lender, today()) ? ` + 중도상환수수료 ${won(해지수수료(l, lender, today()))}` : ""})
 상환완료 처리할까요?`)) return;
     await run(() => q(app.db.from("car_loans").update({ status, repaid_date: status === "상환완료" ? today() : null, repay_fee: fee }).eq("id", l.id)),
       status === "상환완료" ? "상환완료 처리했습니다" : "상환완료를 취소했습니다");
@@ -86,7 +86,7 @@ export function LoansTab({ app, car, loans, reload, locked, office }) {
 function LoanForm({ app, car, onDone }) {
   const active = app.lenders.filter(l => l.active);
   const partner = !!app.dealers.find(d => d.id === car.dealer_id)?.partner;     // 대표 차는 딜러 이자가 없다
-  const def = l => ({ months: Number(l?.base_months) || 3, lender_rate: l?.base_rate != null ? String(Number(l.base_rate)) : "" });
+  const def = l => ({ months: Number(l?.base_months) || 3, lender_rate: l?.base_rate != null ? String(Number(l.base_rate)) : "", rate_tiers: l?.rate_tiers || null });
   const [f, setF] = useState({ lender_id: active[0]?.id, kind: "신규", amount: 0, start_date: today(), ...def(active[0]), dealer_rate: partner ? "0" : "", memo: "" });
   const [used, setUsed] = useState({});
   const set = k => v => setF(p => ({ ...p, [k]: v }));
