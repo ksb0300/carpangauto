@@ -1225,3 +1225,8 @@ end $function$;
 -- 첨부서류 구분에 '등록증'(매입 때 받은 자동차등록증) 추가 — 차 화면 '고객에게 보내기'에서 바로 보낸다
 alter table car_files drop constraint if exists car_files_kind_check;
 alter table car_files add constraint car_files_kind_check check (kind in ('제시', '매도', '정산', '성능', '등록증', '기타'));
+
+
+-- 20261008000002_daangn_id.sql
+-- 당근중고차 글번호 (엔카 매물 동기화가 당근에 올린 글) — 차 화면 '고객에게 보내기'의 당근 링크
+alter table cars add column daangn_id bigint;
