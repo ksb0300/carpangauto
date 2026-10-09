@@ -79,7 +79,7 @@ function Shell({ app, children, path }) {
   const office = profile.role !== "dealer";
   const nav = office
     ? [["/purchases", "리스트"], ["/sales", "매도차량"], ["/loans", "재고금융"],
-       ["/bank", "통장입출금"], ["/reports", "종합업무현황"], ["/stats", "통계"], ["/settings", "환경설정"]]
+       ["/bank", "자금관리"], ["/reports", "종합업무현황"], ["/stats", "통계"], ["/settings", "환경설정"]]
     : [["/purchases", "내 제시차량"], ["/sales", "매도차량"], ["/settlements", "정산내역"], ["/brokerage", "알선"], ["/reports", "내 실적"]];
   // 지금 잘 안 쓰는 메뉴는 '기타'로 (사용자 2026-10-05) — 화면은 그대로 있다
   const etc = office ? [["/settlements", "정산내역"], ["/issue", "매출관리"], ["/signs", "서류"], ["/brokerage", "타상사알선"]] : [];
