@@ -1292,3 +1292,11 @@ create policy office_all on bank_msgs for all to authenticated using (is_office(
 insert into bank_accounts (bank_name, account_no, alias, purpose, sms_keyword, popbill, active)
 select '부산은행', '101-2094-4765-02', '차량 통장', '차량', '부산', false, true
  where not exists (select 1 from bank_accounts where account_no = '101-2094-4765-02');
+
+
+-- 20261009000003_bank_match_kinds.sql
+-- 자금관리 연결 종류에 '자금이동'(내 통장끼리)·'재고금융이자' 추가, 재고금융 실행·상환·이자와 연결된 대출
+alter table bank_txs drop constraint if exists bank_txs_match_kind_check;
+alter table bank_txs add constraint bank_txs_match_kind_check check (match_kind in
+  ('차량매도대금', '차량매입대금', '딜러정산지급', '상품화비', '재고금융', '재고금융이자', '자금이동', '알선', '상사매출', '운영비', '기타'));
+alter table bank_txs add column loan_id uuid references car_loans(id) on delete set null;

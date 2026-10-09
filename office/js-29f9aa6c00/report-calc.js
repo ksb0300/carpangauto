@@ -311,46 +311,63 @@ const near = (a, b, days) => !!a && !!b && Math.abs(Date.parse(a) - Date.parse(b
  * 금액 일치 60, 이름(매수자·매도자·딜러·금융사) 적요 포함 30~40, 날짜 근접 10.
  * 90점 이상이고 2등과 20점 넘게 차이 나면 자동 확정 대상.
  */
-export function 매칭후보(tx, data) {
+/** 통장 거래 → 연결 후보. ctx = { accounts, txs }(같은 기간 모든 통장 거래 — 내 통장끼리 이체 찾기)
+ *  차량 통장: 매입·매도대금, 재고금융 실행·상환·이자, 성능비·취득세 / 운영비 통장: 출금은 운영비 */
+const 금융사말 = { "부산은행": ["부산", "BNK"], "KB국민": ["국민", "KB"], "JB우리": ["우리", "JB"], "신한은행": ["신한"], "키움증권": ["키움"] };
+export function 매칭후보(tx, data, ctx = {}) {
   const out = [];
-  const amt = n(tx.deposit) || n(tx.withdraw), 입금 = n(tx.deposit) > 0, text = tx.remark || "";
+  const amt = n(tx.deposit) || n(tx.withdraw), 입금 = n(tx.deposit) > 0, text = `${tx.counterparty || ""} ${tx.remark || ""}`;
   const car = idx(live(data.cars)), dealer = idx(data.dealers), lender = idx(data.lenders);
-  const buyersOf = id => (data.buyers || []).filter(b => b.car_id === id);
+  const acct = (ctx.accounts || []).find(a => a.id === tx.account_id);
   const add = (kind, score, label, extra) => score >= 40 && out.push({ kind, score, label, ...extra });
-  if (입금) {
+  // 내 통장끼리 이체: 다른 통장에 같은 날 같은 금액이 반대로 (10분 안)
+  const mins = t => { const [h, m] = String(t.tx_time || "00:00").split(":").map(Number); return h * 60 + m; };
+  const pair = (ctx.txs || []).find(o => o.account_id !== tx.account_id && o.tx_date === tx.tx_date
+    && n(입금 ? o.withdraw : o.deposit) === amt && Math.abs(mins(o) - mins(tx)) <= 10);
+  if (pair) add("자금이동", 100, `내 통장끼리 이체 (${(ctx.accounts || []).find(a => a.id === pair.account_id)?.bank_name || "다른 통장"} ${입금 ? "→" : "←"} 여기)`, {});
+  else if (/티어원/.test(text)) add("자금이동", 60, "회사 이름 거래 — 내 통장끼리 이체?", {});
+  const 금융사 = (data.lenders || []).filter(l => (금융사말[l.name] || [l.name.replace(/(은행|캐피탈|증권)$/, "")]).some(w => text.includes(w)));
+  if (acct?.purpose === "운영비") {
+    if (!입금) add("운영비", 60, "운영비", {});
+  } else if (입금) {
     for (const s of data.sales || []) {
       const c = car[s.car_id]; if (!c) continue;
-      const 총액 = n(s.sale_amount) + n(s.sale_fee) + n(s.perf_insurance);
+      const 총액 = n(s.sale_amount) + n(s.sale_fee);
       let sc = 0;
-      if (amt === n(s.sale_amount) || amt === 총액) sc += 60;
-      const who = buyersOf(c.id).find(b => nameIn(b.name, text));
-      if (who) sc += 40;
+      if (amt === n(s.sale_amount) || amt === 총액 || amt === 총액 + n(s.perf_insurance)) sc += 60;
+      else if (amt < 총액 && amt >= 300_000 && amt % 10_000 === 0 && near(tx.tx_date, s.sale_date, 10)) sc += 30;      // 계약금·잔금 나눠 받기 (만원 단위 30만원 이상)
+      if ((data.buyers || []).some(b => b.car_id === c.id && nameIn(b.name, text))) sc += 40;
       if (near(tx.tx_date, s.sale_date, 30)) sc += 10;
-      if (sc && (amt <= 총액)) add("차량매도대금", sc, `${c.plate} ${c.car_name} 매도대금${who ? ` (${who.name})` : ""}`, { car_id: c.id, dealer_id: s.dealer_id || c.dealer_id });
+      add("차량매도대금", sc, `${c.plate} ${c.car_name} 매도대금`, { car_id: c.id, dealer_id: s.dealer_id || c.dealer_id });
     }
-    for (const b of data.brokerages || []) {
-      let sc = (amt === n(b.fee) ? 60 : 0) + (nameIn(b.customer_name, text) ? 30 : 0) + (near(tx.tx_date, b.sale_date, 30) ? 10 : 0);
-      add("알선", sc, `알선 ${b.plate || ""} ${b.customer_name || ""}`.trim(), { dealer_id: b.dealer_id });
+    for (const l of data.loans || []) {        // 재고금융 실행 (금융사에서 들어옴)
+      const c = car[l.car_id]; if (!c) continue;
+      const sc = (amt === n(l.amount) ? 60 : 0) + (금융사.some(x => x.id === l.lender_id) ? 30 : 0) + (near(tx.tx_date, l.start_date, 10) ? 10 : 0);
+      add("재고금융", sc, `${c.plate} 재고금융 실행 (${lender[l.lender_id]?.name || ""})`, { car_id: c.id, dealer_id: c.dealer_id, loan_id: l.id });
     }
   } else {
     for (const c of live(data.cars)) {
-      let sc = (amt === n(c.purchase_amount) ? 60 : 0) + (nameIn(c.seller_name, text) ? 40 : 0) + (near(tx.tx_date, c.purchase_date, 15) ? 10 : 0);
-      if (c.consign === "상사매입") add("차량매입대금", sc, `${c.plate} ${c.car_name} 매입대금${c.seller_name ? ` (${c.seller_name})` : ""}`, { car_id: c.id, dealer_id: c.dealer_id });
+      const sc = (amt === n(c.purchase_amount) ? 60 : 0) + (nameIn(c.seller_name, text) ? 40 : 0) + (near(tx.tx_date, c.purchase_date, 15) ? 10 : 0);
+      if (c.consign === "상사매입") add("차량매입대금", sc, `${c.plate} ${c.car_name} 매입대금`, { car_id: c.id, dealer_id: c.dealer_id });
     }
-    for (const s of data.settlements || []) {
-      const c = car[s.car_id]; if (!c || !s.finalized) continue;
+    for (const l of (data.loans || []).filter(l => l.status === "진행중")) {     // 재고금융 상환 (금융사로 나감)
+      const c = car[l.car_id]; if (!c) continue;
+      const 잔액 = n(l.amount) - n(l.principal_repaid);
+      const sc = (amt === 잔액 || amt === n(l.amount) ? 60 : 0) + (금융사.some(x => x.id === l.lender_id) ? 30 : 0) + ((data.sales || []).some(s => s.car_id === c.id) ? 10 : 0);
+      add("재고금융", sc, `${c.plate} 재고금융 상환 (${lender[l.lender_id]?.name || ""}) → 상환완료 처리`, { car_id: c.id, dealer_id: c.dealer_id, loan_id: l.id, repay: true });
+    }
+    if (금융사.length && amt < 3_000_000) add("재고금융이자", 70, `${금융사.map(x => x.name).join("·")} 재고금융 이자`, {});
+    for (const s of data.settlements || []) {      // 딜러 정산 지급 (대표 차는 지급이 없다)
+      const c = car[s.car_id]; if (!c || !s.finalized || s.mode === "대표" || !n(s.payout)) continue;
       const d = dealer[c.dealer_id];
-      let sc = (amt === n(s.payout) ? 60 : 0) + (d && nameIn(d.name, text) ? 30 : 0) + (near(tx.tx_date, s.settle_date, 15) ? 10 : 0);
+      const sc = (amt === n(s.payout) ? 60 : 0) + (d && nameIn(d.name, text) ? 30 : 0) + (near(tx.tx_date, s.settle_date, 15) ? 10 : 0);
       add("딜러정산지급", sc, `${c.plate} 딜러정산 ${d?.name || ""}`.trim(), { car_id: c.id, dealer_id: c.dealer_id });
     }
-    for (const l of data.loans || []) {
-      const c = car[l.car_id]; if (!c) continue;
-      let sc = (amt === n(l.amount) ? 50 : 0) + (nameIn(lender[l.lender_id]?.name?.replace(/캐피탈$/, ""), text) ? 30 : 0);
-      add("재고금융", sc, `${c.plate} 재고금융 상환 (${lender[l.lender_id]?.name || ""})`, { car_id: c.id, dealer_id: c.dealer_id });
-    }
+    if (/(KAIWA|카이와|오토셀렉션|성능)/i.test(text)) add("상품화비", 70, "성능점검비 (KAIWA)", {});
+    if (/(위택스|지방세|취득세|구청|시청|군청)/.test(text)) add("상품화비", 70, "취득세·등록 비용", {});
     for (const k of data.costs || []) {
       const c = car[k.car_id]; if (!c || k.paid_by !== "상사" || k.auto_source) continue;
-      let sc = (amt === n(k.amount) ? 50 : 0) + (k.memo && nameIn(k.memo, text) ? 30 : 0) + (near(tx.tx_date, k.paid_date, 10) ? 10 : 0);
+      const sc = (amt === n(k.amount) ? 50 : 0) + (k.memo && nameIn(k.memo, text) ? 30 : 0) + (near(tx.tx_date, k.paid_date, 10) ? 10 : 0);
       add("상품화비", sc, `${c.plate} ${k.item}${k.memo ? ` (${k.memo})` : ""}`, { car_id: c.id, dealer_id: c.dealer_id });
     }
   }
