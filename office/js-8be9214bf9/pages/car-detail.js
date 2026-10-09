@@ -110,7 +110,9 @@ function SendBox({ app, car, sale }) {
     const { data } = await app.db.storage.from("car-files").createSignedUrl(f.path, 3600);
     const blob = data?.signedUrl ? await (await fetch(data.signedUrl)).blob() : null;
     const ext = (f.name.match(/\.\w+$/) || [".jpg"])[0];
-    setReg(blob ? new File([blob], `자동차등록증_${car.plate}${ext}`, { type: f.mime || blob.type || "image/jpeg" }) : null);
+    const file = blob ? new File([blob], `자동차등록증_${car.plate}${ext}`, { type: f.mime || blob.type || "image/jpeg" }) : null;
+    // PDF 로 올라온 등록증은 카톡에서 바로 보이게 사진으로
+    setReg(file && /pdf/i.test(file.type + ext) ? (await pdf사진(file, car.plate).catch(() => null))?.map((x, i) => new File([x], `자동차등록증_${car.plate}${i ? "_" + (i + 1) : ""}.jpg`, { type: "image/jpeg" })) || [file] : file ? [file] : null);
   });
   useEffect(() => { loadReg(); }, [car.id]);
   // 등록증이 없으면 바로 찍어 올리기 (폰 카메라)
@@ -140,18 +142,17 @@ function SendBox({ app, car, sale }) {
     if (navigator.canShare?.({ files })) { try { await navigator.share({ files, title }); } catch {} return; }
     for (const f of files) { const a = document.createElement("a"); a.href = URL.createObjectURL(f); a.download = f.name; a.click(); }   // PC: 내려받기
   };
-  const sharePdf = () => shareFiles([pdf], `${car.plate} 성능점검기록부`);
   const shareLink = async (url, title) => {
     if (navigator.share) { try { await navigator.share({ title, url }); return; } catch { return; } }
     try { await navigator.clipboard.writeText(url); toast("링크를 복사했습니다 — 카톡에 붙여 넣으세요"); } catch { window.open(url, "_blank"); }
   };
   return html`<div class="card sendbox no-print"><b>고객에게 보내기</b>
     <button class="btn" disabled=${!imgs} title="성능지 두 쪽을 사진 2장으로 — 카톡에서 바로 보입니다" onClick=${() => shareFiles(imgs, `${car.plate} 성능점검기록부`)}>${pdf === null ? "성능지 없음" : imgs ? `🖼 성능지 사진 보내기 (${imgs.length}장)` : "성능지 준비 중…"}</button>
-    <button class="btn" disabled=${!pdf} title=${pdf === null ? "KAIWA 성능점검기록부가 아직 없습니다" : "원본 PDF 파일"} onClick=${sharePdf}>📄 PDF로 보내기</button>
-    ${reg ? html`<button class="btn" onClick=${() => shareFiles([reg], `${car.plate} 자동차등록증`)}>🪪 등록증 보내기</button>`
+    ${reg ? html`<button class="btn" onClick=${() => shareFiles(reg, `${car.plate} 자동차등록증`)}>🪪 등록증 보내기</button>`
       : reg === null ? html`<label class="btn" title="매입 때 받은 자동차등록증 사진 — 한 번 올리면 다음부터 바로 보냅니다">🪪 등록증 올리기<input type="file" hidden accept="image/*,.pdf" onChange=${e => { upReg(e.target.files[0]); e.target.value = ""; }} /></label>` : ""}
     <a class="btn" href=${quoteUrl} target="_blank" rel="noopener" title=${price ? `${won(price)}원으로 견적서를 엽니다` : "가격 없이 엽니다"}>🧾 견적서 만들기</a>
     ${encarUrl && html`<button class="btn" onClick=${() => shareLink(encarUrl, `${car.car_name} ${car.plate}`)}>🔗 엔카 광고 링크</button>`}
+    ${car.daangn_id && html`<button class="btn" onClick=${() => shareLink(`https://www.daangn.com/kr/cars/${car.daangn_id}/`, `${car.car_name} ${car.plate}`)}>🥕 당근 광고 링크</button>`}
   </div>`;
 }
 

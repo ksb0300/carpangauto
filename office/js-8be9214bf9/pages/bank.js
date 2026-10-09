@@ -109,7 +109,7 @@ export function BankPage({ app }) {
         <tbody>${accounts.map(a => html`<tr>
           <td><input type="radio" name="acc" checked=${acc === a.id} onChange=${() => setAcc(a.id)} /></td>
           <td>${a.bank_name}</td><td>${a.account_no}</td><td>${a.alias || "-"}</td>
-          <td>${a.popbill ? html`<span class="badge green">팝빌 자동조회</span>` : html`<span class="badge">엑셀</span>`}</td>
+          <td>${a.popbill ? html`<span class="badge green">팝빌 자동조회</span>` : a.sms_keyword ? html`<span class="badge green" title="사무실 폰 문자 → 몇 초 안에 자동으로 들어옴">문자 자동</span>${a.purpose ? html` <span class="badge">${a.purpose}</span>` : ""}` : html`<span class="badge">엑셀</span>`}</td>
           <td class="small">${a.last_synced_at ? a.last_synced_at.slice(0, 16).replace("T", " ") : "-"}</td>
           <td class="nowrap">${a.popbill && html`<button class="btn sm primary" disabled=${busy} onClick=${() => sync(a)}>거래내역 불러오기</button>`}
             <label class="btn sm">엑셀 올리기<input type="file" hidden accept=".xls,.xlsx,.csv,.txt" onChange=${e => { upload(a, e.target.files[0]); e.target.value = ""; }} /></label></td>

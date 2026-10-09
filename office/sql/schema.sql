@@ -1262,3 +1262,33 @@ begin
   end if;
   return new;
 end $function$;
+
+
+-- 20261009000002_bank_sms.sql
+-- 통장 입출금 문자 연동: 사무실 안드로이드 폰(MacroDroid)이 은행 문자를 서버 함수 bank-in 으로 보낸다.
+-- 원문은 bank_msgs 에 그대로 남기고(해석 규칙을 나중에 고쳐도 다시 돌릴 수 있게), 읽힌 것은 bank_txs 로.
+alter table bank_txs drop constraint if exists bank_txs_source_check;
+alter table bank_txs add constraint bank_txs_source_check check (source in ('팝빌', '엑셀', '데모', '문자'));
+alter table bank_txs add column counterparty text;          -- 보낸 사람·받는 곳 (문자에 나온 이름)
+
+alter table bank_accounts add column purpose text check (purpose in ('차량', '운영비', '기타'));
+alter table bank_accounts add column sms_keyword text;      -- 이 계좌 문자를 알아보는 말 (예: 부산, KB) — 비우면 은행 이름
+
+create table bank_msgs (
+  id           bigint generated always as identity primary key,
+  received_at  timestamptz not null default now(),
+  sender       text,                       -- 문자 보낸 번호 / 앱 이름
+  text         text not null,
+  hash         text not null unique,       -- 같은 문자가 두 번 와도 한 번만
+  account_id   uuid references bank_accounts(id) on delete set null,
+  parsed       jsonb,
+  tx_id        uuid references bank_txs(id) on delete set null,
+  status       text not null default '저장' check (status in ('저장', '해석실패', '중복', '무시'))
+);
+create index bank_msgs_received on bank_msgs (received_at desc);
+alter table bank_msgs enable row level security;
+create policy office_all on bank_msgs for all to authenticated using (is_office()) with check (is_office());
+
+insert into bank_accounts (bank_name, account_no, alias, purpose, sms_keyword, popbill, active)
+select '부산은행', '101-2094-4765-02', '차량 통장', '차량', '부산', false, true
+ where not exists (select 1 from bank_accounts where account_no = '101-2094-4765-02');
