@@ -149,3 +149,23 @@ export function 검색맞음(q, ...fields) {
   const hs = 소리(hay);
   return words.every(w => hs.includes(소리(w))) ? 1 : 0;
 }
+
+/** 차량 검색 칸: 번호판·차명을 치면 아래에 후보 (재고 먼저, 최근 매입 순). 고르면 onPick(차) */
+export function CarSearch({ cars, value, onPick, placeholder = "차량번호·차명 검색" }) {
+  const [text, setText] = useState("");
+  const [open, setOpen] = useState(false);
+  const [box, setBox] = useState(null);          // 목록은 표 칸에 잘리지 않게 화면 기준(fixed)으로 띄운다
+  let inputEl;
+  const place = () => { const r = inputEl?.getBoundingClientRect(); if (r) setBox({ left: r.left, top: r.bottom + 4, width: Math.max(r.width, 340) }); };
+  const picked = cars.find(c => c.id === value);
+  const list = !text.trim() ? [] : cars.filter(c => !c.deleted_at)
+    .map(c => [c, 검색맞음(text, c.plate, c.plate_before, c.car_name, c.brand, c.model, c.fskey)]).filter(([, sc]) => sc > 0)
+    .sort((a, b) => b[1] - a[1] || (a[0].status === "재고" ? -1 : 1) - (b[0].status === "재고" ? -1 : 1) || String(b[0].purchase_date).localeCompare(String(a[0].purchase_date)))
+    .slice(0, 8).map(([c]) => c);
+  return html`<span class="carsearch">
+    <input ref=${el => { inputEl = el; }} placeholder=${picked ? `${picked.plate} ${picked.car_name}` : placeholder} value=${text}
+      onInput=${e => { setText(e.target.value); place(); setOpen(true); }} onFocus=${() => { place(); setOpen(true); }} onBlur=${() => setTimeout(() => setOpen(false), 200)} />
+    ${open && list.length > 0 && box && html`<span class="carsearch-list" style=${`left:${box.left}px;top:${box.top}px;width:${box.width}px`}>${list.map(c => html`<button type="button" onMouseDown=${e => e.preventDefault()}
+      onClick=${() => { onPick(c); setText(""); setOpen(false); }}><b>${c.plate}</b> ${c.car_name} <small>${c.status}${c.purchase_date ? " · 매입 " + c.purchase_date : ""}</small></button>`)}</span>`}
+  </span>`;
+}

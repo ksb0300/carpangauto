@@ -292,3 +292,11 @@ a.stat { color: inherit; } a.stat:hover { border-color: var(--pri); }
 .repay-pick { display: inline-flex; gap: 4px; align-items: center; white-space: nowrap; } .repay-pick input[type=date] { width: 138px; padding: 3px 6px; }
 /* 자금관리: 통장 탭을 바꿔도 칸 위치가 같게 */
 .banktx { table-layout: fixed; min-width: 1000px; } .banktx td { overflow: hidden; text-overflow: ellipsis; }
+/* 차량 검색 칸 */
+.carsearch { position: relative; display: inline-block; min-width: 260px; } .carsearch input { width: 100%; }
+.carsearch input::placeholder { color: var(--ink); opacity: .55; }
+.carsearch-list { position: fixed; z-index: 40; background: #fff; border: 1px solid var(--line); border-radius: 10px;
+  box-shadow: 0 10px 24px rgba(0,0,0,.12); max-height: 320px; overflow: auto; display: flex; flex-direction: column; min-width: 340px; }
+.carsearch-list button { text-align: left; border: 0; background: none; padding: 8px 12px; cursor: pointer; font: inherit; border-bottom: 1px solid var(--line2); }
+.carsearch-list button:hover { background: #f3f4f6; } .carsearch-list small { color: var(--sub); margin-left: 6px; }
+.manualmatch select { width: 150px; }
