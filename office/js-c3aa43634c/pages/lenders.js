@@ -54,13 +54,12 @@ export async function extendLoan(app, l) {
 export const 연장됨 = l => Number(l.extended_months) > 0;
 export const canExtend = (l, lender) => l.status === "진행중" && !연장됨(l) && (연장조건(l, lender).가능 || !(Number(lender?.ext_months) > 0));
 
-/** 상환 — 상환일을 받아 상환완료 처리, 금융사 해지수수료(설정돼 있으면)도 기록. 성공하면 true */
-export async function repayLoan(app, l) {
+/** 상환 — 고른 상환일로 상환완료 처리, 상환 비용(저당해지비용·중도상환수수료)도 기록. 성공하면 true
+ *  차를 판 날과 실제로 갚은 날이 다를 수 있어 날짜는 늘 고르게 한다 (기본 오늘) */
+export async function repayLoan(app, l, d = today()) {
   const lender = app.lenders.find(x => x.id === l.lender_id);
-  const v = window.prompt(`${lender?.name || ""} ${won(대출상태(l, today()).원금잔액)}원 상환일 (YYYY-MM-DD)`, today());
-  if (!v) return false;
-  const d = v.trim();
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) { toast("날짜를 YYYY-MM-DD 로 넣어 주세요.", "err"); return false; }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d || "")) { toast("상환일을 골라 주세요.", "err"); return false; }
+  if (d < l.start_date) { toast("상환일이 대출 실행일보다 앞섭니다.", "err"); return false; }
   const fee = 상환비용(l, lender, d), 중도 = 해지수수료(l, lender, d);
   if (fee && !window.confirm(`상환 비용 ${won(fee)}원 (저당해지비용 ${won(Number(lender?.release_fee) || 0)}${중도 ? ` + 중도상환수수료 ${won(중도)}` : ""}) — 상환완료 처리할까요?`)) return false;
   return !!(await run(() => q(app.db.from("car_loans").update({ status: "상환완료", repaid_date: d, repay_fee: fee || null }).eq("id", l.id)), "상환완료 처리했습니다"));
@@ -71,8 +70,19 @@ export function LoanAction({ app, l, lender, onDone }) {
   if (l.status !== "진행중" || app.profile.role === "dealer") return null;
   const go_ = async (e, f) => { e.stopPropagation(); if (await f(app, l)) onDone(); };
   const 연장 = html`<button class="btn sm" onClick=${e => go_(e, extendLoan)}>연장</button>`;
-  const 상환 = html`<button class="btn sm primary" onClick=${e => go_(e, repayLoan)}>상환</button>`;
-  return canExtend(l, lender) ? 연장 : 상환;
+  return canExtend(l, lender) ? 연장 : html`<${RepayButton} app=${app} l=${l} onDone=${onDone} />`;
+}
+
+/** [상환] → 상환일 달력(기본 오늘) + 확인. 목록·대시보드·차 화면에서 같이 쓴다 */
+export function RepayButton({ app, l, onDone, label = "상환", cls = "btn sm primary" }) {
+  const [open, setOpen] = useState(false);
+  const [d, setD] = useState(today());
+  const stop = e => e.stopPropagation();
+  if (!open) return html`<button class=${cls} onClick=${e => { stop(e); setD(today()); setOpen(true); }}>${label}</button>`;
+  return html`<span class="repay-pick" onClick=${stop}>
+    <input type="date" value=${d} max=${today()} min=${l.start_date} onInput=${e => setD(e.target.value)} title="실제로 갚은 날" />
+    <button class="btn sm primary" onClick=${async () => { if (await repayLoan(app, l, d)) { setOpen(false); onDone(); } }}>확인</button>
+    <button class="btn sm ghost" onClick=${() => setOpen(false)}>✕</button></span>`;
 }
 
 /** 대출 한 건의 '다음 할 일' */

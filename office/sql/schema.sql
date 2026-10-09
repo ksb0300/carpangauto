@@ -1230,3 +1230,35 @@ alter table car_files add constraint car_files_kind_check check (kind in ('제�
 -- 20261008000002_daangn_id.sql
 -- 당근중고차 글번호 (엔카 매물 동기화가 당근에 올린 글) — 차 화면 '고객에게 보내기'의 당근 링크
 alter table cars add column daangn_id bigint;
+
+
+-- 20261009000001_loan_repay_date.sql
+-- 손익(정산) 확정 때 함께 상환 처리하는 재고금융의 상환일 — 차를 판 날·확정일과 실제로 갚은 날이 다를 수 있다 (비우면 확정일)
+alter table settlements add column loan_repay_date date;
+
+create or replace function public.settlements_finalize() returns trigger
+language plpgsql security definer set search_path to 'public' as $function$
+begin
+  new.updated_at := now();
+  if new.finalized and not coalesce(old.finalized, false) then
+    new.finalized_at := now();
+    if new.loan_repay then
+      update car_loans cl set status = '상환완료', repaid_date = coalesce(new.loan_repay_date, new.settle_date),
+             repay_fee = (select nullif(l.release_fee, 0) from lenders l where l.id = cl.lender_id)
+       where cl.car_id = new.car_id and cl.status = '진행중';
+    end if;
+  end if;
+  -- 확정 해제: 이 정산이 상환완료로 바꾼 대출을 되돌린다
+  if tg_op = 'UPDATE' and old.finalized and not new.finalized then
+    new.finalized_at := null;
+    if old.loan_repay then
+      update car_loans set status = '진행중', repaid_date = null, repay_fee = null
+       where car_id = new.car_id and status = '상환완료' and repaid_date = coalesce(old.loan_repay_date, old.settle_date);
+    end if;
+  end if;
+  if tg_op = 'UPDATE' and old.finalized and new.finalized
+     and (new.detail is distinct from old.detail) then
+    raise exception '정산완료 상태에서는 금액을 바꿀 수 없습니다. 정산 확정을 먼저 해제하세요.';
+  end if;
+  return new;
+end $function$;
