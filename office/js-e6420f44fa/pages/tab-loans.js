@@ -1,7 +1,7 @@
 import { html, useState, useEffect, Money, Field, Select, Seg, run, won, today, toast } from "../ui.js";
 import { q } from "../db.js";
 import { 대출이자, 미납이자, 대출상태, 연장조건, 해지수수료, 상환비용, 재고금융이자 } from "../calc.js";
-import { 조건요약, 할일, extendLoan, canExtend } from "./lenders.js";
+import { 조건요약, 할일, extendLoan, canExtend, RepayButton } from "./lenders.js";
 
 const MONTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 24, 36];
 const addMonths = (d, m) => { const x = new Date(d + "T00:00:00Z"); x.setUTCMonth(x.getUTCMonth() + Number(m)); return x.toISOString().slice(0, 10); };
@@ -61,7 +61,7 @@ export function LoansTab({ app, car, loans, reload, locked, office }) {
         <div class="kvrow">
           <div><span>캐피탈이율</span><b>${l.lender_rate ?? "-"}%${st.연장됨 && l.ext_rate != null && Number(l.ext_rate) !== Number(l.lender_rate) ? ` → ${Number(l.ext_rate)}%` : ""}</b><small>${done ? "낸" : "오늘까지"} 이자 ${won(쌓인이자)}</small></div>
           ${Number(l.principal_repaid) > 0 && html`<div><span>연장 때 상환</span><b>${won(l.principal_repaid)}</b><small>잔액 ${won(st.원금잔액)}</small></div>`}
-          ${l.repay_fee != null && html`<div><span>상환해지수수료</span><b>${won(l.repay_fee)}</b></div>`}
+          ${done && html`<div><span>상환일</span><b>${l.repaid_date || "-"}</b><small>상환 비용 ${won(l.repay_fee || 0)} (저당해지 등)</small></div>`}
           ${!partnerCar && html`<div><span>딜러이율</span><b>${l.dealer_rate}%</b><small>일 ${won(dl.일이자)} · 월 ${won(dl.월이자)} · 총 ${won(dl.총이자)}</small></div>
           <div><span>이자마진(총)</span><b>${won(dl.총이자 - cp.총이자)}</b></div>
           <div><span>납입이자</span><b>${won(paid)}</b><small>${l.payments.length}건</small></div>
@@ -75,7 +75,7 @@ export function LoansTab({ app, car, loans, reload, locked, office }) {
           <button class="btn sm" disabled=${done} onClick=${() => pay(l)}>이자납입</button>
           <button class="btn sm" disabled=${done || !canExtend(l, lender)} title=${c.가능 ? `${c.개월}개월 연장${c.상환필요 ? ` · 원금 ${won(c.상환필요)} 상환` : ""}` : "금융사 조건상 연장 불가 — 수동 연장"} onClick=${() => extend(l)}>연장</button>
           ${done ? html`<button class="btn sm" onClick=${() => setStatus(l, "진행중")}>상환완료 취소</button>`
-                 : html`<button class="btn sm" onClick=${() => setStatus(l, "상환완료")}>상환완료</button>`}
+                 : html`<${RepayButton} app=${app} l=${l} onDone=${reload} label="상환완료" cls="btn sm" />`}
           <button class="btn sm danger" disabled=${done} title=${done ? "상환완료를 먼저 취소하세요" : ""} onClick=${() => remove(l)}>삭제</button>
         </div>`}
       </div>`;

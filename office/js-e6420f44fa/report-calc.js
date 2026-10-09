@@ -253,6 +253,7 @@ export function 대표차량계산(data, c, s) {
     매도금액: n(s.sale_amount), 기타매출: (st?.other_revenue || []).map(x => ({ 금액: n(x.금액), 과세: x.과세 !== false })),
     상사매도비: n(s.sale_fee), 할부수익: n(s.installment_income), 제시금액: n(c.purchase_amount), 제시증빙: c.evidence,
     비용: (data.costs || []).filter(k => k.car_id === c.id).map(k => ({ 금액: n(k.amount), 과세: k.taxable, 정산반영: k.include_in_settlement })),
+    // 갚은 대출은 실제 상환일까지, 아직 안 갚은 대출은 매도일까지
     캐피탈이자: 차량캐피탈이자((data.loans || []).filter(l => l.car_id === c.id), s.sale_date),
   });
 }

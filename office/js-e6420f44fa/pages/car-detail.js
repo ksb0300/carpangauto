@@ -152,6 +152,7 @@ function SendBox({ app, car, sale }) {
       : reg === null ? html`<label class="btn" title="매입 때 받은 자동차등록증 사진 — 한 번 올리면 다음부터 바로 보냅니다">🪪 등록증 올리기<input type="file" hidden accept="image/*,.pdf" onChange=${e => { upReg(e.target.files[0]); e.target.value = ""; }} /></label>` : ""}
     <a class="btn" href=${quoteUrl} target="_blank" rel="noopener" title=${price ? `${won(price)}원으로 견적서를 엽니다` : "가격 없이 엽니다"}>🧾 견적서 만들기</a>
     ${encarUrl && html`<button class="btn" onClick=${() => shareLink(encarUrl, `${car.car_name} ${car.plate}`)}>🔗 엔카 광고 링크</button>`}
+    ${car.daangn_id && html`<button class="btn" onClick=${() => shareLink(`https://www.daangn.com/kr/cars/${car.daangn_id}/`, `${car.car_name} ${car.plate}`)}>🥕 당근 광고 링크</button>`}
   </div>`;
 }
 

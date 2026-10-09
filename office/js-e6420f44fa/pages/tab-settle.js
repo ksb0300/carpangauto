@@ -28,19 +28,23 @@ function PartnerSettle({ app, car, costs, loans, sale, settlement, reload, offic
   const ro = fin || !office;
   const owner = app.dealers.find(d => d.id === car.dealer_id);
   const [f, setF] = useState({ settle_date: settlement?.settle_date || today(), other_revenue: settlement?.other_revenue || [],
-    loan_repay: settlement?.loan_repay ?? true, memo: settlement?.memo || "" });
+    loan_repay: settlement?.loan_repay ?? true, loan_repay_date: settlement?.loan_repay_date || today(), memo: settlement?.memo || "" });
   const [busy, setBusy] = useState(false);
   const set = k => v => setF(p => ({ ...p, [k]: v }));
+  const 상환예정 = f.loan_repay && loans.some(l => l.status === "진행중");
+  // 이자·저당해지비용은 실제로 갚는 날까지 (확정 때 같이 상환하면 고른 상환일로, 아니면 오늘까지 쌓이는 중)
+  const 계산대출 = loans.map(l => l.status === "진행중" && f.loan_repay
+    ? { ...l, status: "상환완료", repaid_date: f.loan_repay_date, repay_fee: Number(app.lenders.find(x => x.id === l.lender_id)?.release_fee) || 0 } : l);
   const r = useMemo(() => 대표손익({
     매도금액: Number(sale.sale_amount), 기타매출: f.other_revenue.map(x => ({ 금액: Number(x.금액) || 0, 과세: x.과세 !== false })),
     상사매도비: Number(sale.sale_fee), 할부수익: Number(sale.installment_income) || 0, 제시금액: Number(car.purchase_amount), 제시증빙: car.evidence,
     비용: costs.map(c => ({ 금액: Number(c.amount), 과세: c.taxable, 정산반영: c.include_in_settlement })),
-    캐피탈이자: 차량캐피탈이자(loans, sale.sale_date),
+    캐피탈이자: 차량캐피탈이자(계산대출, sale.sale_date),
   }), [f, costs, sale, car, loans]);
   const save = async finalize => {
-    if (finalize && !confirm(`${owner?.name || ""} 대표 실적으로 손익을 확정할까요?\n손익 ${won(r.손익)}원${f.loan_repay && loans.some(l => l.status === "진행중") ? "\n진행중인 재고금융은 상환완료 처리됩니다." : ""}`)) return;
+    if (finalize && !confirm(`${owner?.name || ""} 대표 실적으로 손익을 확정할까요?\n손익 ${won(r.손익)}원${상환예정 ? `\n진행중인 재고금융은 ${f.loan_repay_date} 상환으로 처리됩니다.` : ""}`)) return;
     setBusy(true);
-    const row = { car_id: car.id, mode: "대표", settle_date: f.settle_date, withholding: false, method: app.settings.settle_method, allow_negative: true,
+    const row = { car_id: car.id, mode: "대표", loan_repay_date: 상환예정 ? f.loan_repay_date : (settlement?.loan_repay_date || null), settle_date: f.settle_date, withholding: false, method: app.settings.settle_method, allow_negative: true,
       other_revenue: f.other_revenue, offsets: [], loan_repay: f.loan_repay, memo: f.memo || null,
       sale_total: r.매출.금액, purchase_total: r.제시.금액, cost_total: r.C.금액, base_amount: r.손익, base_supply: r.손익, base_vat: r.부가세,
       income_amount: 0, income_tax: 0, local_tax: 0, tax_total: 0, offset_total: 0, payout: 0, net_income: r.손익, detail: r, finalized: !!finalize };
@@ -67,6 +71,8 @@ function PartnerSettle({ app, car, costs, loans, sale, settlement, reload, offic
       <div class="fgrid">
         <${Field} label="확정일"><input type="date" disabled=${ro} value=${f.settle_date} onInput=${e => set("settle_date")(e.target.value)} /><//>
         <${Field} label="재고금융" hint="확정 시 진행중 대출을 상환완료 처리"><label class="check"><input type="checkbox" disabled=${ro} checked=${f.loan_repay} onChange=${e => set("loan_repay")(e.target.checked)} /> 상환완료 종결처리</label><//>
+        ${f.loan_repay && (loans.some(l => l.status === "진행중") || settlement?.loan_repay_date) && html`<${Field} label="재고금융 상환일" hint="실제로 갚은 날 — 판 날과 달라도 됩니다. 이자는 이 날까지">
+          <input type="date" disabled=${ro} value=${f.loan_repay_date} min=${loans.reduce((m, l) => l.start_date > m ? l.start_date : m, "")} onInput=${e => set("loan_repay_date")(e.target.value)} /><//>`}
         <${Field} label="메모" wide><input disabled=${ro} value=${f.memo} onInput=${e => set("memo")(e.target.value)} /><//>
       </div>
       <div class="bar"><h4>기타 매출</h4><span class="grow"></span>${!ro && html`<button class="btn sm" onClick=${() => set("other_revenue")([...f.other_revenue, { 항목: "", 금액: 0, 과세: true }])}>+ 추가</button>`}</div>
@@ -87,7 +93,7 @@ function PartnerSettle({ app, car, costs, loans, sale, settlement, reload, offic
         ${L("매출 합계", r.매출.금액, `공급가 ${won(r.매출.공급가)} / 부가세 ${won(r.매출.부가세)}`, "em")}
         ${L("매입가", -r.제시.금액, car.evidence === "계산서" ? "계산서 — 매입세액 공제 없음" : `${car.evidence} — 매입세액 ${won(r.제시.부가세)} 공제`)}
         ${L("상품화비용", -r.C.금액, `${costs.length}건`)}
-        ${r.이자 ? L("재고금융 이자(캐피탈)", -r.이자, "실행일 ~ 매도일") : ""}
+        ${r.이자 ? L("재고금융 이자(캐피탈)", -r.이자, "실행일 ~ 상환일 (+ 저당해지비용)") : ""}
         ${L("차량 손익 (실적)", r.손익, "부가세는 빼지 않음", "em")}
         <tr><th class="muted">참고: 예상 부가세</th><td class="r muted">${won(r.부가세)}</td><td class="note">매출세액 − 제시·비용 매입세액 (손익에 안 뺌)</td></tr>
         ${Number(sale.perf_insurance) ? html`<tr><th class="muted">성능보험료</th><td class="r muted">${won(sale.perf_insurance)}</td><td class="note">손님 부담 — 손익 제외</td></tr>` : ""}
@@ -103,11 +109,11 @@ function DealerSettle({ app, car, costs, loans, sale, settlement, reload, office
     settle_date: settlement.settle_date, withholding: settlement.withholding, method: settlement.method,
     allow_negative: settlement.allow_negative, other_revenue: settlement.other_revenue || [],
     offsets: fin ? settlement.offsets : [...autoOffsets(loans, settlement.settle_date), ...(settlement.offsets || []).filter(o => !o.auto)],
-    loan_repay: settlement.loan_repay, memo: settlement.memo || "",
+    loan_repay: settlement.loan_repay, loan_repay_date: settlement.loan_repay_date || today(), memo: settlement.memo || "",
     broker_amount: Number(settlement.broker_amount) || 0, broker_withholding: settlement.broker_withholding !== false,
   } : {
     settle_date: today(), withholding: dealer?.kind === "개인", method: app.settings.settle_method, allow_negative: false,
-    other_revenue: [], offsets: autoOffsets(loans, today()), loan_repay: true, memo: "",
+    other_revenue: [], offsets: autoOffsets(loans, today()), loan_repay: true, loan_repay_date: today(), memo: "",
     broker_amount: 0, broker_withholding: app.dealers.find(d => d.id === sale.broker_dealer_id)?.kind === "개인",
   };
   const broker = app.dealers.find(d => d.id === sale.broker_dealer_id);
@@ -135,7 +141,8 @@ function DealerSettle({ app, car, costs, loans, sale, settlement, reload, office
     setBusy(true);
     const row = {
       car_id: car.id, settle_date: f.settle_date, withholding: f.withholding, method: f.method, allow_negative: f.allow_negative,
-      other_revenue: f.other_revenue, offsets: f.offsets.filter(o => Number(o.금액)), loan_repay: f.loan_repay, memo: f.memo || null,
+      other_revenue: f.other_revenue, offsets: f.offsets.filter(o => Number(o.금액)), loan_repay: f.loan_repay,
+      loan_repay_date: f.loan_repay && loans.some(l => l.status === "진행중") ? f.loan_repay_date : (settlement?.loan_repay_date || null), memo: f.memo || null,
       sale_total: r.A, purchase_total: r.B, cost_total: r.C.금액, base_amount: r.D, base_supply: r.D공급가, base_vat: r.D부가세,
       income_amount: r.소득금액, income_tax: r.소득세, local_tax: r.지방세, tax_total: r.징수세액,
       offset_total: r.L, payout: r.실지급액, net_income: r.세후소득, detail: r, finalized: !!finalize,
@@ -173,6 +180,8 @@ function DealerSettle({ app, car, costs, loans, sale, settlement, reload, office
           <${Seg} value=${f.method} onChange=${v => !ro && set("method")(v)} options=${["일괄", "분할"]} /><//>
         <${Field} label="손실일 때"><${Seg} value=${f.allow_negative ? "마이너스" : "0"} onChange=${v => !ro && set("allow_negative")(v === "마이너스")} options=${[["0", "0으로"], ["마이너스", "마이너스로"]]} /><//>
         <${Field} label="재고금융" hint="정산완료 시 진행중 대출을 상환완료 처리"><label class="check"><input type="checkbox" disabled=${ro} checked=${f.loan_repay} onChange=${e => set("loan_repay")(e.target.checked)} /> 상환완료 종결처리</label><//>
+        ${f.loan_repay && (loans.some(l => l.status === "진행중") || settlement?.loan_repay_date) && html`<${Field} label="재고금융 상환일" hint="실제로 갚은 날 — 정산일과 달라도 됩니다">
+          <input type="date" disabled=${ro} value=${f.loan_repay_date} onInput=${e => set("loan_repay_date")(e.target.value)} /><//>`}
         ${broker && html`<${Field} label=${`알선딜러 몫 — ${broker.name}`} hint=${`정산기준금액 ${won(r.D + (r.알선?.기준 || 0))} 중 알선딜러에게 줄 금액`}>
           <div class="row"><${Money} value=${f.broker_amount} readOnly=${ro} onInput=${v => set("broker_amount")(v)} />
           <${Seg} value=${f.broker_withholding ? "대상" : "미대상"} onChange=${v => !ro && set("broker_withholding")(v === "대상")} options=${["대상", "미대상"]} /></div><//>`}
