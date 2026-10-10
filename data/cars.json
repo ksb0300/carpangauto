@@ -1,5 +1,5 @@
 {
- "updated": "2026-10-09 17:47",
+ "updated": "2026-10-10 17:47",
  "count": 41,
  "cars": [
   {
@@ -731,6 +731,32 @@
    "link": "https://fem.encar.com/cars/detail/42830983"
   },
   {
+   "id": "42757118",
+   "plate": "05어3945",
+   "maker": "현대",
+   "model": "캐스퍼",
+   "grade": "프리미엄",
+   "year": "25년 10월",
+   "yearRaw": "202510",
+   "mileage": 14284,
+   "fuel": "전기",
+   "transmission": "오토",
+   "color": "검정색",
+   "price": 2490,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture05/pic4275/42757118_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4275/42757118_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4275/42757118_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4275/42757118_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4275/42757118_018.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4275/42757118_017.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4275/42757118_036.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4275/42757118_042.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42757118"
+  },
+  {
    "id": "42843284",
    "plate": "48서6546",
    "maker": "미니",
@@ -781,32 +807,6 @@
     "https://ci.encar.com/carpicture01/pic4281/42819398_034.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42819398"
-  },
-  {
-   "id": "42757118",
-   "plate": "05어3945",
-   "maker": "현대",
-   "model": "캐스퍼",
-   "grade": "프리미엄",
-   "year": "25년 10월",
-   "yearRaw": "202510",
-   "mileage": 14284,
-   "fuel": "전기",
-   "transmission": "오토",
-   "color": "검정색",
-   "price": 2490,
-   "diagnosis": true,
-   "photos": [
-    "https://ci.encar.com/carpicture05/pic4275/42757118_027.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4275/42757118_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4275/42757118_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4275/42757118_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4275/42757118_018.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4275/42757118_017.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4275/42757118_036.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4275/42757118_042.jpg?impolicy=widthRate&wid=800"
-   ],
-   "link": "https://fem.encar.com/cars/detail/42757118"
   },
   {
    "id": "42517582",
@@ -957,10 +957,10 @@
     "https://ci.encar.com/carpicture01/pic4251/42518291_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture01/pic4251/42518291_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture01/pic4251/42518291_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4251/42518291_020.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4251/42518291_045.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4251/42518291_009.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture01/pic4251/42518291_006.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4251/42518291_019.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture01/pic4251/42518291_010.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4251/42518291_033.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42518291"
   },
