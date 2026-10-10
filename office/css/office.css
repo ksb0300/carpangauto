@@ -300,3 +300,4 @@ a.stat { color: inherit; } a.stat:hover { border-color: var(--pri); }
 .carsearch-list button { text-align: left; border: 0; background: none; padding: 8px 12px; cursor: pointer; font: inherit; border-bottom: 1px solid var(--line2); }
 .carsearch-list button:hover { background: #f3f4f6; } .carsearch-list small { color: var(--sub); margin-left: 6px; }
 .manualmatch select { width: 150px; }
+.carline { display: inline-flex; flex-direction: column; line-height: 1.25; } .carline small { color: var(--sub); font-size: 11.5px; font-weight: 400; white-space: nowrap; }

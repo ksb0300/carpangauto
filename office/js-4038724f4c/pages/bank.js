@@ -1,11 +1,12 @@
 // 통장 입출금: 계좌 등록, 거래내역 불러오기(팝빌 자동조회 또는 은행 엑셀), 입출금 ↔ 차량·딜러 매칭
-import { html, useState, useEffect, useMemo, Field, Select, Seg, Loading, Empty, run, won, toast, ask, Period, initPeriod, W, downloadCsv } from "../ui.js";
+import { html, useState, useEffect, useMemo, Field, Select, Seg, Loading, Empty, run, won, toast, ask, Period, initPeriod, W, downloadCsv, CarSearch } from "../ui.js";
 import { q } from "../db.js";
 import { popbill, PB_NOTE } from "../pb.js";
 import { loadAll } from "./report-data.js";
 import { 매칭후보, 자동확정, 거래내역정리, 거래키 } from "../report-calc.js";
+import { repayLoan } from "./lenders.js";
 
-const KINDS = ["차량매도대금", "차량매입대금", "딜러정산지급", "상품화비", "재고금융", "알선", "상사매출", "운영비", "기타"];
+const KINDS = ["차량매도대금", "차량매입대금", "재고금융", "재고금융이자", "상품화비", "자금이동", "운영비", "딜러정산지급", "알선", "상사매출", "기타"];
 const XLSX_URL = "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm";
 
 /** 은행 엑셀(xls/xlsx) 또는 CSV(UTF-8·EUC-KR)를 행 배열로 */
@@ -55,22 +56,32 @@ export function BankPage({ app }) {
   const car = useMemo(() => Object.fromEntries((data?.cars || []).map(c => [c.id, c])), [data]);
   const dealer = Object.fromEntries(app.dealers.map(d => [d.id, d]));
   const shown = (txs || []).filter(t => only === "전체" || (only === "미매칭" ? !t.match_kind : only === "입금" ? t.deposit > 0 : t.withdraw > 0));
-  const cand = useMemo(() => data ? Object.fromEntries((txs || []).filter(t => !t.match_kind).map(t => [t.id, 매칭후보(t, data)])) : {}, [txs, data]);
+  // 내 통장끼리 이체를 찾으려면 같은 기간 모든 통장 거래가 필요
+  const [allTxs, setAllTxs] = useState([]);
+  useEffect(() => { run(async () => setAllTxs(await q(app.db.from("bank_txs").select("id,account_id,tx_date,tx_time,deposit,withdraw").gte("tx_date", period.from).lte("tx_date", period.to)))); }, [period.from, period.to, txs]);
+  const cand = useMemo(() => data ? Object.fromEntries((txs || []).filter(t => !t.match_kind).map(t => [t.id, 매칭후보(t, data, { accounts, txs: allTxs })])) : {}, [txs, data, allTxs, accounts]);
 
   const setMatch = (t, m, by = "수동") => run(async () => {
+    // 재고금융 상환과 연결하면 그 대출을 이 거래 날짜로 상환완료 (상환 비용도 기록)
+    if (m?.repay && m.loan_id) {
+      const loan = (data?.loans || []).find(l => l.id === m.loan_id);
+      if (loan && loan.status === "진행중" && !(await repayLoan(app, loan, t.tx_date))) return;
+    }
     await q(app.db.from("bank_txs").update({ match_kind: m?.kind || null, car_id: m?.car_id || null, dealer_id: m?.dealer_id || null,
-      matched_by: m ? by : null }).eq("id", t.id));
+      loan_id: m?.loan_id || null, matched_by: m ? by : null }).eq("id", t.id));
     setPick(null); loadTx();
+    if (m?.repay) setData(await loadAll(app.db));
   });
   const editMemo = t => {
     const m = window.prompt("상세메모", t.memo || ""); if (m === null) return;
     run(async () => { await q(app.db.from("bank_txs").update({ memo: m.trim() || null }).eq("id", t.id)); loadTx(); }, "메모를 저장했습니다");
   };
   const autoAll = async () => {
-    const list = (txs || []).filter(t => !t.match_kind).map(t => [t, 자동확정(cand[t.id] || [])]).filter(([, m]) => m);
+    // 자동은 장부 표시만 — 재고금융 상환처럼 대출 상태를 바꾸는 건 사람이 [연결]을 눌러야
+    const list = (txs || []).filter(t => !t.match_kind).map(t => [t, 자동확정(cand[t.id] || [])]).filter(([, m]) => m && !m.repay);
     if (!list.length) return toast("확실하게 맞는 거래가 없습니다. 후보를 보고 직접 연결하세요.");
     setBusy(true);
-    await run(async () => { for (const [t, m] of list) await q(app.db.from("bank_txs").update({ match_kind: m.kind, car_id: m.car_id || null, dealer_id: m.dealer_id || null, matched_by: "자동" }).eq("id", t.id)); },
+    await run(async () => { for (const [t, m] of list) await q(app.db.from("bank_txs").update({ match_kind: m.kind, car_id: m.car_id || null, dealer_id: m.dealer_id || null, loan_id: m.loan_id || null, matched_by: "자동" }).eq("id", t.id)); },
       `${list.length}건을 자동으로 연결했습니다`);
     setBusy(false); loadTx();
   };
@@ -169,11 +180,12 @@ function ManualMatch({ cands, cars, dealers, onPick, onCancel }) {
   const [kind, setKind] = useState(cands[0]?.kind || "기타");
   const [carId, setCarId] = useState(null);
   const [dealerId, setDealerId] = useState(null);
-  return html`<div class="row" style="flex-wrap:wrap">
+  return html`<div class="row manualmatch" style="flex-wrap:wrap">
     ${cands.map(c => html`<button class="btn sm" onClick=${() => onPick(c)}>${c.label} (${c.score})</button>`)}
-    <${Select} value=${kind} onChange=${setKind} options=${KINDS} />
-    <${Select} value=${carId} onChange=${setCarId} empty="차량 없음" options=${cars.filter(c => !c.deleted_at).map(c => [c.id, `${c.plate} ${c.car_name}`])} />
-    <${Select} value=${dealerId} onChange=${setDealerId} empty="딜러 없음" options=${dealers.map(d => [d.id, d.name])} />
+    <span class="muted small">종류</span><${Select} value=${kind} onChange=${setKind} options=${KINDS} />
+    <span class="muted small">차량</span>
+    <${CarSearch} cars=${cars} value=${carId} onPick=${c => setCarId(c.id)} />${carId && html`<button class="btn sm ghost" title="차량 빼기" onClick=${() => setCarId(null)}>✕</button>`}
+    ${dealers.some(d => d.active && !d.partner) && html`<${Select} value=${dealerId} onChange=${setDealerId} empty="딜러 없음" options=${dealers.filter(d => !d.partner).map(d => [d.id, d.name])} />`}
     <button class="btn sm primary" onClick=${() => onPick({ kind, car_id: carId, dealer_id: dealerId || cars.find(c => c.id === carId)?.dealer_id })}>이걸로 연결</button>
     <button class="btn sm ghost" onClick=${onCancel}>닫기</button></div>`;
 }

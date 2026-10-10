@@ -1,5 +1,5 @@
 // 재고금융관리 → 금융사별 현황 · 금융사 조건 설정. 금융사마다 기본기간·연장·이율·연장 조건·상환해지수수료가 다르다.
-import { html, useState, useEffect, Money, Field, Seg, Loading, Empty, run, won, go, today, W, toast } from "../ui.js";
+import { html, useState, useEffect, Money, Field, Seg, Loading, Empty, run, won, go, today, W, toast , 차줄 } from "../ui.js";
 import { q } from "../db.js";
 import { loadAll } from "./report-data.js";
 import { 대출상태, 연장조건, 재고금융이자, 해지수수료, 상환비용 } from "../calc.js";
@@ -133,7 +133,7 @@ export function LenderOverview({ app }) {
         ${!mine.length ? html`<p class="muted small">진행중 대출 없음</p>` : html`<div class="table-wrap"><table class="grid click">
           <thead><tr><th>차량</th><th class="r">대출(잔액)</th><th>실행일</th><th>단계</th><th>만기</th><th class="r">이율</th><th class="r">오늘까지 이자</th><th class="r" title="중도상환수수료 + 저당해지비용">지금 갚으면 상환비용</th><th>다음 할 일</th><th></th></tr></thead>
           <tbody>${mine.map(l => { const s = 대출상태(l, t), h = 할일(l, x, t), c = car[l.car_id];
-            return html`<tr onClick=${() => go(`/car/${c.id}/loans`)}><td><b>${c.plate}</b> <span class="small">${c.car_name}</span></td>
+            return html`<tr onClick=${() => go(`/car/${c.id}/loans`)}><td>${차줄(c)}</td>
               ${W(s.원금잔액)}<td>${l.start_date}</td><td>${s.단계}</td><td>${s.만기}</td>
               <td class="r">${s.연장됨 && l.ext_rate != null ? `${Number(l.ext_rate)}%` : `${Number(l.lender_rate ?? 0)}%`}</td>
               ${W(재고금융이자(l, l.start_date, t))}${W(상환비용(l, x, t))}<td><span class=${"badge " + h.tone}>${h.text}</span></td>
