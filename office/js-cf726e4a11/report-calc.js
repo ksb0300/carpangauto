@@ -324,7 +324,8 @@ export function 매칭후보(tx, data, ctx = {}) {
   const mins = t => { const [h, m] = String(t.tx_time || "00:00").split(":").map(Number); return h * 60 + m; };
   const pair = (ctx.txs || []).find(o => o.account_id !== tx.account_id && o.tx_date === tx.tx_date
     && n(입금 ? o.withdraw : o.deposit) === amt && Math.abs(mins(o) - mins(tx)) <= 10);
-  if (pair) add("자금이동", 100, `내 통장끼리 이체 (${(ctx.accounts || []).find(a => a.id === pair.account_id)?.bank_name || "다른 통장"} ${입금 ? "→" : "←"} 여기)`, {});
+  if (pair) { const 상대 = (ctx.accounts || []).find(a => a.id === pair.account_id)?.bank_name || "다른 통장";
+    add("자금이동", 100, `내 통장끼리 이체 (${입금 ? `${상대} → 여기` : `여기 → ${상대}`})`, {}); }
   else if (/티어원/.test(text)) add("자금이동", 60, "회사 이름 거래 — 내 통장끼리 이체?", {});
   const 금융사 = (data.lenders || []).filter(l => (금융사말[l.name] || [l.name.replace(/(은행|캐피탈|증권)$/, "")]).some(w => text.includes(w)));
   if (acct?.purpose === "운영비") {

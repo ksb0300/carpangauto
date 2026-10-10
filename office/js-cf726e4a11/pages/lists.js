@@ -1,6 +1,6 @@
 // 목록 화면: 리스트(재고·매도 차량) / 상품화비용(차량별·비용별) / 재고금융(리스트·이자납입) / 매도차량.
 // 공통: 차량번호 검색, 매입담당, 검색기간(기준일 선택), 정렬, 엑셀(CSV) 다운로드, 합계표, 등록 버튼.
-import { html, useState, useEffect, useMemo, Select, Seg, Loading, Empty, run, won, go, today, Period, initPeriod, SubTabs, downloadCsv, W, toast, Money, 검색맞음 } from "../ui.js";
+import { html, useState, useEffect, useMemo, Select, Seg, Loading, Empty, run, won, go, today, Period, initPeriod, SubTabs, downloadCsv, W, toast, Money, 검색맞음 , 차줄 } from "../ui.js";
 import { q } from "../db.js";
 import { loadAll } from "./report-data.js";
 import { 부가세분리, 대출이자, 미납이자, 재고금융이자 } from "../calc.js";
@@ -315,7 +315,7 @@ function LoansList({ app, tab }) {
       ${!rows.length ? html`<${Empty}>이자납입 기록이 없습니다.<//>` : html`<div class="table-wrap"><table class="grid click">
         <thead><tr><th>차량번호</th><th>매입담당</th><th>재고금융사</th><th class="r">대출금액</th><th>실행일</th><th class="r">기간</th><th class="r">딜러이율</th>
           <th class="r">일이자</th><th class="r">월이자</th><th class="r">총이자</th><th class="r">납입이자</th><th>이자납일</th><th class="r">총납입이자</th><th>상태</th></tr></thead>
-        <tbody>${rows.map(({ l, p }) => html`<tr onClick=${() => go(`/car/${l.car.id}/loans`)}><td><b>${l.car.plate}</b></td><td>${dealer[l.car.dealer_id] || "-"}</td><td>${lender[l.lender_id]}</td>
+        <tbody>${rows.map(({ l, p }) => html`<tr onClick=${() => go(`/car/${l.car.id}/loans`)}><td>${차줄(l.car)}</td><td>${dealer[l.car.dealer_id] || "-"}</td><td>${lender[l.lender_id]}</td>
           ${W(l.amount)}<td>${l.start_date}</td><td class="r">${l.months}개월</td><td class="r">${l.dealer_rate}%</td>${W(l.일이자)}${W(l.월이자)}${W(l.총이자)}
           ${W(p?.amount || 0)}<td>${p?.paid_date || html`<span class="muted">납입 없음</span>`}</td>${W(l.paid)}<td>${l.status}</td></tr>`)}</tbody></table></div>`}
       <${LenderLimits} d=${d} />`;
@@ -328,7 +328,7 @@ function LoansList({ app, tab }) {
     ${!loans.length ? html`<${Empty}>조건에 맞는 재고금융이 없습니다.<//>` : html`<div class="table-wrap"><table class="grid click">
       <thead><tr><th>차량번호</th><th>매입담당</th><th>재고금융사</th><th class="r">대출(잔액)</th><th>실행일</th><th class="r">기간</th><th>만기일</th><th>상태·할 일</th>
         <th class="r">일이자</th><th class="r" title="실행일부터 오늘까지(상환했으면 상환일까지) 일할, 금융사 조건 반영">이자(오늘까지)</th>${hasDealer && html`<th class="r">딜러 미납이자</th>`}<th></th></tr></thead>
-      <tbody>${loans.map(l => html`<tr onClick=${() => go(`/car/${l.car.id}/loans`)}><td><b>${l.car.plate}</b></td><td>${dealer[l.car.dealer_id] || "-"}</td>
+      <tbody>${loans.map(l => html`<tr onClick=${() => go(`/car/${l.car.id}/loans`)}><td>${차줄(l.car)}</td><td>${dealer[l.car.dealer_id] || "-"}</td>
         <td>${lender[l.lender_id]}</td>${W(l.잔액)}<td>${l.start_date}</td><td class="r">${l.months}개월</td>
         <td class=${l.status === "진행중" && l.만기 < today() ? "red" : ""}>${l.만기}</td><td><span class=${"badge " + l.할일.tone}>${l.할일.text}</span></td>${W(l.캐피탈일이자)}${W(l.이자)}${hasDealer && W(l.미납, "red")}
         <td><${LoanAction} app=${app} l=${l} lender=${d.lenders.find(x => x.id === l.lender_id)} onDone=${reload} /></td></tr>`)}</tbody>
