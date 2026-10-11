@@ -1,5 +1,7 @@
-// 서류: 고객이 tieronekorea.com/sign 에서 서명한 비사업용 사실확인서 (예전 구글 앱스스크립트 → 이제 서버 함수 sign 이 여기 저장).
-// 목록 → 확인서 보기·인쇄(PDF 저장). 주민번호는 가린 값으로 보이고, 대표만 원문을 넣어 인쇄할 수 있다.
+// 서류: 고객이 tieronekorea.com/sign 에서 서명한 서류 (서버 함수 sign 이 여기 저장).
+//   비사업용 사실확인서 (차를 파는 고객, 주민번호는 가린 값 — 대표만 원문을 넣어 인쇄)
+//   3일 환불 약정서 (차를 사 가는 고객, /sign/refund — 약관 원문은 서명 때 그대로 terms 에)
+// 목록 → 서류 보기·인쇄(PDF 저장).
 import { html, useState, useEffect, Loading, Empty, Badge, run, toast, go } from "../ui.js";
 import { q } from "../db.js";
 
@@ -17,6 +19,17 @@ async function withCars(db, rows) {
   return rows.map(r => ({ ...r, cars: cars.find(c => c.id === r.car_id) || null }));
 }
 const kst = iso => new Date(Date.parse(iso) + 9 * 3600e3).toISOString().replace("T", " ").slice(0, 16);
+const 환불 = r => r.kind === "3일환불";
+const 종류 = r => 환불(r) ? "3일 환불" : "비사업용";
+const 요일 = "일월화수목금토";
+export const 기한글 = iso => { const k = new Date(Date.parse(iso) + 9 * 3600e3); return `${k.getUTCMonth() + 1}/${k.getUTCDate()}(${요일[k.getUTCDay()]}) ${k.getUTCHours()}시`; };
+/** 3일 환불: 기한 안이면 '환불 가능' 표시 */
+function 기한배지(r) {
+  if (!환불(r) || !r.deadline) return "";
+  const left = Date.parse(r.deadline) - Date.now();
+  return left > 0 ? html`<${Badge} tone=${left < 24 * 3600e3 ? "red" : "amber"} title="이 때까지 고객이 환불을 요청할 수 있습니다">환불 가능 ~${기한글(r.deadline)}<//>`
+    : html`<${Badge} title="환불 기한이 지났습니다">기한 끝<//>`;
+}
 
 export function SignsPage({ app, id }) {
   return id ? html`<${SignView} app=${app} id=${id} />` : html`<${SignList} app=${app} />`;
@@ -25,21 +38,25 @@ export function SignsPage({ app, id }) {
 function SignList({ app }) {
   const [rows, setRows] = useState(null);
   const [only, setOnly] = useState("전체");
+  const [kind, setKind] = useState("전체 종류");
   useEffect(() => { run(async () => setRows(await withCars(app.db, await q(app.db.from("sign_docs").select("*").order("created_at", { ascending: false }))))); }, []);
   if (!rows) return html`<${Loading} />`;
-  const list = rows.filter(r => only === "전체" || !r.checked_at);
-  return html`<div class="bar"><h2>서류 접수</h2><span class="muted small">비사업용 사실확인서 · 고객 작성 주소 <a href="/sign/" target="_blank">tieronekorea.com/sign</a></span>
+  const list = rows.filter(r => (only === "전체" || !r.checked_at) && (kind === "전체 종류" || 종류(r) === kind));
+  return html`<div class="bar"><h2>서류 접수</h2><span class="muted small">고객 작성 주소: 비사업용 <a href="/sign/" target="_blank">tieronekorea.com/sign</a>
+      · 3일 환불 <a href="/sign/refund/" target="_blank">tieronekorea.com/sign/refund</a></span>
       <span class="grow"></span>
+      <div class="seg">${["전체 종류", "비사업용", "3일 환불"].map(k => html`<button class=${kind === k ? "on" : ""} onClick=${() => setKind(k)}>${k}</button>`)}</div>
       <div class="seg">${["전체", "새 서류"].map(k => html`<button class=${only === k ? "on" : ""} onClick=${() => setOnly(k)}>${k}${k === "새 서류" ? ` ${rows.filter(r => !r.checked_at).length}` : ""}</button>`)}</div></div>
     ${!list.length ? html`<${Empty}>${rows.length ? "새로 들어온 서류가 없습니다." : "아직 접수된 서류가 없습니다. 고객에게 tieronekorea.com/sign 주소를 보내면 여기에 쌓입니다."}<//>`
       : html`<div class="table-wrap"><table class="grid click">
-        <thead><tr><th>접수일시</th><th>차량번호</th><th>차명</th><th>성명</th><th>주민번호</th><th>전화번호</th><th>사업자번호</th><th>우리 차</th><th>상태</th></tr></thead>
+        <thead><tr><th>접수일시</th><th>종류</th><th>차량번호</th><th>차명</th><th>성명</th><th>주민번호·생년월일</th><th>전화번호</th><th>사업자번호</th><th>우리 차</th><th>상태</th></tr></thead>
         <tbody>${list.map(r => html`<tr key=${r.id} onClick=${() => go("/signs/" + r.id)}>
-          <td>${kst(r.created_at)}</td><td><b>${r.car_no}</b></td><td class="ellipsis">${r.car_name}</td><td>${r.name}</td><td>${r.ssn_masked}</td>
+          <td>${kst(r.created_at)}</td><td>${종류(r)}</td><td><b>${r.car_no}</b></td><td class="ellipsis">${r.car_name}</td><td>${r.name}</td><td>${r.ssn_masked || r.birth || "-"}</td>
           <td>${r.phone}</td><td>${r.biz_no || "-"}</td>
           <td onClick=${e => e.stopPropagation()}>${r.car_id ? html`<a href=${"#/car/" + r.car_id}>${r.cars?.plate} (${r.cars?.status})</a>` : html`<span class="muted">-</span>`}</td>
-          <td>${r.checked_at ? html`<${Badge} tone="green">확인<//>` : html`<${Badge} tone="amber">새 서류<//>`}</td></tr>`)}</tbody></table></div>`}
-    <p class="note">예전에는 구글 드라이브·시트에 쌓이고 메일로 왔습니다. 이제는 여기서 보고, 확인서를 열어 인쇄하거나 PDF 로 저장합니다. 번호판이 같은 우리 차가 있으면 자동으로 연결됩니다.</p>`;
+          <td class="nowrap">${r.checked_at ? html`<${Badge} tone="green">확인<//>` : html`<${Badge} tone="amber">새 서류<//>`} ${기한배지(r)}</td></tr>`)}</tbody></table></div>`}
+    <p class="note">고객이 휴대폰으로 서명하면 여기에 쌓입니다. 서류를 열어 인쇄하거나 PDF 로 저장합니다. 번호판이 같은 우리 차가 있으면 자동으로 연결됩니다.
+      3일 환불 약정서는 차 화면 '고객에게 보내기'에서 차량 정보가 채워진 링크로 보낼 수 있습니다.</p>`;
 }
 
 function SignView({ app, id }) {
@@ -58,7 +75,7 @@ function SignView({ app, id }) {
   const reveal = () => run(async () => { const { data, error } = await app.db.rpc("reveal_ssn", { p_target: "sign_doc", p_id: id }); if (error) throw new Error(error.message); setSsn(data); });
   const check = () => run(async () => { await q(app.db.from("sign_docs").update({ checked_at: r.checked_at ? null : new Date().toISOString(), checked_by: r.checked_at ? null : (await app.db.auth.getSession()).data.session?.user?.id || null }).eq("id", id)); load(); });
   const remove = () => {
-    if (!confirm(`${r.car_no} ${r.name} 확인서를 지울까요? 서명·주민번호도 같이 지워지고 되돌릴 수 없습니다.`)) return;
+    if (!confirm(`${r.car_no} ${r.name} ${종류(r)} 서류를 지울까요? 서명${환불(r) ? "" : "·주민번호"}도 같이 지워지고 되돌릴 수 없습니다.`)) return;
     run(async () => {
       if (r.signature_path) await app.db.storage.from("car-files").remove([r.signature_path]);
       await q(app.db.from("sign_docs").delete().eq("id", id));
@@ -68,13 +85,13 @@ function SignView({ app, id }) {
   const t = new Date(Date.parse(r.created_at) + 9 * 3600e3), 날짜 = `${t.getUTCFullYear()}년  ${t.getUTCMonth() + 1}월  ${t.getUTCDate()}일`;
   const TR = (k, v) => html`<tr><th>${k}</th><td>${v}</td></tr>`;
   return html`<div class="bar no-print"><a class="btn ghost" href="#/signs">← 목록</a><h2>${r.car_no} · ${r.name}</h2>
-      ${r.checked_at ? html`<${Badge} tone="green">확인 ${kst(r.checked_at).slice(0, 10)}<//>` : html`<${Badge} tone="amber">새 서류<//>`}<span class="grow"></span>
+      ${r.checked_at ? html`<${Badge} tone="green">확인 ${kst(r.checked_at).slice(0, 10)}<//>` : html`<${Badge} tone="amber">새 서류<//>`} ${기한배지(r)}<span class="grow"></span>
       ${r.car_id && html`<a class="btn" href=${"#/car/" + r.car_id}>차 화면 (${r.cars?.plate})</a>`}
-      ${admin && !ssn && html`<button class="btn" onClick=${reveal} title="대표만 · 열람 기록이 남습니다">주민번호 원문 넣기</button>`}
+      ${admin && !ssn && !환불(r) && html`<button class="btn" onClick=${reveal} title="대표만 · 열람 기록이 남습니다">주민번호 원문 넣기</button>`}
       <button class="btn" onClick=${check}>${r.checked_at ? "확인 취소" : "확인함"}</button>
       <button class="btn primary" onClick=${() => window.print()}>인쇄·PDF 저장</button>
       ${admin && html`<button class="btn danger" onClick=${remove}>삭제</button>`}</div>
-    <div class="sign-paper">
+    ${환불(r) ? html`<${RefundPaper} r=${r} sig=${sig} 날짜=${날짜} TR=${TR} />` : html`<div class="sign-paper">
       <h1>비사업용 사실확인서</h1>
       <div class="sec">※ 매각차량</div>
       <table>${TR("차량번호", r.car_no)}${TR("차명", r.car_name)}${TR("소유자", r.name)}</table>
@@ -86,15 +103,35 @@ function SignView({ app, id }) {
       <table><tr><th>성명</th><td class="owner">${r.name}<span class="sigwrap"><span class="sigmark">(서명)</span>${sig && html`<img class="sig" src=${sig} />`}</span></td></tr>
         ${TR("주민등록번호", ssn || r.ssn_masked)}${TR("주소", r.address)}${TR("전화번호", r.phone)}${r.biz_no && TR("사업자등록번호", r.biz_no)}</table>
       <div class="buyer">매수자 : ${매수자} · ${매수자주소}<br />전자서명 접수 : ${kst(r.created_at)} · 1·2·3항 확인 체크 ${r.agreed ? "완료" : "없음"}</div>
-    </div>
-    <p class="note no-print">인쇄 창에서 'PDF로 저장'을 고르면 파일로 보관됩니다. 주민번호 원문은 대표만 넣을 수 있고, 넣을 때마다 열람 기록이 남습니다.</p>`;
+    </div>`}
+    <p class="note no-print">인쇄 창에서 'PDF로 저장'을 고르면 파일로 보관됩니다.${환불(r) ? " 약관은 고객이 서명할 때 본 원문 그대로입니다." : " 주민번호 원문은 대표만 넣을 수 있고, 넣을 때마다 열람 기록이 남습니다."}</p>`;
+}
+
+/** 3일 환불 약정서 — 고객 사본(/sign/refund)과 같은 양식, 약관은 서명 때 원문(terms) */
+function RefundPaper({ r, sig, 날짜, TR }) {
+  const t = r.terms || { title: "3일 환불 약정서", clauses: [], seller: "TierONE (티어원)" };
+  const k = r.deadline ? new Date(Date.parse(r.deadline) + 9 * 3600e3) : null;
+  const 기한 = k ? `${k.getUTCFullYear()}년 ${k.getUTCMonth() + 1}월 ${k.getUTCDate()}일 (${요일[k.getUTCDay()]}) ${k.getUTCHours()}시까지` : "-";
+  return html`<div class="sign-paper">
+    <h1>${t.title}</h1>
+    <div class="sec">※ 매매 차량</div>
+    <table>${TR("차량번호", r.car_no)}${TR("차명", r.car_name)}${TR("인도 때 주행거리", r.mileage != null ? `${Number(r.mileage).toLocaleString()} km` : "-")}${TR("환불 신청 기한", 기한)}</table>
+    <p>매도인 ${t.seller}(이하 '매도인')과 매수인은 위 차량의 매매에 관하여 다음과 같이 3일 환불을 약정합니다.</p>
+    <ol class="terms">${t.clauses.map(([h, b], i) => html`<li><b>제${i + 1}조 (${h})</b><br />${b.split(String.fromCharCode(10)).map((x, j) => html`${j ? html`<br />` : ""}${x}`)}</li>`)}</ol>
+    <p class="date">${날짜}</p>
+    <div class="sec">※ 매수인</div>
+    <table><tr><th>성명</th><td class="owner">${r.name}<span class="sigwrap"><span class="sigmark">(서명)</span>${sig && html`<img class="sig" src=${sig} />`}</span></td></tr>
+      ${TR("생년월일", r.birth)}${TR("주소", r.address)}${TR("전화번호", r.phone)}</table>
+    <div class="buyer">매도인 : ${t.seller}${t.seller_addr ? ` · ${t.seller_addr}` : ""}${t.seller_tel ? ` · ${t.seller_tel}` : ""}<br />
+      전자서명 접수 : ${kst(r.created_at)} · 약관 확인 체크 ${r.agreed ? "완료" : "없음"}${t.ver ? ` · 약관 ${t.ver}` : ""}</div>
+  </div>`;
 }
 
 /** 대시보드 위젯: 아직 확인 안 한 서류 */
 export function SignsWidget({ app }) {
   const [rows, setRows] = useState(null);
-  useEffect(() => { run(async () => setRows(await q(app.db.from("sign_docs").select("id,car_no,name,created_at").is("checked_at", null).order("created_at", { ascending: false }).limit(8)))); }, []);
+  useEffect(() => { run(async () => setRows(await q(app.db.from("sign_docs").select("id,kind,car_no,name,created_at,deadline").is("checked_at", null).order("created_at", { ascending: false }).limit(8)))); }, []);
   return html`<div class="card"><div class="bar"><h3>새 서류 ${rows ? `— ${rows.length}건` : ""}</h3><span class="grow"></span><a class="btn sm" href="#/signs">서류</a></div>
-    ${!rows ? html`<${Loading} />` : !rows.length ? html`<p class="muted small">새로 들어온 비사업용 확인서가 없습니다.</p>`
-      : html`<table class="grid click"><tbody>${rows.map(r => html`<tr onClick=${() => go("/signs/" + r.id)}><td><b>${r.car_no}</b></td><td>${r.name}</td><td class="r small">${kst(r.created_at)}</td></tr>`)}</tbody></table>`}</div>`;
+    ${!rows ? html`<${Loading} />` : !rows.length ? html`<p class="muted small">새로 들어온 서류가 없습니다.</p>`
+      : html`<table class="grid click"><tbody>${rows.map(r => html`<tr onClick=${() => go("/signs/" + r.id)}><td><b>${r.car_no}</b></td><td>${r.name}</td><td class="small">${종류(r)}</td><td class="r small">${kst(r.created_at)}</td></tr>`)}</tbody></table>`}</div>`;
 }
