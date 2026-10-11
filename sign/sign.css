@@ -56,6 +56,13 @@
   .sf .deadline b{color:#fff;margin-left:6px}
   .sf .statement ol.terms{list-style:none;padding:0} .sf .statement ol.terms li{margin-bottom:16px}
   .paper ol.terms{list-style:none;padding:0} .paper ol.terms li{margin-bottom:10px;text-align:left}
+  /* 사무실이 채운 고지 사항 */
+  .sf input.locked{background:transparent;border-style:dashed;color:var(--tx2)}
+  .sf table.notice{width:100%;border-collapse:collapse;margin:0 0 12px;font-size:14.5px}
+  .sf table.notice th{text-align:left;color:var(--tx3);font-weight:500;padding:8px 10px 8px 0;width:40%;vertical-align:top;border-bottom:1px solid var(--line)}
+  .sf table.notice td{color:var(--tx);padding:8px 0;border-bottom:1px solid var(--line)}
+  .sf .sec{font-weight:700;font-size:13.5px;margin:16px 0 6px;color:var(--tx)}
+  .perfbtn{display:block;text-align:center;text-decoration:none;margin-top:4px;border-color:var(--pp)!important;color:#fff!important}
   @media print{
     body *{visibility:hidden} .paper,.paper *{visibility:visible}
     .paper{position:absolute;left:0;top:0;margin:0;max-width:none;width:100%;border-radius:0;padding:30px 46px}

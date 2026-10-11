@@ -1,4 +1,5 @@
 import { html, useState, useEffect, Loading, Badge, won, go, run, toast } from "../ui.js";
+import { RefundPrep } from "./signs.js";
 import { q } from "../db.js";
 import { CostsTab } from "./tab-costs.js";
 import { LoansTab } from "./tab-loans.js";
@@ -103,7 +104,8 @@ function InfoTab({ app, car, sale, office }) {
 function SendBox({ app, car, sale }) {
   const [pdf, setPdf] = useState(undefined);      // 성능점검기록부 파일 (미리 받아 둔다 — 공유창은 누른 직후에 열어야 해서)
   const [imgs, setImgs] = useState(null);         // 성능지 두 쪽을 사진(JPG)으로
-  const [reg, setReg] = useState(undefined);      // 자동차등록증 (매입 때 받은 것) 사진
+  const [reg, setReg] = useState(undefined);
+  const [refund, setRefund] = useState(false);    // 3일 환불 약정서 만들기 칸      // 자동차등록증 (매입 때 받은 것) 사진
   const loadReg = () => run(async () => {
     const f = (await q(app.db.from("car_files").select("path,name,mime").eq("car_id", car.id).eq("kind", "등록증").order("created_at", { ascending: false }).limit(1)))[0];
     if (!f) return setReg(null);
@@ -153,7 +155,10 @@ function SendBox({ app, car, sale }) {
     <a class="btn" href=${quoteUrl} target="_blank" rel="noopener" title=${price ? `${won(price)}원으로 견적서를 엽니다` : "가격 없이 엽니다"}>🧾 견적서 만들기</a>
     ${encarUrl && html`<button class="btn" onClick=${() => shareLink(encarUrl, `${car.car_name} ${car.plate}`)}>🔗 엔카 광고 링크</button>`}
     ${car.daangn_id && html`<button class="btn" onClick=${() => shareLink(`https://www.daangn.com/kr/cars/${car.daangn_id}/`, `${car.car_name} ${car.plate}`)}>🥕 당근 광고 링크</button>`}
-  </div>`;
+    <button class=${"btn" + (refund ? " on" : "")} title="차를 내줄 때: 고지 사항(판매금액·압류저당·성능보험·환불 때 비용)을 채워 고객 서명 링크를 보냅니다"
+      onClick=${() => setRefund(!refund)}>📝 3일 환불 약정서</button>
+  </div>
+  ${refund && html`<${RefundPrep} app=${app} car=${car} sale=${sale} shareLink=${shareLink} onClose=${() => setRefund(false)} />`}`;
 }
 
 // 성능지 PDF 각 쪽을 JPG 사진으로 (pdf.js — 처음 한 번만 불러온다)

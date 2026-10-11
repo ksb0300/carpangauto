@@ -1324,3 +1324,20 @@ begin
   return nid;
 end $$;
 revoke all on function sign_submit_refund(jsonb) from public, anon, authenticated;
+
+
+-- 20261011000002_refund_prepared.sql
+-- 3일 환불 약정서를 사무실이 먼저 만든다: 판매가·키·압류저당·성능보험·환불 때 돌려받지 못하는 비용(고지 사항)을 채워 두면
+-- 고객은 링크(/sign/refund/?t=토큰)에서 그 내용을 고치지 못하고 확인·서명만 한다. 서명 전에는 이름·주소·전화가 비어 있다.
+alter table sign_docs alter column name drop not null;
+alter table sign_docs alter column address drop not null;
+alter table sign_docs alter column phone drop not null;
+alter table sign_docs add column token       text unique;          -- 고객 링크 열쇠 (서명 대기)
+alter table sign_docs add column prepared    jsonb;                -- { price, keys, lien, insurance, costs: [[항목, 금액]...], note }
+alter table sign_docs add column prepared_by uuid references auth.users(id);
+alter table sign_docs add column signed_at   timestamptz;          -- 고객이 서명한 때 (서명 대기면 비어 있음)
+update sign_docs set signed_at = created_at where signature_path is not null;
+create index sign_docs_car on sign_docs (car_id);
+
+-- 링크 없이(홈페이지 탭에서) 바로 쓰는 약정서·비사업용 확인서는 접수 = 서명
+alter table sign_docs alter column signed_at set default now();
