@@ -1,5 +1,5 @@
 // 통장 입출금: 계좌 등록, 거래내역 불러오기(팝빌 자동조회 또는 은행 엑셀), 입출금 ↔ 차량·딜러 매칭
-import { html, useState, useEffect, useMemo, Field, Select, Seg, Loading, Empty, run, won, toast, ask, Period, initPeriod, W, downloadCsv } from "../ui.js";
+import { html, useState, useEffect, useMemo, Field, Select, Seg, Loading, Empty, run, won, toast, ask, Period, initPeriod, W, downloadCsv, CarSearch } from "../ui.js";
 import { q } from "../db.js";
 import { popbill, PB_NOTE } from "../pb.js";
 import { loadAll } from "./report-data.js";
@@ -180,11 +180,12 @@ function ManualMatch({ cands, cars, dealers, onPick, onCancel }) {
   const [kind, setKind] = useState(cands[0]?.kind || "기타");
   const [carId, setCarId] = useState(null);
   const [dealerId, setDealerId] = useState(null);
-  return html`<div class="row" style="flex-wrap:wrap">
+  return html`<div class="row manualmatch" style="flex-wrap:wrap">
     ${cands.map(c => html`<button class="btn sm" onClick=${() => onPick(c)}>${c.label} (${c.score})</button>`)}
-    <${Select} value=${kind} onChange=${setKind} options=${KINDS} />
-    <${Select} value=${carId} onChange=${setCarId} empty="차량 없음" options=${cars.filter(c => !c.deleted_at).map(c => [c.id, `${c.plate} ${c.car_name}`])} />
-    <${Select} value=${dealerId} onChange=${setDealerId} empty="딜러 없음" options=${dealers.map(d => [d.id, d.name])} />
+    <span class="muted small">종류</span><${Select} value=${kind} onChange=${setKind} options=${KINDS} />
+    <span class="muted small">차량</span>
+    <${CarSearch} cars=${cars} value=${carId} onPick=${c => setCarId(c.id)} />${carId && html`<button class="btn sm ghost" title="차량 빼기" onClick=${() => setCarId(null)}>✕</button>`}
+    ${dealers.some(d => d.active && !d.partner) && html`<${Select} value=${dealerId} onChange=${setDealerId} empty="딜러 없음" options=${dealers.filter(d => !d.partner).map(d => [d.id, d.name])} />`}
     <button class="btn sm primary" onClick=${() => onPick({ kind, car_id: carId, dealer_id: dealerId || cars.find(c => c.id === carId)?.dealer_id })}>이걸로 연결</button>
     <button class="btn sm ghost" onClick=${onCancel}>닫기</button></div>`;
 }
