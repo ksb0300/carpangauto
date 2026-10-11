@@ -301,3 +301,4 @@ a.stat { color: inherit; } a.stat:hover { border-color: var(--pri); }
 .carsearch-list button:hover { background: #f3f4f6; } .carsearch-list small { color: var(--sub); margin-left: 6px; }
 .manualmatch select { width: 150px; }
 .carline { display: inline-flex; flex-direction: column; line-height: 1.25; } .carline small { color: var(--sub); font-size: 11.5px; font-weight: 400; white-space: nowrap; }
+.sign-paper ol.terms { list-style: none; padding: 0; } .sign-paper ol.terms li { margin-bottom: 10px; text-align: left; }

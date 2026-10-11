@@ -1300,3 +1300,27 @@ alter table bank_txs drop constraint if exists bank_txs_match_kind_check;
 alter table bank_txs add constraint bank_txs_match_kind_check check (match_kind in
   ('차량매도대금', '차량매입대금', '딜러정산지급', '상품화비', '재고금융', '재고금융이자', '자금이동', '알선', '상사매출', '운영비', '기타'));
 alter table bank_txs add column loan_id uuid references car_loans(id) on delete set null;
+
+
+-- 20261011000001_refund_contract.sql
+-- 3일 환불 약정서: 차를 사 가는 고객이 tieronekorea.com/sign/refund 에서 약관을 읽고 서명한다 (비사업용 확인서와 같은 sign_docs 에 kind='3일환불').
+-- 주민번호는 받지 않는다 (생년월일만). 고객이 본 약관 원문은 terms 에 그대로 남겨, 나중에 약관을 고쳐도 서명한 내용은 그대로 보인다.
+alter table sign_docs add column birth    text;            -- 생년월일 6자리
+alter table sign_docs add column mileage  integer;         -- 인도 때 계기판 주행거리
+alter table sign_docs add column deadline timestamptz;     -- 환불 신청 기한
+alter table sign_docs add column terms    jsonb;           -- { ver, title, clauses[], km_limit }
+
+create or replace function sign_submit_refund(p jsonb) returns uuid
+language plpgsql security definer set search_path = public as $$
+declare nid uuid; cid uuid;
+begin
+  select id into cid from cars
+   where deleted_at is null and regexp_replace(plate, '\s', '', 'g') = regexp_replace(p->>'car_no', '\s', '', 'g')
+   order by purchase_date desc limit 1;
+  insert into sign_docs (kind, car_no, car_name, name, birth, address, phone, mileage, deadline, terms, agreed, car_id, ua, ip)
+  values ('3일환불', p->>'car_no', p->>'car_name', p->>'name', p->>'birth', p->>'address', p->>'phone',
+          (p->>'mileage')::integer, (p->>'deadline')::timestamptz, p->'terms', true, cid, left(p->>'ua', 300), p->>'ip')
+  returning id into nid;
+  return nid;
+end $$;
+revoke all on function sign_submit_refund(jsonb) from public, anon, authenticated;

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>3일 환불 약정서 · TierONE</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0a0a0c">
+<link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="/assets/style.css?v=8bb9c7a9">
+<link rel="stylesheet" href="/sign/sign.css?v=1">
+</head>
+<body>
+
+<section class="full short" style="padding-top:calc(var(--nav) + 44px)">
+  <div class="wrap">
+    <div class="doctabs"><a href="/sign/">비사업용 사실확인서</a><a class="on" href="/sign/refund/">3일 환불 약정서</a></div>
+    <p class="eyebrow">Document</p>
+    <h1 class="t">3일 환불 약정서</h1>
+    <p class="s">TierONE 에서 차량을 구매하신 고객님께 드리는 3일 환불 보장 약정입니다.
+       아래 내용을 읽고 휴대폰으로 바로 서명하실 수 있습니다.</p>
+
+    <div class="sf" id="form">
+      <div class="err" id="err" hidden></div>
+      <div class="card">
+        <div class="field"><label>차량번호 <span class="req">*</span></label>
+          <input type="text" id="carNo" placeholder="12가3456" autocomplete="off"></div>
+        <div class="field"><label>차명 <span class="req">*</span></label>
+          <input type="text" id="carName" placeholder="BMW 3시리즈" autocomplete="off"></div>
+        <div class="field"><label>인도 때 주행거리 (계기판) <span class="req">*</span></label>
+          <div class="split"><input type="tel" id="km" inputmode="numeric" placeholder="45,210" autocomplete="off" style="text-align:left"><span class="dash">km</span></div>
+          <p class="hint">차를 받으신 지금 계기판에 보이는 숫자입니다. 환불 조건(주행 <b id="kmLimit">300</b>km 이하)의 기준이 됩니다.</p></div>
+      </div>
+
+      <div class="card">
+        <div class="field"><label>성명 (매수인) <span class="req">*</span></label>
+          <input type="text" id="name" placeholder="홍길동" autocomplete="name"></div>
+        <div class="field"><label>생년월일 <span class="req">*</span></label>
+          <input type="tel" id="birth" maxlength="6" inputmode="numeric" placeholder="910729 (6자리)" autocomplete="off"></div>
+        <div class="field"><label>주소 <span class="req">*</span></label>
+          <input type="text" id="address" placeholder="부산광역시 금정구 ..." autocomplete="street-address"></div>
+        <div class="field"><label>전화번호 <span class="req">*</span></label>
+          <div class="split">
+            <input type="tel" id="tel1" maxlength="3" value="010" inputmode="numeric" autocomplete="off">
+            <span class="dash">-</span>
+            <input type="tel" id="tel2" maxlength="4" placeholder="0000" inputmode="numeric" autocomplete="off">
+            <span class="dash">-</span>
+            <input type="tel" id="tel3" maxlength="4" placeholder="0000" inputmode="numeric" autocomplete="off">
+          </div></div>
+      </div>
+
+      <div class="card">
+        <div class="deadline">환불 신청 기한 <b id="deadline">불러오는 중…</b></div>
+        <div class="statement" id="clauses">약관을 불러오는 중입니다…</div>
+      </div>
+
+      <div class="card">
+        <label class="agree"><input type="checkbox" id="agree1">
+          <span>위 <b>약관을 모두 읽었고</b>, 환불 신청 기한과 환불 조건을 확인했습니다.</span></label>
+        <label class="agree" style="margin-top:14px"><input type="checkbox" id="agree2">
+          <span>환불하더라도 <b>이전등록 비용·탁송비·보험료 등 제3조의 비용은 돌려받지 못함</b>을 확인했습니다.</span></label>
+      </div>
+
+      <div class="card">
+        <label>서명 <span class="req">*</span></label>
+        <p class="hint" style="margin:0 0 10px">아래 칸에 손가락으로 서명해 주세요.</p>
+        <canvas id="pad"></canvas>
+        <div class="padrow"><span class="hint" id="padHint">서명 전</span>
+          <button class="ghostbtn" type="button" id="clear">다시 쓰기</button></div>
+      </div>
+
+      <button class="submit" id="send" type="button" disabled>제출하기</button>
+      <p class="foot">제출 시각과 입력하신 정보가 함께 기록됩니다. 제출 후 약정서 사본을 저장하실 수 있습니다.</p>
+    </div>
+
+    <div id="done" class="done" hidden>
+      <div class="mark">✓</div>
+      <h2>제출되었습니다</h2>
+      <p>3일 환불 약정서가 접수되었습니다. 감사합니다.</p>
+      <p>환불 신청 기한: <b id="doneDeadline"></b></p>
+      <p style="margin-top:14px"><button class="ghostbtn" type="button" id="print" style="border-color:var(--pp);color:#fff">약정서 사본 저장·인쇄</button></p>
+      <p style="font-size:13px;color:var(--tx3)">인쇄 창에서 'PDF로 저장'을 고르시면 파일로 보관됩니다. 화면을 캡처해 두셔도 됩니다.</p>
+      <div class="paper" id="paper"></div>
+    </div>
+  </div>
+</section>
+
+<script src="/assets/site.js?v=0f0f056c"></script>
+<script src="/sign/pad.js?v=1"></script>
+<script>
+var API = "https://fwqtyyjhfewpxihpaasu.supabase.co/functions/v1/sign";
+var $ = function (id) { return document.getElementById(id); };
+var T = null;      // 서버에서 받은 약관 { ver, title, clauses, km_limit, seller... }
+var pad = SignPad($("pad"), function (ink) { $("padHint").textContent = ink ? "서명됨" : "서명 전"; });
+$("clear").onclick = function () { pad.clear(); };
+
+function esc(v) { return String(v == null ? "" : v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+function p2(n) { return String(n).padStart(2, "0"); }
+var 요일 = "일월화수목금토";
+/* 기한(ISO) → "2026년 10월 13일 (화) 18시" — 한국 시간으로 */
+function 기한글(iso) { var k = new Date(Date.parse(iso) + 9 * 3600e3);
+  return k.getUTCFullYear() + "년 " + (k.getUTCMonth() + 1) + "월 " + k.getUTCDate() + "일 (" + 요일[k.getUTCDay()] + ") " + k.getUTCHours() + "시까지"; }
+function 조항html(t) {
+  return "<ol class='terms'>" + t.clauses.map(function (c, i) {
+    return "<li><b>제" + (i + 1) + "조 (" + esc(c[0]) + ")</b><br>" + esc(c[1]).replace(/\n/g, "<br>") + "</li>"; }).join("") + "</ol>";
+}
+
+/* 차 화면에서 보낸 링크면 차량 정보가 미리 채워진다: ?car=번호&name=차명&km=주행거리 */
+(function () {
+  var u = new URLSearchParams(location.search);
+  if (u.get("car")) $("carNo").value = u.get("car");
+  if (u.get("name")) $("carName").value = u.get("name");
+  if (u.get("km")) $("km").value = Number(u.get("km").replace(/[^0-9]/g, "")).toLocaleString();
+})();
+$("km").addEventListener("input", function () { var v = this.value.replace(/[^0-9]/g, "").slice(0, 7); this.value = v ? Number(v).toLocaleString() : ""; });
+$("birth").addEventListener("input", function () { this.value = this.value.replace(/[^0-9]/g, "").slice(0, 6); });
+SignPad.autoNext($, [["tel1", 3, "tel2"], ["tel2", 4, "tel3", "tel1"], ["tel3", 4, null, "tel2"]]);
+
+fetch(API).then(function (r) { return r.json(); }).then(function (res) {
+  T = res.refund;
+  $("clauses").innerHTML = 조항html(T);
+  $("deadline").textContent = 기한글(res.deadline);
+  $("kmLimit").textContent = T.km_limit;
+  $("send").disabled = false;
+}).catch(function () { $("clauses").textContent = "약관을 불러오지 못했습니다. 인터넷 연결을 확인하고 새로고침해 주세요."; });
+
+function showErr(msg) { var b = $("err"); b.textContent = msg; b.hidden = false; window.scrollTo({ top: 0, behavior: "smooth" }); }
+function tr(k, v) { return "<tr><th>" + esc(k) + "</th><td>" + esc(v) + "</td></tr>"; }
+/* 업무관리 '서류' 화면과 같은 양식 */
+function 약정서(d, sig, at, deadline) {
+  var t = new Date(at), 날짜 = t.getFullYear() + "년  " + (t.getMonth() + 1) + "월  " + t.getDate() + "일";
+  var 접수 = t.getFullYear() + "-" + p2(t.getMonth() + 1) + "-" + p2(t.getDate()) + " " + p2(t.getHours()) + ":" + p2(t.getMinutes());
+  return "<h1>" + esc(T.title) + "</h1><div class='sec'>※ 매매 차량</div><table>" + tr("차량번호", d.carNo) + tr("차명", d.carName) +
+    tr("인도 때 주행거리", Number(d.mileage).toLocaleString() + " km") + tr("환불 신청 기한", 기한글(deadline)) + "</table>" +
+    "<p>매도인 " + esc(T.seller) + "(이하 '매도인')과 매수인은 위 차량의 매매에 관하여 다음과 같이 3일 환불을 약정합니다.</p>" +
+    조항html(T) + "<p class='date'>" + 날짜 + "</p>" +
+    "<div class='sec'>※ 매수인</div><table><tr><th>성명</th><td class='owner'>" + esc(d.name) +
+    "<span class='sigwrap'><span class='sigmark'>(서명)</span><img class='sig' src='" + sig + "'></span></td></tr>" +
+    tr("생년월일", d.birth) + tr("주소", d.address) + tr("전화번호", d.phone) + "</table>" +
+    "<div class='buyer'>매도인 : " + esc(T.seller) + " · " + esc(T.seller_addr) + " · " + esc(T.seller_tel) +
+    "<br>전자서명 접수 : " + 접수 + " · 약관 확인 체크 완료 · 약관 " + esc(T.ver) + "</div>";
+}
+
+$("send").onclick = function () {
+  if (!T) return;
+  var d = {
+    kind: "3일환불", ver: T.ver,
+    carNo: $("carNo").value.trim(), carName: $("carName").value.trim(), mileage: $("km").value.replace(/[^0-9]/g, ""),
+    name: $("name").value.trim(), birth: $("birth").value.trim(), address: $("address").value.trim(),
+    phone: [$("tel1").value.trim(), $("tel2").value.trim(), $("tel3").value.trim()].join("-"),
+    ua: navigator.userAgent, agreed: $("agree1").checked && $("agree2").checked
+  };
+  if (!d.carNo || !d.carName || !d.name || !d.address) return showErr("별표(*) 표시된 항목을 모두 입력해 주세요.");
+  if (!d.mileage) return showErr("인도 때 계기판 주행거리를 입력해 주세요.");
+  if (d.birth.length !== 6) return showErr("생년월일을 6자리로 입력해 주세요. (예: 910729)");
+  if ($("tel1").value.length < 2 || $("tel2").value.length < 3 || $("tel3").value.length !== 4) return showErr("전화번호를 정확히 입력해 주세요.");
+  if (!d.agreed) return showErr("확인란 두 곳에 모두 체크해 주세요.");
+  if (!pad.hasInk()) return showErr("서명을 입력해 주세요.");
+  d.signature = pad.blackPng();
+
+  var btn = $("send"); btn.disabled = true; btn.textContent = "제출 중…";
+  fetch(API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(d) })
+    .then(function (r) { return r.json(); })
+    .then(function (res) {
+      if (!res || !res.ok) throw new Error((res && res.msg) || "제출에 실패했습니다. 다시 시도해 주세요.");
+      $("paper").innerHTML = 약정서(d, d.signature, res.at, res.deadline);
+      $("doneDeadline").textContent = 기한글(res.deadline);
+      $("form").hidden = true; $("done").hidden = false; window.scrollTo(0, 0);
+    })
+    .catch(function (e) { showErr(/fetch|network/i.test(e.message) ? "통신 오류: 인터넷 연결을 확인해 주세요." : e.message); btn.disabled = false; btn.textContent = "제출하기"; });
+};
+$("print").onclick = function () { window.print(); };
+</script>
+</body>
+</html>

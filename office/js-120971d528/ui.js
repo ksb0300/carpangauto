@@ -169,3 +169,16 @@ export function CarSearch({ cars, value, onPick, placeholder = "차량번호·�
       onClick=${() => { onPick(c); setText(""); setOpen(false); }}><b>${c.plate}</b> ${c.car_name} <small>${c.status}${c.purchase_date ? " · 매입 " + c.purchase_date : ""}</small></button>`)}</span>`}
   </span>`;
 }
+
+/** 목록에서 차 한 대: 번호(굵게) + 아래 작게 '간략 차명 · 연식 · 주행거리' — 번호만 있으면 헷갈려서 */
+export function 간략차명(c) {
+  const name = String(c?.car_name || "").replace(/\([^)]*\)/g, " ").replace(/\s+/g, " ").trim();
+  return name.length > 20 ? name.slice(0, 19) + "…" : name;
+}
+export function 차줄(c) {
+  if (!c) return "";
+  const 연식 = c.model_year ? String(c.model_year).slice(0, 4) + "년" : "";
+  const km = c.mileage != null && c.mileage !== "" ? (Number(c.mileage) >= 10000 ? (Number(c.mileage) / 10000).toFixed(1).replace(/\.0$/, "") + "만km" : Number(c.mileage).toLocaleString() + "km") : "";
+  const sub = [간략차명(c), 연식, km].filter(Boolean).join(" · ");
+  return html`<span class="carline"><b>${c.plate}</b>${sub && html`<small title=${c.car_name}>${sub}</small>`}</span>`;
+}
