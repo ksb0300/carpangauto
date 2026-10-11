@@ -137,6 +137,7 @@ function SendBox({ app, car, sale }) {
   }); }, [car.id]);
   const price = sale ? Number(sale.sale_amount) : Number(car.list_price || car.ad_price || 0);
   const quoteUrl = `${location.origin}/quote/?car=${encodeURIComponent(car.plate)}${price ? "&price=" + price : ""}`;
+  const refundUrl = `${location.origin}/sign/refund/?car=${encodeURIComponent(car.plate)}&name=${encodeURIComponent(car.car_name || "")}${car.mileage ? "&km=" + car.mileage : ""}`;
   const encarUrl = car.encar_id ? `https://fem.encar.com/cars/detail/${car.encar_id}` : null;
   const shareFiles = async (files, title) => {
     if (navigator.canShare?.({ files })) { try { await navigator.share({ files, title }); } catch {} return; }
@@ -153,6 +154,8 @@ function SendBox({ app, car, sale }) {
     <a class="btn" href=${quoteUrl} target="_blank" rel="noopener" title=${price ? `${won(price)}원으로 견적서를 엽니다` : "가격 없이 엽니다"}>🧾 견적서 만들기</a>
     ${encarUrl && html`<button class="btn" onClick=${() => shareLink(encarUrl, `${car.car_name} ${car.plate}`)}>🔗 엔카 광고 링크</button>`}
     ${car.daangn_id && html`<button class="btn" onClick=${() => shareLink(`https://www.daangn.com/kr/cars/${car.daangn_id}/`, `${car.car_name} ${car.plate}`)}>🥕 당근 광고 링크</button>`}
+    <button class="btn" title="차를 사 가는 고객이 휴대폰으로 읽고 서명 — 차량번호·차명·주행거리가 채워진 링크 (주행거리는 고객이 계기판 보고 고칠 수 있음)"
+      onClick=${() => shareLink(refundUrl, `${car.plate} 3일 환불 약정서`)}>📝 3일 환불 약정서</button>
   </div>`;
 }
 

@@ -132,7 +132,7 @@ function 약정서(d, sig, at, deadline) {
   var t = new Date(at), 날짜 = t.getFullYear() + "년  " + (t.getMonth() + 1) + "월  " + t.getDate() + "일";
   var 접수 = t.getFullYear() + "-" + p2(t.getMonth() + 1) + "-" + p2(t.getDate()) + " " + p2(t.getHours()) + ":" + p2(t.getMinutes());
   return "<h1>" + esc(T.title) + "</h1><div class='sec'>※ 매매 차량</div><table>" + tr("차량번호", d.carNo) + tr("차명", d.carName) +
-    tr("인도 때 주행거리", Number(d.mileage).toLocaleString() + " km") + tr("환불 신청 기한", 기한글(deadline)) + "</table>" +
+    tr("주행거리", Number(d.mileage).toLocaleString() + " km (인도 때 계기판)") + tr("환불기한", 기한글(deadline)) + "</table>" +
     "<p>매도인 " + esc(T.seller) + "(이하 '매도인')과 매수인은 위 차량의 매매에 관하여 다음과 같이 3일 환불을 약정합니다.</p>" +
     조항html(T) + "<p class='date'>" + 날짜 + "</p>" +
     "<div class='sec'>※ 매수인</div><table><tr><th>성명</th><td class='owner'>" + esc(d.name) +

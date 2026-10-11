@@ -91,10 +91,10 @@ export function 할일(l, lender, t) {
   const 조건없음 = !(Number(lender?.ext_months) > 0);       // 연장 조건을 아직 안 넣은 금융사 (KB국민·신한 등)
   if (l.status !== "진행중") return { text: "상환완료", tone: "gray" };
   const 연장전 = !연장됨(l) && (c.가능 || 조건없음);
-  if (조건없음 && 연장전 && s.남은일 < 0) return { text: `만기 ${-s.남은일}일 지남 · 연장 기록`, tone: "red" };
+  if (조건없음 && 연장전 && s.남은일 < 0) return { text: `만기 ${-s.남은일}일 지남`, tone: "red" };
   if (조건없음 && 연장전 && s.남은일 <= 14) return { text: `D-${s.남은일} 만기 — 연장 필요`, tone: "amber" };
   // 기본 만기는 지났는데 연장 기록이 없음 — 은행에서 이미 연장했으면 '연장'으로 기록, 아니면 상환
-  if (s.남은일 < 0 && c.가능) return { text: `기본 만기 ${-s.남은일}일 지남 · 연장 기록`, tone: "red" };
+  if (s.남은일 < 0 && c.가능) return { text: `만기 ${-s.남은일}일 지남`, tone: "red" };
   if (s.남은일 < 0) return { text: `최종 만기 ${-s.남은일}일 지남 · 상환`, tone: "red" };
   if (c.가능 && s.남은일 <= 14) return { text: `D-${s.남은일} 연장 필요${c.상환필요 ? ` — 원금 ${won(c.상환필요)} 먼저 상환` : ""}`, tone: "amber" };
   if (!c.가능 && s.남은일 <= 14) return { text: `D-${s.남은일} 최종 만기 · 상환 준비`, tone: s.남은일 <= 7 ? "red" : "amber" };
