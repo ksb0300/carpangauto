@@ -1341,3 +1341,37 @@ create index sign_docs_car on sign_docs (car_id);
 
 -- 링크 없이(홈페이지 탭에서) 바로 쓰는 약정서·비사업용 확인서는 접수 = 서명
 alter table sign_docs alter column signed_at set default now();
+
+
+-- 20261011000003_encar_reserve.sql
+-- 엔카 광고장 예약 저격: 폰(업무관리)에서 요청 → 사무실 PC 의 감시 프로그램(encar_reserve_worker.py)이 받아 감시·확보.
+-- 마무리: '앱' = 확보만 하고 엔카 앱에서 사람이 마무리 / '자동' = 미리 적은 차량·연락처로 끝까지 확정 (준비 중)
+create table encar_reserve_jobs (
+  id          uuid primary key default gen_random_uuid(),
+  center      text not null,                       -- 부산경동오토필드 / 부산경동오토필드2
+  res_date    date not null,
+  times       text[] not null,                     -- 노리는 시간대 '09:00' …
+  interval_s  numeric not null default 7,
+  finish      text not null default '앱' check (finish in ('앱', '자동')),
+  auto_info   jsonb,                               -- 자동 확정 때 쓸 값 (차량·연락처 등)
+  topic       text,                                -- ntfy 알림 토픽
+  status      text not null default '대기' check (status in ('대기', '감시중', '확보', '완료', '실패', '정지')),
+  stop        boolean not null default false,      -- 폰에서 [정지] → 감시 프로그램이 보고 멈춤
+  result      text,                                -- 확보한 시간대·실패 이유
+  log         jsonb not null default '[]',         -- 최근 기록 ["HH:MM:SS 메시지", …]
+  created_by  uuid references auth.users(id) default auth.uid(),
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+create index encar_reserve_jobs_created on encar_reserve_jobs (created_at desc);
+alter table encar_reserve_jobs enable row level security;
+create policy office_all on encar_reserve_jobs for all to authenticated using (is_office()) with check (is_office());
+
+-- 감시 프로그램이 살아 있는지 (몇 초마다 찍는다)
+create table encar_reserve_worker (
+  id        int primary key default 1 check (id = 1),
+  host      text,
+  seen_at   timestamptz
+);
+alter table encar_reserve_worker enable row level security;
+create policy office_read on encar_reserve_worker for select to authenticated using (is_office());
