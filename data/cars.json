@@ -1,6 +1,6 @@
 {
- "updated": "2026-10-11 17:48",
- "count": 41,
+ "updated": "2026-10-12 17:56",
+ "count": 43,
  "cars": [
   {
    "id": "42351261",
@@ -263,6 +263,32 @@
    "link": "https://fem.encar.com/cars/detail/42779163"
   },
   {
+   "id": "42873091",
+   "plate": "52버8779",
+   "maker": "기아",
+   "model": "EV6",
+   "grade": "롱레인지 2WD",
+   "year": "25년 02월",
+   "yearRaw": "202502",
+   "mileage": 15291,
+   "fuel": "전기",
+   "transmission": "오토",
+   "color": "흰색",
+   "price": 4590,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture07/pic4287/42873091_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4287/42873091_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4287/42873091_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4287/42873091_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4287/42873091_042.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4287/42873091_031.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4287/42873091_024.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4287/42873091_033.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42873091"
+  },
+  {
    "id": "42584618",
    "plate": "01오8134",
    "maker": "아우디",
@@ -315,6 +341,32 @@
    "link": "https://fem.encar.com/cars/detail/42551877"
   },
   {
+   "id": "42873077",
+   "plate": "102고5546",
+   "maker": "기아",
+   "model": "스팅어",
+   "grade": "3.3 GT AWD 트리뷰트 에디션",
+   "year": "23년 01월",
+   "yearRaw": "202301",
+   "mileage": 27989,
+   "fuel": "가솔린",
+   "transmission": "오토",
+   "color": "은색",
+   "price": 4290,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture07/pic4287/42873077_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4287/42873077_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4287/42873077_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4287/42873077_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4287/42873077_018.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4287/42873077_008.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4287/42873077_009.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4287/42873077_005.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42873077"
+  },
+  {
    "id": "42806257",
    "plate": "150마9800",
    "maker": "BMW",
@@ -326,17 +378,17 @@
    "fuel": "가솔린+전기",
    "transmission": "오토",
    "color": "검정색",
-   "price": 4190,
+   "price": 4170,
    "diagnosis": true,
    "photos": [
     "https://ci.encar.com/carpicture10/pic4280/42806257_027.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture10/pic4280/42806257_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture10/pic4280/42806257_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture10/pic4280/42806257_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture10/pic4280/42806257_047.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture10/pic4280/42806257_015.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture10/pic4280/42806257_044.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture10/pic4280/42806257_033.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture10/pic4280/42806257_045.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture10/pic4280/42806257_007.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture10/pic4280/42806257_008.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture10/pic4280/42806257_024.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42806257"
   },
@@ -391,6 +443,32 @@
     "https://ci.encar.com/carpicture07/pic4277/42775839_043.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42775839"
+  },
+  {
+   "id": "42873057",
+   "plate": "03마3648",
+   "maker": "현대",
+   "model": "넥쏘",
+   "grade": "익스클루시브 스페셜",
+   "year": "25년 07월",
+   "yearRaw": "202507",
+   "mileage": 14414,
+   "fuel": "수소",
+   "transmission": "오토",
+   "color": "진주색",
+   "price": 3990,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture07/pic4287/42873057_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4287/42873057_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4287/42873057_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4287/42873057_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4287/42873057_024.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4287/42873057_035.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4287/42873057_021.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4287/42873057_007.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42873057"
   },
   {
    "id": "42775853",
@@ -489,10 +567,10 @@
     "https://ci.encar.com/carpicture10/pic4280/42806307_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture10/pic4280/42806307_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture10/pic4280/42806307_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture10/pic4280/42806307_042.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture10/pic4280/42806307_016.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture10/pic4280/42806307_021.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture10/pic4280/42806307_035.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture10/pic4280/42806307_009.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture10/pic4280/42806307_010.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture10/pic4280/42806307_031.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture10/pic4280/42806307_036.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42806307"
   },
@@ -575,6 +653,32 @@
    "link": "https://fem.encar.com/cars/detail/42700355"
   },
   {
+   "id": "42773383",
+   "plate": "135보2818",
+   "maker": "BMW",
+   "model": "2시리즈",
+   "grade": "218d 럭셔리",
+   "year": "22년 11월",
+   "yearRaw": "202211",
+   "mileage": 61675,
+   "fuel": "디젤",
+   "transmission": "오토",
+   "color": "흰색",
+   "price": 3070,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture07/pic4277/42773383_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42773383_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42773383_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42773383_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42773383_020.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42773383_008.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42773383_040.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42773383_016.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42773383"
+  },
+  {
    "id": "42831004",
    "plate": "102조9178",
    "maker": "미니",
@@ -627,58 +731,6 @@
    "link": "https://fem.encar.com/cars/detail/42618931"
   },
   {
-   "id": "42790171",
-   "plate": "111어8930",
-   "maker": "BMW",
-   "model": "X4",
-   "grade": "xDrive20d M 스포츠 온라인 익스클루시브 에디션",
-   "year": "21년 09월",
-   "yearRaw": "202109",
-   "mileage": 177127,
-   "fuel": "디젤",
-   "transmission": "오토",
-   "color": "흰색",
-   "price": 2890,
-   "diagnosis": true,
-   "photos": [
-    "https://ci.encar.com/carpicture09/pic4279/42790171_027.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4279/42790171_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4279/42790171_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4279/42790171_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4279/42790171_005.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4279/42790171_035.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4279/42790171_021.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4279/42790171_042.jpg?impolicy=widthRate&wid=800"
-   ],
-   "link": "https://fem.encar.com/cars/detail/42790171"
-  },
-  {
-   "id": "42773383",
-   "plate": "135보2818",
-   "maker": "BMW",
-   "model": "2시리즈",
-   "grade": "218d 럭셔리",
-   "year": "22년 11월",
-   "yearRaw": "202211",
-   "mileage": 61675,
-   "fuel": "디젤",
-   "transmission": "오토",
-   "color": "흰색",
-   "price": 2800,
-   "diagnosis": true,
-   "photos": [
-    "https://ci.encar.com/carpicture07/pic4277/42773383_027.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4277/42773383_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4277/42773383_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4277/42773383_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4277/42773383_010.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4277/42773383_021.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4277/42773383_023.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4277/42773383_040.jpg?impolicy=widthRate&wid=800"
-   ],
-   "link": "https://fem.encar.com/cars/detail/42773383"
-  },
-  {
    "id": "42826707",
    "plate": "151수9869",
    "maker": "현대",
@@ -705,6 +757,32 @@
    "link": "https://fem.encar.com/cars/detail/42826707"
   },
   {
+   "id": "42790171",
+   "plate": "111어8930",
+   "maker": "BMW",
+   "model": "X4",
+   "grade": "xDrive20d M 스포츠 온라인 익스클루시브 에디션",
+   "year": "21년 09월",
+   "yearRaw": "202109",
+   "mileage": 177127,
+   "fuel": "디젤",
+   "transmission": "오토",
+   "color": "흰색",
+   "price": 2790,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture09/pic4279/42790171_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4279/42790171_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4279/42790171_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4279/42790171_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4279/42790171_041.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4279/42790171_032.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4279/42790171_036.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4279/42790171_044.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42790171"
+  },
+  {
    "id": "42830983",
    "plate": "68다7414",
    "maker": "기아",
@@ -729,6 +807,32 @@
     "https://ci.encar.com/carpicture03/pic4283/42830983_046.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42830983"
+  },
+  {
+   "id": "42790315",
+   "plate": "326오4610",
+   "maker": "KG모빌리티(쌍용)",
+   "model": "코란도",
+   "grade": "디젤 1.6 4WD C7",
+   "year": "20년 08월",
+   "yearRaw": "202008",
+   "mileage": 63181,
+   "fuel": "디젤",
+   "transmission": "오토",
+   "color": "검정색",
+   "price": 2500,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture09/pic4279/42790315_001.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4279/42790315_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4279/42790315_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4279/42790315_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4279/42790315_020.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4279/42790315_036.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4279/42790315_041.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4279/42790315_035.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42790315"
   },
   {
    "id": "42757118",
@@ -783,32 +887,6 @@
    "link": "https://fem.encar.com/cars/detail/42843284"
   },
   {
-   "id": "42819398",
-   "plate": "235저9381",
-   "maker": "KG모빌리티(쌍용)",
-   "model": "액티언",
-   "grade": "가솔린 1.5 2WD",
-   "year": "24년 08월",
-   "yearRaw": "202408",
-   "mileage": 33631,
-   "fuel": "가솔린",
-   "transmission": "오토",
-   "color": "검정색",
-   "price": 2490,
-   "diagnosis": true,
-   "photos": [
-    "https://ci.encar.com/carpicture01/pic4281/42819398_027.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4281/42819398_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4281/42819398_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4281/42819398_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4281/42819398_006.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4281/42819398_009.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4281/42819398_019.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4281/42819398_034.jpg?impolicy=widthRate&wid=800"
-   ],
-   "link": "https://fem.encar.com/cars/detail/42819398"
-  },
-  {
    "id": "42517582",
    "plate": "43오0890",
    "maker": "렉서스",
@@ -833,6 +911,32 @@
     "https://ci.encar.com/carpicture01/pic4251/42517582_032.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42517582"
+  },
+  {
+   "id": "42819398",
+   "plate": "235저9381",
+   "maker": "KG모빌리티(쌍용)",
+   "model": "액티언",
+   "grade": "가솔린 1.5 2WD",
+   "year": "24년 08월",
+   "yearRaw": "202408",
+   "mileage": 33631,
+   "fuel": "가솔린",
+   "transmission": "오토",
+   "color": "검정색",
+   "price": 2450,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture01/pic4281/42819398_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4281/42819398_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4281/42819398_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4281/42819398_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4281/42819398_009.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4281/42819398_016.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4281/42819398_036.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4281/42819398_006.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42819398"
   },
   {
    "id": "42193712",
@@ -887,82 +991,30 @@
    "link": "https://fem.encar.com/cars/detail/42844172"
   },
   {
-   "id": "42790315",
-   "plate": "326오4610",
+   "id": "42873315",
+   "plate": "806머7712",
    "maker": "KG모빌리티(쌍용)",
-   "model": "코란도",
-   "grade": "디젤 1.6 4WD C7",
-   "year": "20년 08월",
-   "yearRaw": "202008",
-   "mileage": 63181,
+   "model": "렉스턴",
+   "grade": "디젤 2.2 4WD",
+   "year": "22년 08월",
+   "yearRaw": "202208",
+   "mileage": 73245,
    "fuel": "디젤",
    "transmission": "오토",
-   "color": "검정색",
-   "price": 2100,
-   "diagnosis": true,
-   "photos": [
-    "https://ci.encar.com/carpicture09/pic4279/42790315_001.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4279/42790315_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4279/42790315_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4279/42790315_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4279/42790315_024.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4279/42790315_031.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4279/42790315_021.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4279/42790315_005.jpg?impolicy=widthRate&wid=800"
-   ],
-   "link": "https://fem.encar.com/cars/detail/42790315"
-  },
-  {
-   "id": "42830994",
-   "plate": "373저1168",
-   "maker": "쉐보레(GM대우)",
-   "model": "이쿼녹스",
-   "grade": "4WD LT",
-   "year": "20년 12월",
-   "yearRaw": "202012",
-   "mileage": 85202,
-   "fuel": "디젤",
-   "transmission": "오토",
-   "color": "흰색",
+   "color": "담녹색",
    "price": 1990,
    "diagnosis": true,
    "photos": [
-    "https://ci.encar.com/carpicture03/pic4283/42830994_027.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture03/pic4283/42830994_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture03/pic4283/42830994_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture03/pic4283/42830994_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture03/pic4283/42830994_019.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture03/pic4283/42830994_009.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture03/pic4283/42830994_007.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture03/pic4283/42830994_031.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture07/pic4287/42873315_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4287/42873315_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4287/42873315_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4287/42873315_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4287/42873315_043.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4287/42873315_019.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4287/42873315_033.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4287/42873315_022.jpg?impolicy=widthRate&wid=800"
    ],
-   "link": "https://fem.encar.com/cars/detail/42830994"
-  },
-  {
-   "id": "42518291",
-   "plate": "311루1792",
-   "maker": "제네시스",
-   "model": "G70",
-   "grade": "디젤 2.2 4WD",
-   "year": "20년 12월",
-   "yearRaw": "202012",
-   "mileage": 209030,
-   "fuel": "디젤",
-   "transmission": "오토",
-   "color": "검정색",
-   "price": 1950,
-   "diagnosis": false,
-   "photos": [
-    "https://ci.encar.com/carpicture01/pic4251/42518291_001.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4251/42518291_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4251/42518291_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4251/42518291_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4251/42518291_010.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4251/42518291_033.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4251/42518291_007.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4251/42518291_034.jpg?impolicy=widthRate&wid=800"
-   ],
-   "link": "https://fem.encar.com/cars/detail/42518291"
+   "link": "https://fem.encar.com/cars/detail/42873315"
   },
   {
    "id": "42263583",
