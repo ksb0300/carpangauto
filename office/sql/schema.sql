@@ -1375,3 +1375,32 @@ create table encar_reserve_worker (
 );
 alter table encar_reserve_worker enable row level security;
 create policy office_read on encar_reserve_worker for select to authenticated using (is_office());
+
+
+-- 20261012000001_encar_mitgo_fee.sql
+-- 엔카믿고 수수료 (2026-09 부터 바뀐 방식)
+--   고객은 평소처럼 상사매도비 44만원을 내고, 엔카가 그 매도비에서 수수료를 떼고 나머지를 상사에 입금한다.
+--   → 상사매도비(매출)는 그대로, 수수료는 상품화비용 '엔카믿고 수수료'(과세, 상사가 낸 것)로 자동 등록.
+--   수수료(부가세 포함) = 176,000 + (판매가 − 1천만원) × 0.33%, 판매가는 1천만~5천만원 사이로만 계산 (최대 308,000)
+--   판매가 = 엔카 광고가 = 매도금액. 2026-09-01 이전 매도는 예전 방식(매도비를 실수령액 242,000 으로 적음)이라 손대지 않는다.
+create or replace function encar_mitgo_fee(price bigint) returns bigint language sql immutable as $$
+  select round(176000 + (least(greatest(coalesce(price, 0), 10000000), 50000000) - 10000000) * 0.0033)::bigint
+$$;
+
+create or replace function car_sales_encar_fee() returns trigger language plpgsql security definer set search_path = public as $$
+declare cid uuid := coalesce(new.car_id, old.car_id);
+begin
+  delete from car_costs where car_id = cid and auto_source = '엔카믿고수수료';
+  if tg_op <> 'DELETE' and new.sale_type = '엔카믿고' and new.sale_date >= '2026-09-01' then
+    insert into car_costs (car_id, item, paid_by, taxable, amount, paid_date, include_in_settlement, auto_source, sort, memo)
+    values (cid, '엔카믿고 수수료', '상사', true, encar_mitgo_fee(new.sale_amount), new.sale_date, true, '엔카믿고수수료', 12,
+            '판매가 ' || to_char(new.sale_amount, 'FM999,999,999') || '원 기준 — 매도비에서 엔카가 떼고 입금');
+  end if;
+  return coalesce(new, old);
+end $$;
+create trigger car_sales_encar_fee after insert or update of sale_type, sale_amount, sale_date or delete on car_sales
+  for each row execute function car_sales_encar_fee();
+
+-- 9월 이후 엔카믿고로 판 차: 매도비를 고객이 낸 44만원으로 바로잡고 수수료 비용을 넣는다 (sale_type 을 다시 써서 트리거를 돌림)
+update car_sales set sale_fee = 440000, sale_type = sale_type
+ where sale_type = '엔카믿고' and sale_date >= '2026-09-01';
