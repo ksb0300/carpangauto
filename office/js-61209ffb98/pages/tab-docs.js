@@ -1,5 +1,6 @@
 // 차량 상세 → 매출증빙: 이 차에서 나갈 현금영수증·세금계산서를 정하고 발행한다.
 // 매도정보(차량대금·상사매도비·성능보험료)는 매수자별 결제비율로 나누고, 상사매입비는 딜러 앞으로.
+// 성능보험료는 현금영수증을 해 주지 않아 기본이 '발행안함'.
 import { html, useState, useEffect, Select, run, won, toast, ask } from "../ui.js";
 import { q } from "../db.js";
 import { DocTable, DocForm, issueMany } from "./docs-ui.js";
@@ -20,8 +21,10 @@ export function planLines({ car, sale, buyers, dealer, settings }) {
   };
   const def = b => (digits(b?.biz_no).length === 10 ? "세금계산서" : "현금영수증");
   const lines = [];
+  // 고객 현금영수증은 차량대금·상사매도비 두 가지만 해 준다 — 성능보험료는 기본 '발행안함' (필요하면 차마다 바꿀 수 있음)
+  const 기본 = (source, buyer) => source === "성능보험료" ? "발행안함" : source === "상사매입비" ? "현금영수증" : def(buyer);
   const push = (source, taxable, parts) => parts.forEach(p => lines.push({ source, taxable, ...p,
-    evidence: plan[source] || (source === "상사매입비" ? "현금영수증" : def(p.buyer)) }));
+    evidence: plan[source] || 기본(source, p.buyer) }));
   if (car.consign === "상사매입") push("차량대금", true, split(sale.sale_amount));
   push("상사매도비", true, split(sale.sale_fee));
   push("성능보험료", false, split(sale.perf_insurance));

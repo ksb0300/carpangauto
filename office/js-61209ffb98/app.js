@@ -16,6 +16,7 @@ import { PurchasesPage, CostsPage, LoansPage, SalesPage } from "./pages/lists.js
 import { LenderEdit } from "./pages/lenders.js";
 import { StatsPage } from "./pages/stats.js";
 import { SignsPage } from "./pages/signs.js";
+import { ReservePage } from "./pages/reserve.js";
 
 function useHash() {
   const [h, setH] = useState(location.hash.slice(1) || "/");
@@ -82,7 +83,7 @@ function Shell({ app, children, path }) {
        ["/bank", "자금관리"], ["/reports", "종합업무현황"], ["/stats", "통계"], ["/settings", "환경설정"]]
     : [["/purchases", "내 제시차량"], ["/sales", "매도차량"], ["/settlements", "정산내역"], ["/brokerage", "알선"], ["/reports", "내 실적"]];
   // 지금 잘 안 쓰는 메뉴는 '기타'로 (사용자 2026-10-05) — 화면은 그대로 있다
-  const etc = office ? [["/settlements", "정산내역"], ["/issue", "매출관리"], ["/signs", "서류"], ["/brokerage", "타상사알선"]] : [];
+  const etc = office ? [["/settlements", "정산내역"], ["/issue", "매출관리"], ["/signs", "서류"], ["/brokerage", "타상사알선"], ["/reserve", "광고장 예약"]] : [];
   const [etcAt, setEtcAt] = useState(null);       // 펼친 '기타' 메뉴 위치 (메뉴줄이 가로 스크롤이라 밖에 띄운다)
   useEffect(() => { setEtcAt(null); }, [path]);
   useEffect(() => { if (!etcAt) return; const close = () => setEtcAt(null); addEventListener("click", close); addEventListener("scroll", close, true);
@@ -110,7 +111,7 @@ function Router({ app }) {
   const path = useHash();
   const [, a, b, c] = path.split("?")[0].split("/");
   const office = app.profile.role !== "dealer";
-  const officeOnly = ["settings", "dashboard", "issue", "bank", "ledger", "signs"];
+  const officeOnly = ["settings", "dashboard", "issue", "bank", "ledger", "signs", "reserve"];
   let page;
   if (!office && (officeOnly.includes(a) || (a === "cars" && b === "new") || c === "edit")) page = html`<div class="card empty">딜러 계정은 볼 수 없는 화면입니다. <a href="#/cars">차량 목록으로</a></div>`;
   else if (a === "cars" && b === "new") page = html`<${CarForm} app=${app} />`;
@@ -119,6 +120,7 @@ function Router({ app }) {
   else if (a === "purchases") page = html`<${PurchasesPage} app=${app} />`;
   else if (a === "costs") page = html`<${CostsPage} app=${app} tab=${b || "car"} />`;
   else if (a === "signs") page = html`<${SignsPage} app=${app} id=${b} />`;
+  else if (a === "reserve") page = html`<${ReservePage} app=${app} />`;
   else if (a === "stats") page = html`<${StatsPage} app=${app} />`;
   else if (a === "loans" && b === "lender") page = html`<${LenderEdit} app=${app} id=${c} />`;
   else if (a === "loans") page = html`<${LoansPage} app=${app} tab=${b || "lenders"} />`;
