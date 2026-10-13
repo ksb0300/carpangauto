@@ -122,7 +122,7 @@ ${hasDealer && html`      <a class="stat" href="#/settlements"><span>이번 달 
         x => html`<td class="nowrap">${차줄(x.c)}</td><td><${LoanAction} app=${app} l=${x.l} lender=${d.lenders.find(l => l.id === x.l.lender_id)} onDone=${load} /></td>
           <td class="wrap"><span class=${"badge wrap " + x.h.tone}>${x.h.text}</span></td><td>${d.lenders.find(l => l.id === x.l.lender_id)?.name}</td><td class="r">${won(x.l.amount)}</td>`, "loans"),
       html`<a class="btn sm" href="#/loans/lenders">금융사별 현황</a>`) },
-    cash_cars: { title: "현금 차량 리스트", size: "half", render: () => card(`현금 차량 리스트 — ${현금차.length}대 · ${won(현금차.reduce((a, x) => a + Number(x.c.purchase_amount), 0))}원`,
+    cash_cars: { title: "현금 차량 리스트 (재고금융 없는 재고)", size: "half", render: () => card(`현금 차량 리스트 (재고금융 없음) — ${현금차.length}대 · ${won(현금차.reduce((a, x) => a + Number(x.c.purchase_amount), 0))}원`,
       차표(현금차, ["차량", "매입가", "재고일", "사유"], x => html`<td>${차줄(x.c)}</td><td class="r">${won(x.c.purchase_amount)}</td>
         <td class="r">${x.일}일</td><td class="small">${x.사유}</td>`), html`<a class="btn sm" href="#/purchases">리스트</a>`) },
     insp: { title: "성능점검 90일 지난 재고", size: "half", render: () => card(`성능점검 ${ALERT_DAYS}일 지난 재고`,

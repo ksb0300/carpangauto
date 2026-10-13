@@ -74,7 +74,7 @@
         <label class="agree"><input type="checkbox" id="agree1">
           <span>위 <b>약관을 모두 읽었고</b>, 환불 신청 기한과 환불 조건을 확인했습니다.</span></label>
         <label class="agree" style="margin-top:14px"><input type="checkbox" id="agree2">
-          <span id="agree2Text">환불하더라도 <b>탁송비·보험료 등 제3조의 비용은 돌려받지 못함</b>을 확인했습니다.</span></label>
+          <span id="agree2Text">환불할 때 <b>제3조의 공제(300km 넘은 주행거리 등)</b>가 있음을 확인했습니다.</span></label>
       </div>
 
       <div class="card">
@@ -173,9 +173,9 @@ var 요일 = "일월화수목금토";
 /* 기한(ISO) → "2026년 10월 13일 (화) 18시" — 한국 시간으로 */
 function 기한글(iso) { var k = new Date(Date.parse(iso) + 9 * 3600e3);
   return k.getUTCFullYear() + "년 " + (k.getUTCMonth() + 1) + "월 " + k.getUTCDate() + "일 (" + 요일[k.getUTCDay()] + ") " + k.getUTCHours() + "시까지"; }
-function 조항html(t) {
+function 조항html(t, deadline) {
   return "<ol class='terms'>" + t.clauses.map(function (c, i) {
-    return "<li><b>제" + (i + 1) + "조 (" + esc(c[0]) + ")</b><br>" + esc(c[1]).replace(/\n/g, "<br>") + "</li>"; }).join("") + "</ol>";
+    return "<li><b>제" + (i + 1) + "조 (" + esc(c[0]) + ")</b><br>" + esc(c[1]).replace(/\{기한\}/g, deadline ? 기한글(deadline).replace(/까지$/, "") : "환불 기한").replace(/\n/g, "<br>") + "</li>"; }).join("") + "</ol>";
 }
 
 /* 차 화면에서 보낸 링크면 차량 정보가 미리 채워진다: ?car=번호&name=차명&km=주행거리 */
@@ -201,9 +201,8 @@ fetch(API + (TOKEN ? "?t=" + encodeURIComponent(TOKEN) : "")).then(function (r) 
     $("noticeCard").hidden = false; $("agreeNotice").hidden = false;
     if (res.perf) { PERF = res.perf; $("perfBtn").hidden = false; $("perfPdf").href = res.perf; }
     var sum = 비용합계(P);
-    if (sum) $("agree2Text").innerHTML = "환불하더라도 위 <b>돌려받지 못하는 비용(예상 " + won(sum) + ")</b>과 제3조의 비용은 매수인이 부담함을 확인했습니다.";
   }
-  $("clauses").innerHTML = 조항html(T);
+  $("clauses").innerHTML = 조항html(T, res.deadline);
   $("deadline").textContent = 기한글(res.deadline);
   $("kmLimit").textContent = T.km_limit;
   $("send").disabled = false;
@@ -219,7 +218,7 @@ function 약정서(d, sig, at, deadline) {
     tr("주행거리", Number(d.mileage).toLocaleString() + " km (인도 전 계기판)") + tr("환불기한", 기한글(deadline)) + "</table>" +
     (P ? "<div class='sec'>※ 인도 때 안내 사항</div>" + 고지html(P) : "") +
     "<p>매도인 " + esc(T.seller) + "(이하 '매도인')과 매수인은 위 차량의 매매에 관하여 다음과 같이 3일 환불을 약정합니다.</p>" +
-    조항html(T) + "<p class='date'>" + 날짜 + "</p>" +
+    조항html(T, deadline) + "<p class='date'>" + 날짜 + "</p>" +
     "<div class='sec'>※ 매수인</div><table><tr><th>성명</th><td class='owner'>" + esc(d.name) +
     "<span class='sigwrap'><span class='sigmark'>(서명)</span><img class='sig' src='" + sig + "'></span></td></tr>" +
     tr("생년월일", d.birth) + tr("주소", d.address) + tr("전화번호", d.phone) + "</table>" +
