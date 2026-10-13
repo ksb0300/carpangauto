@@ -250,7 +250,8 @@ export function 대표차량(data) {
 export function 대표차량계산(data, c, s) {
   const st = (data.settlements || []).find(x => x.car_id === c.id);
   return 대표손익({
-    매도금액: n(s.sale_amount), 기타매출: (st?.other_revenue || []).map(x => ({ 금액: n(x.금액), 과세: x.과세 !== false })),
+    매도금액: n(s.sale_amount), 기타매출: [...(st?.other_revenue || []).map(x => ({ 금액: n(x.금액), 과세: x.과세 !== false })),
+      ...(n(c.extra_income) ? [{ 금액: n(c.extra_income), 과세: false }] : [])],      // 차량 리스트에서 넣은 추가수익 (매도 뒤에도)
     상사매도비: n(s.sale_fee), 할부수익: n(s.installment_income), 제시금액: n(c.purchase_amount), 제시증빙: c.evidence,
     비용: (data.costs || []).filter(k => k.car_id === c.id).map(k => ({ 금액: n(k.amount), 과세: k.taxable, 정산반영: k.include_in_settlement })),
     // 갚은 대출은 실제 상환일까지, 아직 안 갚은 대출은 매도일까지

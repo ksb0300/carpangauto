@@ -1420,3 +1420,24 @@ create trigger cars_acq_tax_known before insert or update of acq_tax, acq_tax_un
   for each row execute function cars_acq_tax_known();
 
 -- 기존 차는 건드리지 않는다 (취득세 0원이 맞는 차가 많다 — 사용자 2026-10-13). 앞으로 [모름]을 누른 차만.
+
+
+-- 20261013000002_loan_fixed_due.sql
+-- 재고금융 만기는 은행이 '매월 N일'로 고정한다 (2026-10-13 부산은행·KB국민 화면 확인).
+--   만기 = 실행월 + 기간(개월) 의 N일, 단 실행일이 기준일(due_cutoff)보다 늦으면 한 달 더.
+--   부산은행: 10일 · 15일까지 → 5개월 (6/15→11/10, 8/20→2/10, 9/17→3/10, 10/13→3/10)
+--   KB국민 : 10일 · 20일까지 → 3개월 (9/18→12/10, 9/29→1/10, 10/12→1/10) — 19~28일 사이 기준은 확인 필요
+alter table lenders   add column due_day    int check (due_day between 1 and 31);     -- 만기일 (매월 N일), 비우면 실행일 + 개월
+alter table lenders   add column due_cutoff int check (due_cutoff between 1 and 31);  -- 실행일이 이 날보다 늦으면 한 달 더
+alter table car_loans add column due_day    int;     -- 대출 등록 때 금융사 설정을 옮겨 둔다 (기간·이율처럼)
+alter table car_loans add column due_cutoff int;
+
+update lenders set due_day = 10, due_cutoff = 15, base_months = 5 where name = '부산은행';
+update lenders set due_day = 10, due_cutoff = 20 where name = 'KB국민';
+
+-- 진행중 대출에 적용 (상환완료 대출은 잠겨 있고 만기도 의미 없다)
+update car_loans cl set due_day = l.due_day, due_cutoff = l.due_cutoff
+  from lenders l where l.id = cl.lender_id and l.due_day is not null and cl.status = '진행중';
+-- 부산은행은 기본 기간이 5개월 (은행 화면의 만기) — 진행중 대출의 기간을 맞춘다
+update car_loans cl set base_months = 5, months = greatest(cl.months, 5)
+  from lenders l where l.id = cl.lender_id and l.name = '부산은행' and cl.status = '진행중';

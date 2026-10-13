@@ -159,7 +159,8 @@ export function LenderEdit({ app, id }) {
       interest_day: f.interest_day ? Number(f.interest_day) : null, active: f.active,
       base_months: Number(f.base_months) || 1, ext_months: Number(f.ext_months) || 0, base_rate: num(f.base_rate), ext_rate: num(f.ext_rate),
       ext_repay_pct: Number(f.ext_repay_pct) || 0, repay_fee_method: f.repay_fee_method, repay_fee_pct: Number(f.repay_fee_pct) || 0, rule_memo: f.rule_memo || null,
-      release_fee: n(f.release_fee), rate_tiers: 단계읽기(f.tiers_text ?? 단계글(f.rate_tiers)) };
+      release_fee: n(f.release_fee), rate_tiers: 단계읽기(f.tiers_text ?? 단계글(f.rate_tiers)),
+      due_day: Number(f.due_day) || null, due_cutoff: Number(f.due_cutoff) || null };
     const ok = await run(async () => { await q(app.db.from("lenders").update(row).eq("id", id)); await app.reload(); return true; }, "저장했습니다");
     if (ok) go("/loans/lenders");
   };
@@ -171,6 +172,8 @@ export function LenderEdit({ app, id }) {
     <div class="fgrid">
       <${Field} label="금융사 이름" req><input value=${f.name} onInput=${setT("name")} required /><//>
       <${Field} label="기본 대출기간 (개월)" req><input inputmode="numeric" value=${f.base_months} onInput=${setT("base_months")} /><//>
+      <${Field} label="만기일 고정 (매월 N일)" hint="은행이 만기를 매월 같은 날로 맞추면 (예: 10) — 비우면 실행일 + 개월"><input inputmode="numeric" value=${f.due_day ?? ""} onInput=${setT("due_day")} /><//>
+      <${Field} label="한 달 더 기준일" hint="실행일이 이 날보다 늦으면 만기가 한 달 뒤 (예: 부산은행 15)"><input inputmode="numeric" value=${f.due_cutoff ?? ""} onInput=${setT("due_cutoff")} /><//>
       <${Field} label="연장 가능 (개월)" hint="0이면 연장 불가"><input inputmode="numeric" value=${f.ext_months} onInput=${setT("ext_months")} /><//>
       <${Field} label="기본 이율 (연 %)"><input inputmode="decimal" value=${f.base_rate ?? ""} onInput=${setT("base_rate")} /><//>
       <${Field} label="연장분 이율 (연 %)" hint="비우면 기본 이율 그대로"><input inputmode="decimal" value=${f.ext_rate ?? ""} onInput=${setT("ext_rate")} /><//>
