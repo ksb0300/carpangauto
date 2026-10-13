@@ -31,7 +31,7 @@ function Ops({ app }) {
       <${Field} label="상사매입비 → 상품화비용 자동입력"><${Seg} value=${f.purchase_fee_to_cost ? "예" : "아니오"} onChange=${v => set("purchase_fee_to_cost")(v === "예")} options=${["예", "아니오"]} /><//>
       <${Field} label="취득세 → 상품화비용 자동입력"><${Seg} value=${f.acq_tax_to_cost ? "예" : "아니오"} onChange=${v => set("acq_tax_to_cost")(v === "예")} options=${["예", "아니오"]} /><//>
       <${Field} label="상사매도비" hint="매도 때 기본값 · 상사 매출"><${Money} value=${f.sale_fee} onInput=${set("sale_fee")} /><//>
-      <${Field} label="엔카믿고 매도비" hint="판매가(엔카 광고가)로 자동 계산 — 1천만원까지 176,000원, 넘는 금액 0.33%, 5천만원부터 308,000원"><input value="자동 계산" readOnly /><//>
+      <${Field} label="엔카믿고 수수료" hint="매도비에서 엔카가 떼는 돈 — 판매가 1천만원까지 176,000원, 넘는 금액 0.33%, 5천만원부터 308,000원. 매도하면 상품화비용에 자동 등록"><input value="자동 계산" readOnly /><//>
       <${Field} label="딜러 정산 13.3% 처리" hint=${f.settle_method === "일괄" ? "마진에서 13.3% 일률 적용" : "10% 예수부가세 처리 후 나머지에서 3.3%"}>
         <${Seg} value=${f.settle_method} onChange=${set("settle_method")} options=${["일괄", "분할"]} /><//>
       <${Field} label="현금영수증 발행형태" hint="차량 → 매출증빙에서 발행대기를 만들 때"><${Seg} value=${f.cash_issue_form} onChange=${set("cash_issue_form")} options=${[["건별", "건별 (각각)"], ["합산", "합산 1장"]]} /><//>

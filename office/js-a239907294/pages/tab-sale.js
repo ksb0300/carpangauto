@@ -1,6 +1,6 @@
 import { html, useState, useEffect, Money, Field, Select, run, won, today, toast, go } from "../ui.js";
 import { q } from "../db.js";
-import { 부가세분리, 할부수수료, 엔카믿고매도비 } from "../calc.js";
+import { 부가세분리, 할부수수료, 엔카믿고수수료 } from "../calc.js";
 
 export const SALE_TYPES = ["내수판매", "수출", "엔카믿고", "알선판매"];
 
@@ -61,10 +61,8 @@ function SaleForm({ app, car, sale, buyers, onDone }) {
   const upd = (i, k, v) => setBs(x => x.map((b, j) => j === i ? { ...b, [k]: v } : b));
   const vat = 부가세분리(f.sale_amount);
   const 할부 = 할부수수료(f.installment_amount, f.installment_rate);
-  // 엔카믿고면 매도비를 판매가로 계산 (1천만원까지 176,000 + 넘는 금액 0.33%, 5천만원 상한), 다른 유형으로 돌리면 기본 매도비
-  const pickType = v => setF(p => ({ ...p, sale_type: v,
-    sale_fee: v === "엔카믿고" ? 엔카믿고매도비(p.sale_amount) : p.sale_type === "엔카믿고" ? app.settings.sale_fee : p.sale_fee }));
-  const pickAmount = v => setF(p => ({ ...p, sale_amount: v, ...(p.sale_type === "엔카믿고" ? { sale_fee: 엔카믿고매도비(v) } : {}) }));
+  // 엔카믿고도 매도비는 그대로(고객이 44만원 냄) — 엔카가 떼는 수수료는 저장하면 상품화비용으로 자동 등록
+  const pickType = v => setF(p => ({ ...p, sale_type: v }));
   const shareSum = bs.reduce((s, b) => s + Number(b.share_rate || 0), 0);
 
   const save = async e => {
@@ -112,9 +110,9 @@ function SaleForm({ app, car, sale, buyers, onDone }) {
         <label class="check"><input type="checkbox" checked=${f.other_dealer} onChange=${e => set("other_dealer")(e.target.checked)} /> 타상사딜러</label></div><//>
       <${Field} label="알선딜러" hint="다른 딜러가 손님을 데려와 판 경우 — 정산 때 정산금을 나눕니다">
         <${Select} value=${f.broker_dealer_id} onChange=${set("broker_dealer_id")} empty="없음" options=${app.dealers.filter(d => d.id !== f.dealer_id).map(d => [d.id, d.name])} /><//>
-      <${Field} label="판매유형" hint=${f.sale_type === "수출" ? "수출 — 성능점검비가 22,000원으로 바뀝니다" : f.sale_type === "엔카믿고" ? `엔카믿고 — 매도비 ${won(엔카믿고매도비(f.sale_amount))}원 (1천만원까지 176,000 + 넘는 금액 0.33%, 5천만원 상한)` : ""}>
+      <${Field} label="판매유형" hint=${f.sale_type === "수출" ? "수출 — 성능점검비가 22,000원으로 바뀝니다" : f.sale_type === "엔카믿고" ? `엔카믿고 — 수수료 ${won(엔카믿고수수료(f.sale_amount))}원이 상품화비용으로 자동 등록됩니다 (매도비에서 엔카가 떼고 입금)` : ""}>
         <${Select} value=${f.sale_type} onChange=${pickType} options=${SALE_TYPES} /><//>
-      <${Field} label="매도금액" req hint=${f.sale_amount ? `공급가 ${won(vat.공급가)} / 부가세 ${won(vat.부가세)}` : "부가세 포함"}><${Money} value=${f.sale_amount} onInput=${pickAmount} /><//>
+      <${Field} label="매도금액" req hint=${f.sale_amount ? `공급가 ${won(vat.공급가)} / 부가세 ${won(vat.부가세)}` : "부가세 포함"}><${Money} value=${f.sale_amount} onInput=${set("sale_amount")} /><//>
       <${Field} label="상사매도비" hint="상사 매출로 잡힙니다"><${Money} value=${f.sale_fee} onInput=${set("sale_fee")} /><//>
       <${Field} label="성능보험료" hint="손님이 내는 돈 — 현금영수증용, 손익에는 안 들어감"><${Money} value=${f.perf_insurance} onInput=${set("perf_insurance")} /><//>
       <${Field} label="출고 번호판"><input value=${f.plate_out || ""} onInput=${e => set("plate_out")(e.target.value)} /><//>
