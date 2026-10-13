@@ -5,7 +5,7 @@ import { 부가세분리, 예상취득세 } from "../calc.js";
 // 직접 입력은 간단하게 — 조합 제시는 조합 전산에서 하고, 여기선 장부용으로 최소한만 적는다.
 // 차명은 통합키에서 고르고(브랜드·모델·등급 따라옴), 차량정보(차대번호·연식·주행거리 등)는 성능점검(KAIWA)이 채운다.
 const EMPTY = {
-  dealer_id: null, car_name: "", plate: "", purchase_date: today(), purchase_amount: 0, purchase_fee: 0, acq_tax: 0,
+  dealer_id: null, car_name: "", plate: "", purchase_date: today(), purchase_amount: 0, purchase_fee: 0, acq_tax: 0, acq_tax_unknown: false,
   evidence: "의제매입", purchase_channel: null, key_no: "", memo: "",
   fskey: null, car_type: null, brand: null, model: null, grade: null, fuel: null, encar_id: null,
 };
@@ -60,7 +60,7 @@ export function CarForm({ app, id }) {
   const pickDealer = v => setF(p => ({ ...p, dealer_id: v, purchase_fee: isPartner(v) || !v ? 0 : (isPartner(p.dealer_id) || !p.dealer_id ? app.settings.purchase_fee : p.purchase_fee) }));
   const vat = 부가세분리(f.purchase_amount);
   const autoTax = 예상취득세(f.purchase_amount, f.car_kind || "승용");
-  const setPrice = v => setF(p => ({ ...p, purchase_amount: v, ...(taxEdited ? {} : { acq_tax: 예상취득세(v, p.car_kind || "승용") }) }));
+  const setPrice = v => setF(p => ({ ...p, purchase_amount: v, ...(taxEdited || p.acq_tax_unknown ? {} : { acq_tax: 예상취득세(v, p.car_kind || "승용") }) }));
   const channel = (app.settings.purchase_channels || []).find(c => c.name === f.purchase_channel);
 
   const save = async e => {
@@ -94,9 +94,12 @@ export function CarForm({ app, id }) {
         <${Select} value=${f.purchase_channel} onChange=${set("purchase_channel")} empty="선택" options=${(app.settings.purchase_channels || []).map(c => c.name)} /><//>
       <${Field} label="매입증빙" hint=${f.evidence === "세금계산서" ? "사업자(렌트사·법인 등)에게 사서 세금계산서를 받은 경우" : "개인에게 산 경우 (대부분)"}>
         <${Seg} value=${f.evidence} onChange=${set("evidence")} options=${["의제매입", "세금계산서"]} /><//>
-      <${Field} label="취득세" hint=${`자동계산 ${won(autoTax)}원`}>
-        <div class="row"><${Money} value=${f.acq_tax} onInput=${v => { setTaxEdited(true); set("acq_tax")(v); }} />
-        <button type="button" class="btn sm" onClick=${() => { setTaxEdited(false); set("acq_tax")(autoTax); }}>자동계산</button></div><//>
+      <${Field} label="취득세" hint=${f.acq_tax_unknown ? "모름 — 대시보드 '취등록세 수정 필요'에 올라갑니다. 금액을 넣으면 풀립니다." : `자동계산 ${won(autoTax)}원`}>
+        <div class="row"><${Money} value=${f.acq_tax} placeholder=${f.acq_tax_unknown ? "모름" : "0"}
+            onInput=${v => { setTaxEdited(true); setF(p => ({ ...p, acq_tax: v, acq_tax_unknown: v > 0 ? false : p.acq_tax_unknown })); }} />
+        <button type="button" class="btn sm" onClick=${() => { setTaxEdited(false); setF(p => ({ ...p, acq_tax: autoTax, acq_tax_unknown: false })); }}>자동계산</button>
+        <button type="button" class=${"btn sm" + (f.acq_tax_unknown ? " on" : "")} title="취득세를 아직 모르면 — 사무장이 나중에 채웁니다"
+          onClick=${() => { setTaxEdited(true); setF(p => ({ ...p, acq_tax: 0, acq_tax_unknown: true })); }}>모름</button></div><//>
       ${f.dealer_id && !partner && html`<${Field} label="상사매입비" hint="딜러 차 — 상품화비용으로 자동 반영"><${Money} value=${f.purchase_fee} onInput=${set("purchase_fee")} /><//>`}
       <${Field} label="Key번호"><input value=${f.key_no || ""} onInput=${setT("key_no")} /><//>
       <${Field} label="엔카 매물 주소" hint=${f.encar_id ? `매물번호 ${f.encar_id} — 광고가를 매일 13·18시에 가져옵니다` : "엔카 매물 주소나 번호를 붙여 넣으세요 (보통은 자동으로 찾음)"}>
