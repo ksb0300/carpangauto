@@ -1,5 +1,5 @@
 // 대시보드: 위젯 모음 — 계정마다 켜고 끄고 순서를 바꾼다(위젯 편집). 확인할 것·공동대표 실적·재고금융·성능점검·미발행·이자·추이·한도
-import { html, useState, useEffect, Loading, run, won, today , 차줄 } from "../ui.js";
+import { html, useState, useEffect, Loading, run, won, today, 차줄, Money } from "../ui.js";
 import { q } from "../db.js";
 import { loadAll } from "./report-data.js";
 import { 종합현황, 이자납부예정, 월별추이, 대표별실적, 수익배분 } from "../report-calc.js";
@@ -45,6 +45,7 @@ export function Dashboard({ app }) {
              일: Math.round((Date.parse(t) - Date.parse(c.purchase_date)) / 864e5) };
   }).sort((a, b) => b.일 - a.일);
   const 미납합 = act.reduce((a, l) => a + 미납이자({ 대출금액: l.amount, 딜러이율: l.dealer_rate, 개월: l.months, 실행일: l.start_date, 납입이자누계: pay(l.id) }, t), 0);
+  const 취득세모름 = live.filter(c => c.acq_tax_unknown).sort((a, b) => String(a.purchase_date).localeCompare(String(b.purchase_date)));
   const 장기 = live.filter(c => c.status === "재고" && (Date.parse(t) - Date.parse(c.purchase_date)) / 864e5 >= 90);
   // 성능점검: 재고 차마다 가장 최근 점검이 90일 지났거나 만료된 것
   const 최근점검 = {}; for (const i of d.insp) 최근점검[i.car_id] ??= i;
@@ -128,6 +129,8 @@ ${hasDealer && html`      <a class="stat" href="#/settlements"><span>이번 달 
       차표(성능, ["차량", "", "경과", "상태"], x => html`<td class="wrap">${차줄(x.c)}</td>
         <td><button class="btn sm" onClick=${async e => { e.stopPropagation(); if (await renewInsp(app, x.i)) load(); }}>연장</button></td>
         <td class="r nowrap">${x.s.경과}일</td><td class="wrap"><span class=${"badge wrap " + x.s.tone}>${x.s.text}</span></td>`)) },
+    acq_tax: { title: "취등록세 수정 필요", size: "half", render: () => card(`취등록세 수정 필요${취득세모름.length ? ` — ${취득세모름.length}대` : ""}`,
+      html`<${AcqTaxList} app=${app} cars=${취득세모름} onSaved=${load} />`) },
     stock_old: { title: "90일 넘은 재고", size: "half", render: () => card("90일 넘은 재고",
       차표(장기.map(c => ({ c, 일: Math.round((Date.parse(t) - Date.parse(c.purchase_date)) / 864e5) })).sort((a, b) => b.일 - a.일), ["차량", "매입가", "재고일"],
         x => html`<td>${차줄(x.c)}</td><td class="r">${won(x.c.purchase_amount)}</td><td class="r red">${x.일}일</td>`)) },
@@ -194,7 +197,7 @@ ${hasDealer && html`      <a class="stat" href="#/settlements"><span>이번 달 
 }
 
 // 기본 배치 (새 위젯은 여기 추가하면 기존 계정 배치 끝에 꺼진 채로 붙는다)
-const DEFAULT = ["partners", "todo", "signs", "month", "loans_todo", "cash_cars", "insp", "news", "cash", "tax", "interest", "trend", "stock_old", "lenders"];
+const DEFAULT = ["partners", "todo", "signs", "month", "loans_todo", "cash_cars", "insp", "acq_tax", "news", "cash", "tax", "interest", "trend", "stock_old", "lenders"];
 const DEFAULT_OFF = new Set(["stock_old"]);
 function normalize(saved) {
   const list = Array.isArray(saved) ? saved.filter(w => DEFAULT.includes(w.id)) : DEFAULT.map(id => ({ id, on: !DEFAULT_OFF.has(id) }));
@@ -217,4 +220,21 @@ function NewsWidget({ app }) {
       : !items.length ? html`<p class="muted">기사가 없습니다.</p>` : html`<ul class="newslist">${items.slice(0, 8).map(n => html`<li>
         <a href=${n.link} target="_blank" rel="noopener">${n.title}</a><small class="muted">${n.source}${n.source && n.date ? " · " : ""}${n.date ? ago(n.date) : ""}</small></li>`)}</ul>`}
   </div>`;
+}
+
+/** 취등록세 수정 필요: 차량 등록 때 취득세 '모름'으로 둔 차 — 여기서 바로 금액을 넣으면 목록에서 빠진다 */
+function AcqTaxList({ app, cars, onSaved }) {
+  const [v, setV] = useState({});
+  if (!cars.length) return html`<p class="muted">없음 — 취득세를 모르는 차가 없습니다.</p>`;
+  const save = c => run(async () => {
+    const n = Number(v[c.id]) || 0;
+    if (n <= 0) throw new Error("취득세 금액을 넣어 주세요");
+    await q(app.db.from("cars").update({ acq_tax: n }).eq("id", c.id));
+    setV(x => ({ ...x, [c.id]: undefined })); onSaved();
+  }, `${c.plate} 취득세를 저장했습니다`);
+  return html`<div class="table-wrap"><table class="grid"><thead><tr><th>차량</th><th>매입일</th><th class="r">취득세</th><th></th></tr></thead>
+    <tbody>${cars.map(c => html`<tr key=${c.id}>
+      <td><a href=${"#/car/" + c.id}>${차줄(c)}</a></td><td class="nowrap small">${c.purchase_date}${c.status !== "재고" ? html` <span class="muted">(${c.status})</span>` : ""}</td>
+      <td class="r"><${Money} value=${v[c.id] || 0} placeholder="모름" onInput=${n => setV(x => ({ ...x, [c.id]: n }))} style="width:110px" /></td>
+      <td><button class="btn sm" disabled=${!v[c.id]} onClick=${() => save(c)}>저장</button></td></tr>`)}</tbody></table></div>`;
 }

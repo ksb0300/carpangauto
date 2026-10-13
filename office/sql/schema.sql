@@ -1404,3 +1404,19 @@ create trigger car_sales_encar_fee after insert or update of sale_type, sale_amo
 -- 9월 이후 엔카믿고로 판 차: 매도비를 고객이 낸 44만원으로 바로잡고 수수료 비용을 넣는다 (sale_type 을 다시 써서 트리거를 돌림)
 update car_sales set sale_fee = 440000, sale_type = sale_type
  where sale_type = '엔카믿고' and sale_date >= '2026-09-01';
+
+
+-- 20261013000001_acq_tax_unknown.sql
+-- 취득세 '모름' — 차량 등록 때 취득세를 모르면 [모름] 으로 두고, 대시보드 '취등록세 수정 필요' 목록에서 사무장이 채운다.
+-- 금액(> 0)을 넣으면 저절로 '모름'이 풀린다.
+alter table cars add column acq_tax_unknown boolean not null default false;
+
+create or replace function cars_acq_tax_known() returns trigger language plpgsql as $$
+begin
+  if coalesce(new.acq_tax, 0) > 0 then new.acq_tax_unknown := false; end if;
+  return new;
+end $$;
+create trigger cars_acq_tax_known before insert or update of acq_tax, acq_tax_unknown on cars
+  for each row execute function cars_acq_tax_known();
+
+-- 기존 차는 건드리지 않는다 (취득세 0원이 맞는 차가 많다 — 사용자 2026-10-13). 앞으로 [모름]을 누른 차만.
