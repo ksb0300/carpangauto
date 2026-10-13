@@ -4,7 +4,7 @@
 // data = { cars, costs, loans, payments, sales, settlements, brokerages, ledger, lenders, dealers }
 // 날짜는 모두 'YYYY-MM-DD' 문자열, 기간은 [from, to] 양끝 포함.
 
-import { 부가세분리, 기간이자, 원천징수분해, 대표손익, 차량캐피탈이자, 재고금융이자 } from "./calc.js";
+import { 부가세분리, 기간이자, 원천징수분해, 대표손익, 차량캐피탈이자, 재고금융이자, 상환비용 } from "./calc.js";
 
 const n = v => Math.round(Number(v) || 0);
 const inP = (d, from, to) => !!d && d >= from && d <= to;
@@ -250,7 +250,8 @@ export function 대표차량(data) {
 export function 대표차량계산(data, c, s) {
   const st = (data.settlements || []).find(x => x.car_id === c.id);
   return 대표손익({
-    매도금액: n(s.sale_amount), 기타매출: (st?.other_revenue || []).map(x => ({ 금액: n(x.금액), 과세: x.과세 !== false })),
+    매도금액: n(s.sale_amount), 기타매출: [...(st?.other_revenue || []).map(x => ({ 금액: n(x.금액), 과세: x.과세 !== false })),
+      ...(n(c.extra_income) ? [{ 금액: n(c.extra_income), 과세: false }] : [])],      // 차량 리스트에서 넣은 추가수익 (매도 뒤에도)
     상사매도비: n(s.sale_fee), 할부수익: n(s.installment_income), 제시금액: n(c.purchase_amount), 제시증빙: c.evidence,
     비용: (data.costs || []).filter(k => k.car_id === c.id).map(k => ({ 금액: n(k.amount), 과세: k.taxable, 정산반영: k.include_in_settlement })),
     // 갚은 대출은 실제 상환일까지, 아직 안 갚은 대출은 매도일까지
@@ -354,8 +355,12 @@ export function 매칭후보(tx, data, ctx = {}) {
     for (const l of (data.loans || []).filter(l => l.status === "진행중")) {     // 재고금융 상환 (금융사로 나감)
       const c = car[l.car_id]; if (!c) continue;
       const 잔액 = n(l.amount) - n(l.principal_repaid);
-      const sc = (amt === 잔액 || amt === n(l.amount) ? 60 : 0) + (금융사.some(x => x.id === l.lender_id) ? 30 : 0) + ((data.sales || []).some(s => s.car_id === c.id) ? 10 : 0);
-      add("재고금융", sc, `${c.plate} 재고금융 상환 (${lender[l.lender_id]?.name || ""}) → 상환완료 처리`, { car_id: c.id, dealer_id: c.dealer_id, loan_id: l.id, repay: true });
+      // 은행은 원금 + 그날까지 이자 + 해지비용을 한 번에 빼 간다 (받는 쪽 이름이 '김상혁(티어원)' 처럼 우리 대출계좌로 찍혀도 금액으로 알아본다)
+      const 갚은날 = { ...l, status: "상환완료", repaid_date: tx.tx_date };
+      const 예상 = 잔액 + 재고금융이자(갚은날, l.start_date, tx.tx_date) + 상환비용(l, lender[l.lender_id], tx.tx_date);
+      const 딱맞음 = Math.abs(amt - 예상) <= 10;
+      const sc = 딱맞음 ? 100 : (amt === 잔액 || amt === n(l.amount) ? 60 : 0) + (금융사.some(x => x.id === l.lender_id) ? 30 : 0) + ((data.sales || []).some(s => s.car_id === c.id) ? 10 : 0);
+      add("재고금융", sc, `${c.plate} 재고금융 상환 (${lender[l.lender_id]?.name || ""})${딱맞음 ? " — 원금+이자+해지비 금액 일치" : ""} → 상환완료 처리`, { car_id: c.id, dealer_id: c.dealer_id, loan_id: l.id, repay: true });
     }
     if (금융사.length && amt < 3_000_000) add("재고금융이자", 70, `${금융사.map(x => x.name).join("·")} 재고금융 이자`, {});
     for (const s of data.settlements || []) {      // 딜러 정산 지급 (대표 차는 지급이 없다)

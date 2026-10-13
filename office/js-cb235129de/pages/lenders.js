@@ -65,12 +65,12 @@ export async function repayLoan(app, l, d = today()) {
   return !!(await run(() => q(app.db.from("car_loans").update({ status: "상환완료", repaid_date: d, repay_fee: fee || null }).eq("id", l.id)), "상환완료 처리했습니다"));
 }
 
-/** 목록용 버튼은 하나: 아직 연장 전이면 '연장', 한 번 연장했으면(최종 만기) '상환' */
-export function LoanAction({ app, l, lender, onDone }) {
+/** 목록용 버튼은 하나: 아직 연장 전이면 '연장', 한 번 연장했으면(최종 만기) '상환'. 팔린 차는 언제나 '상환' */
+export function LoanAction({ app, l, lender, car, onDone }) {
   if (l.status !== "진행중" || app.profile.role === "dealer") return null;
   const go_ = async (e, f) => { e.stopPropagation(); if (await f(app, l)) onDone(); };
   const 연장 = html`<button class="btn sm" onClick=${e => go_(e, extendLoan)}>연장</button>`;
-  return canExtend(l, lender) ? 연장 : html`<${RepayButton} app=${app} l=${l} onDone=${onDone} />`;
+  return canExtend(l, lender) && car?.status !== "매도" ? 연장 : html`<${RepayButton} app=${app} l=${l} onDone=${onDone} />`;
 }
 
 /** [상환] → 상환일 달력(기본 오늘) + 확인. 목록·대시보드·차 화면에서 같이 쓴다 */
@@ -137,7 +137,7 @@ export function LenderOverview({ app }) {
               ${W(s.원금잔액)}<td>${l.start_date}</td><td>${s.단계}</td><td>${s.만기}</td>
               <td class="r">${s.연장됨 && l.ext_rate != null ? `${Number(l.ext_rate)}%` : `${Number(l.lender_rate ?? 0)}%`}</td>
               ${W(재고금융이자(l, l.start_date, t))}${W(상환비용(l, x, t))}<td><span class=${"badge " + h.tone}>${h.text}</span></td>
-              <td><${LoanAction} app=${app} l=${l} lender=${x} onDone=${load} /></td></tr>`; })}</tbody></table></div>`}
+              <td><${LoanAction} app=${app} l=${l} lender=${x} car=${c} onDone=${load} /></td></tr>`; })}</tbody></table></div>`}
       </div>`;
     })}
     ${(rest => rest.length > 0 && html`<div class="card"><h3>대출 없는 금융사</h3><table class="st"><tbody>${rest.map(x => html`<tr>

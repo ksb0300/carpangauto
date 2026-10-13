@@ -72,6 +72,8 @@ export function LoansTab({ app, car, loans, reload, locked, office }) {
         ${l.payments.length > 0 && html`<div class="muted small">납입: ${l.payments.map((p, i) => html`${i ? " · " : ""}${p.paid_date} ${won(p.amount)}${edit && !done &&
           html` <button class="btn sm ghost" title="이 납입 기록 삭제" onClick=${() => removePay(p)}>✕</button>`}`)}</div>`}
         ${l.memo && html`<div class="muted small">메모: ${l.memo}</div>`}
+        ${!edit && office && locked && l.status === "진행중" && html`<div class="actions"><span class="muted small">정산 확정 후에도 상환은 처리할 수 있습니다</span>
+          <${RepayButton} app=${app} l=${l} onDone=${reload} label="상환완료" cls="btn sm" /></div>`}
         ${edit && html`<div class="actions">
           <button class="btn sm" disabled=${done} onClick=${() => pay(l)}>이자납입</button>
           <button class="btn sm" disabled=${done || !canExtend(l, lender)} title=${c.가능 ? `${c.개월}개월 연장${c.상환필요 ? ` · 원금 ${won(c.상환필요)} 상환` : ""}` : "금융사 조건상 연장 불가 — 수동 연장"} onClick=${() => extend(l)}>연장</button>
