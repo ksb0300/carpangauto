@@ -71,6 +71,7 @@ function PartnerSettle({ app, car, costs, loans, sale, settlement, reload, offic
       </div>
       <div class="fgrid">
         <${Field} label="확정일"><input type="date" disabled=${ro} value=${f.settle_date} onInput=${e => set("settle_date")(e.target.value)} /><//>
+        ${office && html`<${ExtraIncome} app=${app} car=${car} reload=${reload} />`}
         <${Field} label="재고금융" hint="확정 시 진행중 대출을 상환완료 처리"><label class="check"><input type="checkbox" disabled=${ro} checked=${f.loan_repay} onChange=${e => set("loan_repay")(e.target.checked)} /> 상환완료 종결처리</label><//>
         ${f.loan_repay && (loans.some(l => l.status === "진행중") || settlement?.loan_repay_date) && html`<${Field} label="재고금융 상환일" hint="실제로 갚은 날 — 판 날과 달라도 됩니다. 이자는 이 날까지">
           <input type="date" disabled=${ro} value=${f.loan_repay_date} min=${loans.reduce((m, l) => l.start_date > m ? l.start_date : m, "")} onInput=${e => set("loan_repay_date")(e.target.value)} /><//>`}
@@ -273,4 +274,14 @@ function Statement({ app, car, sale, dealer, f, r, fin, mode, costs = [], loans 
       <div class="st-meta" style="margin-top:18px"><span>확인: 대표 ____________</span><span>딜러 ____________</span></div>
     </div>`}
   </div>`;
+}
+
+/** 추가수익 — 할부수익·기타매출 말고 매도 뒤에 더 들어온 돈. 손익확정과 상관없이 넣고 고친다 (차량 리스트와 같은 칸) */
+function ExtraIncome({ app, car, reload }) {
+  const [v, setV] = useState(Number(car.extra_income) || 0);
+  const changed = (Number(v) || 0) !== (Number(car.extra_income) || 0);
+  const save = () => run(async () => { await q(app.db.from("cars").update({ extra_income: Number(v) || null }).eq("id", car.id)); reload(); }, "추가수익을 저장했습니다");
+  return html`<${Field} label="추가수익" hint="매도 뒤에 더 들어온 돈 — 손익확정 뒤에도 고칠 수 있습니다">
+    <div class="row"><${Money} value=${v} onInput=${setV} />
+      <button type="button" class="btn sm primary" disabled=${!changed} onClick=${save}>저장</button></div><//>`;
 }

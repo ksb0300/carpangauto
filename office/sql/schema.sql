@@ -1441,3 +1441,47 @@ update car_loans cl set due_day = l.due_day, due_cutoff = l.due_cutoff
 -- 부산은행은 기본 기간이 5개월 (은행 화면의 만기) — 진행중 대출의 기간을 맞춘다
 update car_loans cl set base_months = 5, months = greatest(cl.months, 5)
   from lenders l where l.id = cl.lender_id and l.name = '부산은행' and cl.status = '진행중';
+
+
+-- 20261013000003_bnk_no_extension.sql
+-- 부산은행 재고금융은 5개월(만기 매월 10일)이 끝 — 연장 없음 (2026-10-13 사용자 확인). 만기가 되면 상환.
+update lenders set ext_months = 0 where name = '부산은행';
+
+
+-- 20261013000004_jb_fixed_due.sql
+-- JB우리 은행 화면(2026-10-13) 기준으로 맞춤
+--   만기: 매월 14일, 신청일이 25일까지면 3개월 뒤 14일 · 26일 이후면 4개월 뒤 14일, 연장하면 2개월 더
+--   연장 때 먼저 갚는 원금: 10% (312도7995 잔여 24,750,000 / 234노6727 잔여 30,510,000 — 9.5% 로 적혀 있던 것을 바로잡음)
+update lenders set due_day = 14, due_cutoff = 25, ext_repay_pct = 10 where name = 'JB우리';
+update car_loans cl set due_day = 14, due_cutoff = 25
+  from lenders l where l.id = cl.lender_id and l.name = 'JB우리' and cl.status = '진행중';
+
+-- 은행 기록과 다른 진행중 대출 바로잡기 (실행일 = 은행 신청일, 연장 원금 10%)
+update car_loans cl set principal_repaid = 2750000
+  from cars c where c.id = cl.car_id and replace(c.plate, ' ', '') = '312도7995' and cl.status = '진행중';
+update car_loans cl set principal_repaid = 3390000, start_date = '2026-07-06', ext_start = '2026-10-12'   -- 10/12 'JB6727연장' 출금
+  from cars c where c.id = cl.car_id and replace(c.plate, ' ', '') = '234노6727' and cl.status = '진행중';
+update car_loans cl set start_date = '2026-09-28'
+  from cars c where c.id = cl.car_id and replace(c.plate, ' ', '') = '150마9800' and cl.status = '진행중';
+update car_loans cl set start_date = '2026-10-08'
+  from cars c where c.id = cl.car_id and replace(c.plate, ' ', '') = '03마3648' and cl.status = '진행중';
+
+
+-- 20261013000005_loan_due_min_days.sql
+-- 만기 규칙을 '실행일부터 N일 이상 지난 첫 고정일'로 (KB 전체 이력 2026-10-13 대조 — 날짜 기준(○일까지 3개월)으로는 설명이 안 됨)
+--   KB국민 : 매월 10일, 74일 이상   (8/26→11/10 76일, 9/22→12/10 79일, 9/28→1/10: 12/10은 73일이라 안 됨, 7/29→11/10)
+--   부산은행: 매월 10일, 147일 이상  (9/17→3/10: 2/10은 146일, 10/13→3/10 148일, 6/15→11/10 148일)
+--   JB우리 : 매월 14일, 78일 이상   (6/25→9/14 81일, 6/30→10/14: 9/14는 76일, 9/28→1/14: 12/14는 77일)
+--   연장: 만기에서 그대로 개월 수만큼 (같은 고정일)
+alter table lenders   add column due_min_days int check (due_min_days between 1 and 400);
+alter table car_loans add column due_min_days int;
+
+update lenders set due_min_days = 74  where name = 'KB국민';
+update lenders set due_min_days = 147 where name = '부산은행';
+update lenders set due_min_days = 78  where name = 'JB우리';
+update car_loans cl set due_min_days = l.due_min_days
+  from lenders l where l.id = cl.lender_id and l.due_min_days is not null and cl.status = '진행중';
+
+-- KB 은행 기록과 다른 진행중 대출: 331더9360 실행일 10/8 → 10/12 (KB 화면 신청일자·대출일자 26.10.12)
+update car_loans cl set start_date = '2026-10-12'
+  from cars c where c.id = cl.car_id and replace(c.plate, ' ', '') = '331더9360' and cl.status = '진행중';
