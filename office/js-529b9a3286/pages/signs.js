@@ -134,7 +134,7 @@ function 환불계산({ r }) {
   const [반납, set반납] = useState("");
   const km = Number(String(반납).replace(/[^\d]/g, "")) || 0;
   const x = km ? 주행공제({ 차량대금: p.price, 인도전: r.mileage, 반납: km, 이동: p.move_km, 기준: r.terms?.km_limit || 300 }) : null;
-  return html`<div class="card no-print"><b>환불 계산</b> <span class="muted small">반납 때 계기판 주행거리를 넣으면 약관 제3조 ③ 주행거리 공제가 나옵니다</span>
+  return html`<div class="card no-print"><b>환불 계산</b> <span class="muted small">반납 때 계기판 주행거리를 넣으면 약관 제3조 주행거리 초과분 공제가 나옵니다</span>
     <div class="row" style="margin-top:8px;gap:8px;flex-wrap:wrap;align-items:center">
       <input inputmode="numeric" placeholder="반납 때 주행거리 (km)" value=${반납} onInput=${e => set반납(e.target.value)} style="width:180px" />
       ${x && html`<span>인도 후 주행 <b>${won(x.주행)}km</b> (${won(km)} − 인도 전 ${won(r.mileage)}${p.move_km ? ` − 이동 ${won(p.move_km)}` : ""})
@@ -154,7 +154,7 @@ function RefundPaper({ r, sig, 날짜, TR }) {
     <table>${TR("차량번호", r.car_no)}${TR("차명", r.car_name)}${TR("주행거리", r.mileage != null ? `${Number(r.mileage).toLocaleString()} km (인도 전 계기판)` : "-")}${TR("환불기한", 기한)}</table>
     ${r.prepared && html`<div class="sec">※ 인도 때 안내 사항</div><${고지표} p=${r.prepared} />`}
     <p>매도인 ${t.seller}(이하 '매도인')과 매수인은 위 차량의 매매에 관하여 다음과 같이 3일 환불을 약정합니다.</p>
-    <ol class="terms">${t.clauses.map(([h, b], i) => html`<li><b>제${i + 1}조 (${h})</b><br />${b.split(String.fromCharCode(10)).map((x, j) => html`${j ? html`<br />` : ""}${x}`)}</li>`)}</ol>
+    <ol class="terms">${t.clauses.map(([h, b], i) => html`<li><b>제${i + 1}조 (${h})</b><br />${b.replace(/\{기한\}/g, 기한.replace(/까지$/, "")).split(String.fromCharCode(10)).map((x, j) => html`${j ? html`<br />` : ""}${x}`)}</li>`)}</ol>
     <p class="date">${날짜}</p>
     <div class="sec">※ 매수인</div>
     <table><tr><th>성명</th><td class="owner">${r.name}<span class="sigwrap"><span class="sigmark">(서명)</span>${sig && html`<img class="sig" src=${sig} />`}</span></td></tr>
@@ -187,8 +187,8 @@ export function RefundPrep({ app, car, sale, shareLink, onClose }) {
       q(app.db.from("car_inspections").select("insur_price,recept_date").eq("car_id", car.id).order("recept_date", { ascending: false }).limit(1))]);
     const price = Number(sale?.sale_amount || car.ad_price || car.list_price || 0), insurance = Number(ins[0]?.insur_price || 0);
     setF({ price, mileage: car.mileage ?? "", keys: 2, insurance, note: "", dest: "", move_km: "",
-      lien: loans.length ? "재고금융 저당 있음 — 대금을 받은 뒤 해지" : "없음",
-      매도비: 440000, 성능보험료: insurance, 탁송비: 0 });
+      lien: loans.length ? "재고금융 저당 있음 — 고객이 차량 인수를 확정하면 이전등록과 함께 해지" : "없음",
+    });
   }); }, [car.id]);
   const url = t => `${location.origin}/sign/refund/?t=${t}`;
   const make = () => run(async () => {
@@ -196,7 +196,7 @@ export function RefundPrep({ app, car, sale, shareLink, onClose }) {
     if (f.mileage === "" || f.mileage == null) throw new Error("인도 전 주행거리를 넣어 주세요");
     const token = crypto.randomUUID().replace(/-/g, "");
     const prepared = { price: f.price, keys: Number(f.keys) || 0, lien: f.lien.trim() || "없음", insurance: Number(f.insurance) || 0, note: f.note.trim(), dest: f.dest.trim(), move_km: Number(f.move_km) || 0,
-      costs: [["매도비", f.매도비], ["성능보험료", f.성능보험료], ["탁송비", f.탁송비]].filter(c => Number(c[1]) > 0) };
+      costs: [] };
     await q(app.db.from("sign_docs").insert({ kind: "3일환불", car_id: car.id, car_no: car.plate, car_name: car.car_name, mileage: Number(String(f.mileage).replace(/[^\d]/g, "")),
       prepared, token, prepared_by: app.user.id, signed_at: null, agreed: false }));
     load();
@@ -220,10 +220,6 @@ export function RefundPrep({ app, car, sale, shareLink, onClose }) {
       <${Field} label="압류·저당"><input value=${f.lien} onInput=${e => set("lien", e.target.value)} /><//>
       ${N("insurance", "성능보험료", "0이면 '미가입'으로 나옵니다")}
       <${Field} label="특약 (있으면)" wide><input value=${f.note} placeholder="예: 블랙박스 SD카드 별도 · 스마트키 1개는 다음 주 전달" onInput=${e => set("note", e.target.value)} /><//>
-    </div>
-    <div class="sec small"><b>환불 때 돌려받지 못하는 비용 (예상)</b> — 0원인 항목은 약정서에 안 나옵니다</div>
-    <div class="fgrid">
-      ${N("매도비", "매도비")}${N("성능보험료", "성능보험료")}${N("탁송비", "탁송비")}
     </div>
     <div class="bar"><span class="grow"></span><button class="btn primary" onClick=${make}>링크 만들어 보내기</button></div>`}
   </div>`;
