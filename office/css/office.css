@@ -310,3 +310,4 @@ a.stat { color: inherit; } a.stat:hover { border-color: var(--pri); }
 .reserve-job .bar { gap: 8px; flex-wrap: wrap; } .reserve-new .lab .btn { margin-left: 6px; }
 .reserve-log { background: #f6f7f9; border-radius: 8px; padding: 8px 10px; font-size: 12px; white-space: pre-wrap; word-break: break-all; margin: 6px 0 0; max-height: 240px; overflow: auto; }
 .note.bad { color: var(--red, #b91c1c); }
+.widget-scroll { max-height: 380px; overflow-y: auto; } .widget-scroll thead th { position: sticky; top: 0; background: var(--card); z-index: 1; }

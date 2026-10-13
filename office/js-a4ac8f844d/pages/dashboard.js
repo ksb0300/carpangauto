@@ -99,9 +99,9 @@ export function Dashboard({ app }) {
       <tbody>${미발행[k].slice(0, 8).map(x => html`<tr onClick=${() => (location.hash = `/car/${x.c.id}/docs`)}><td><b>${x.c.plate}</b> <span class="small">${x.l.parts.join("+")}</span></td>
         <td class="r">${won(x.l.amount)}</td><td>${(x.l.buyer || x.l.dealer)?.name || "-"}</td><td>${x.s.sale_date}</td><td class=${"r" + (x.경과 > 3 ? " red" : "")}>${x.경과}</td></tr>`)}</tbody></table></div>
       ${미발행[k].length > 8 ? html`<p class="note">외 ${미발행[k].length - 8}건</p>` : ""}`, html`<a class="btn sm" href="#/issue/wait">발행대기 리스트</a>`);
-  const 차표 = (rows, cols, cell, tab = "info") => !rows.length ? html`<p class="muted">없음</p>` : html`<div class="table-wrap"><table class="grid click">
-    <thead><tr>${cols.map(c => html`<th>${c}</th>`)}</tr></thead><tbody>${rows.slice(0, 10).map(x => html`<tr onClick=${() => (location.hash = `/car/${x.c.id}/${tab}`)}>${cell(x)}</tr>`)}</tbody></table></div>
-    ${rows.length > 10 ? html`<p class="note">외 ${rows.length - 10}대</p>` : ""}`;
+  const 차표 = (rows, cols, cell, tab = "info") => !rows.length ? html`<p class="muted">없음</p>` : html`<div class="table-wrap widget-scroll"><table class="grid click">
+    <thead><tr>${cols.map(c => html`<th>${c}</th>`)}</tr></thead><tbody>${rows.map(x => html`<tr onClick=${() => (location.hash = `/car/${x.c.id}/${tab}`)}>${cell(x)}</tr>`)}</tbody></table></div>
+    ${rows.length > 8 ? html`<p class="note">총 ${rows.length}대 — 표 안에서 아래로 스크롤</p>` : ""}`;
 
   const WIDGETS = {
     partners: { title: "이번 달 공동대표 실적", size: "full", show: !!배분, render: () => card("이번 달 공동대표 실적", html`<div class="stat-grid">
@@ -122,7 +122,7 @@ ${hasDealer && html`      <a class="stat" href="#/settlements"><span>이번 달 
         x => html`<td class="nowrap">${차줄(x.c)}</td><td><${LoanAction} app=${app} l=${x.l} lender=${d.lenders.find(l => l.id === x.l.lender_id)} onDone=${load} /></td>
           <td class="wrap"><span class=${"badge wrap " + x.h.tone}>${x.h.text}</span></td><td>${d.lenders.find(l => l.id === x.l.lender_id)?.name}</td><td class="r">${won(x.l.amount)}</td>`, "loans"),
       html`<a class="btn sm" href="#/loans/lenders">금융사별 현황</a>`) },
-    cash_cars: { title: "현금 차량 리스트", size: "half", render: () => card(`현금 차량 리스트 — ${현금차.length}대 · ${won(현금차.reduce((a, x) => a + Number(x.c.purchase_amount), 0))}원`,
+    cash_cars: { title: "현금 차량 리스트 (재고금융 없는 재고)", size: "half", render: () => card(`현금 차량 리스트 (재고금융 없음) — ${현금차.length}대 · ${won(현금차.reduce((a, x) => a + Number(x.c.purchase_amount), 0))}원`,
       차표(현금차, ["차량", "매입가", "재고일", "사유"], x => html`<td>${차줄(x.c)}</td><td class="r">${won(x.c.purchase_amount)}</td>
         <td class="r">${x.일}일</td><td class="small">${x.사유}</td>`), html`<a class="btn sm" href="#/purchases">리스트</a>`) },
     insp: { title: "성능점검 90일 지난 재고", size: "half", render: () => card(`성능점검 ${ALERT_DAYS}일 지난 재고`,
