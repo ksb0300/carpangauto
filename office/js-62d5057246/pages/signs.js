@@ -134,7 +134,7 @@ function 환불계산({ r }) {
   const [반납, set반납] = useState("");
   const km = Number(String(반납).replace(/[^\d]/g, "")) || 0;
   const x = km ? 주행공제({ 차량대금: p.price, 인도전: r.mileage, 반납: km, 이동: p.move_km, 기준: r.terms?.km_limit || 300 }) : null;
-  return html`<div class="card no-print"><b>환불 계산</b> <span class="muted small">반납 때 계기판 주행거리를 넣으면 약관 제3조 ③ 주행거리 공제가 나옵니다</span>
+  return html`<div class="card no-print"><b>환불 계산</b> <span class="muted small">반납 때 계기판 주행거리를 넣으면 약관 제3조 주행거리 초과분 공제가 나옵니다</span>
     <div class="row" style="margin-top:8px;gap:8px;flex-wrap:wrap;align-items:center">
       <input inputmode="numeric" placeholder="반납 때 주행거리 (km)" value=${반납} onInput=${e => set반납(e.target.value)} style="width:180px" />
       ${x && html`<span>인도 후 주행 <b>${won(x.주행)}km</b> (${won(km)} − 인도 전 ${won(r.mileage)}${p.move_km ? ` − 이동 ${won(p.move_km)}` : ""})
@@ -187,7 +187,7 @@ export function RefundPrep({ app, car, sale, shareLink, onClose }) {
       q(app.db.from("car_inspections").select("insur_price,recept_date").eq("car_id", car.id).order("recept_date", { ascending: false }).limit(1))]);
     const price = Number(sale?.sale_amount || car.ad_price || car.list_price || 0), insurance = Number(ins[0]?.insur_price || 0);
     setF({ price, mileage: car.mileage ?? "", keys: 2, insurance, note: "", dest: "", move_km: "",
-      lien: loans.length ? "재고금융 저당 있음 — 대금을 받은 뒤 해지" : "없음",
+      lien: loans.length ? "재고금융 저당 있음 — 고객이 차량 인수를 확정하면 이전등록과 함께 해지" : "없음",
     });
   }); }, [car.id]);
   const url = t => `${location.origin}/sign/refund/?t=${t}`;

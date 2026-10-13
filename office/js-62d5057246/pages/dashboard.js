@@ -38,7 +38,8 @@ export function Dashboard({ app }) {
   const pay = id => d.payments.filter(p => p.loan_id === id).reduce((a, p) => a + Number(p.amount), 0);
   const act = d.loans.filter(l => l.status === "진행중" && car[l.car_id]);
   // 금융사 조건(기본만기·연장 가능 여부)으로 2주 안에 연장하거나 갚아야 할 것
-  const 챙길 = act.map(l => ({ l, h: 할일(l, d.lenders.find(x => x.id === l.lender_id), t) })).filter(x => ["red", "amber"].includes(x.h.tone));
+  const 챙길 = act.map(l => ({ l, h: car[l.car_id]?.status === "매도" ? { text: "매도됨 · 상환 처리", tone: "red" } : 할일(l, d.lenders.find(x => x.id === l.lender_id), t) }))
+    .filter(x => ["red", "amber"].includes(x.h.tone));
   const 현금차 = live.filter(c => c.status === "재고" && !act.some(l => l.car_id === c.id)).map(c => {
     const done = d.loans.filter(l => l.car_id === c.id && l.status === "상환완료").sort((a, b) => String(b.repaid_date).localeCompare(String(a.repaid_date)))[0];
     return { c, 사유: done ? `상환완료 ${done.repaid_date || ""} · ${d.lenders.find(x => x.id === done.lender_id)?.name || ""}` : "재고금융 없음",
@@ -99,9 +100,9 @@ export function Dashboard({ app }) {
       <tbody>${미발행[k].slice(0, 8).map(x => html`<tr onClick=${() => (location.hash = `/car/${x.c.id}/docs`)}><td><b>${x.c.plate}</b> <span class="small">${x.l.parts.join("+")}</span></td>
         <td class="r">${won(x.l.amount)}</td><td>${(x.l.buyer || x.l.dealer)?.name || "-"}</td><td>${x.s.sale_date}</td><td class=${"r" + (x.경과 > 3 ? " red" : "")}>${x.경과}</td></tr>`)}</tbody></table></div>
       ${미발행[k].length > 8 ? html`<p class="note">외 ${미발행[k].length - 8}건</p>` : ""}`, html`<a class="btn sm" href="#/issue/wait">발행대기 리스트</a>`);
-  const 차표 = (rows, cols, cell, tab = "info") => !rows.length ? html`<p class="muted">없음</p>` : html`<div class="table-wrap"><table class="grid click">
-    <thead><tr>${cols.map(c => html`<th>${c}</th>`)}</tr></thead><tbody>${rows.slice(0, 10).map(x => html`<tr onClick=${() => (location.hash = `/car/${x.c.id}/${tab}`)}>${cell(x)}</tr>`)}</tbody></table></div>
-    ${rows.length > 10 ? html`<p class="note">외 ${rows.length - 10}대</p>` : ""}`;
+  const 차표 = (rows, cols, cell, tab = "info") => !rows.length ? html`<p class="muted">없음</p>` : html`<div class="table-wrap widget-scroll"><table class="grid click">
+    <thead><tr>${cols.map(c => html`<th>${c}</th>`)}</tr></thead><tbody>${rows.map(x => html`<tr onClick=${() => (location.hash = `/car/${x.c.id}/${tab}`)}>${cell(x)}</tr>`)}</tbody></table></div>
+    ${rows.length > 8 ? html`<p class="note">총 ${rows.length}대 — 표 안에서 아래로 스크롤</p>` : ""}`;
 
   const WIDGETS = {
     partners: { title: "이번 달 공동대표 실적", size: "full", show: !!배분, render: () => card("이번 달 공동대표 실적", html`<div class="stat-grid">
@@ -119,7 +120,7 @@ export function Dashboard({ app }) {
 ${hasDealer && html`      <a class="stat" href="#/settlements"><span>이번 달 딜러 정산 지급</span><b>${won(s.정산.실지급)}</b><small>${s.정산.건수}건 · 원천징수 ${won(s.정산.세액)}</small></a>`}</div></div>` },
     loans_todo: { title: "재고금융 연장·상환 챙길 것", size: "half", render: () => card("재고금융 연장·상환 챙길 것",
       차표(챙길.map(x => ({ ...x, c: car[x.l.car_id] })), ["차량", "", "할 일", "금융사", "대출"],      // 버튼은 차량 바로 옆 — 위젯이 좁아도 안 가려지게
-        x => html`<td class="nowrap">${차줄(x.c)}</td><td><${LoanAction} app=${app} l=${x.l} lender=${d.lenders.find(l => l.id === x.l.lender_id)} onDone=${load} /></td>
+        x => html`<td class="nowrap">${차줄(x.c)}</td><td><${LoanAction} app=${app} l=${x.l} lender=${d.lenders.find(l => l.id === x.l.lender_id)} car=${x.c} onDone=${load} /></td>
           <td class="wrap"><span class=${"badge wrap " + x.h.tone}>${x.h.text}</span></td><td>${d.lenders.find(l => l.id === x.l.lender_id)?.name}</td><td class="r">${won(x.l.amount)}</td>`, "loans"),
       html`<a class="btn sm" href="#/loans/lenders">금융사별 현황</a>`) },
     cash_cars: { title: "현금 차량 리스트 (재고금융 없는 재고)", size: "half", render: () => card(`현금 차량 리스트 (재고금융 없음) — ${현금차.length}대 · ${won(현금차.reduce((a, x) => a + Number(x.c.purchase_amount), 0))}원`,
