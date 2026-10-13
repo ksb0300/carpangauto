@@ -15,7 +15,7 @@ const 주말 = d => [0, 6].includes(new Date(d + "T00:00:00").getDay());
 export function ReservePage({ app }) {
   const [jobs, setJobs] = useState(null);
   const [worker, setWorker] = useState(undefined);
-  const [f, setF] = useState(() => ({ center: load("center") || CENTERS[0][0], date: "", times: [], interval: 7, finish: "앱", topic: load("topic") }));
+  const [f, setF] = useState(() => ({ center: load("center") || CENTERS[0][0], date: "", times: [], interval: 7, finish: "앱" }));
   const set = (k, v) => setF(x => ({ ...x, [k]: v }));
   const refresh = () => run(async () => {
     setJobs(await q(app.db.from("encar_reserve_jobs").select("*").order("created_at", { ascending: false }).limit(20)));
@@ -30,16 +30,16 @@ export function ReservePage({ app }) {
     if (!f.date) throw new Error("날짜를 고르세요");
     if (주말(f.date)) throw new Error("토·일요일은 엔카 광고장 예약이 안 됩니다");
     if (!f.times.length) throw new Error("노리는 시간대를 하나 이상 고르세요");
-    keep("center", f.center); keep("topic", f.topic.trim());
+    keep("center", f.center);
     await q(app.db.from("encar_reserve_jobs").insert({ center: f.center, res_date: f.date, times: f.times,
-      interval_s: Math.max(3, Number(f.interval) || 7), finish: f.finish, topic: f.topic.trim() || null }));
+      interval_s: Math.max(3, Number(f.interval) || 7), finish: f.finish }));
     set("times", []); refresh();
   }, "감시를 요청했습니다 — 사무실 PC 가 곧 시작합니다");
   const stop = j => run(async () => { await q(app.db.from("encar_reserve_jobs").update({ stop: true }).eq("id", j.id)); refresh(); }, "정지를 요청했습니다");
   const again = j => setF(x => ({ ...x, center: j.center, date: j.res_date >= today() ? j.res_date : "", times: j.times, interval: Number(j.interval_s), finish: j.finish }));
 
   return html`<div class="bar"><h2>광고장 예약</h2>
-      <span class="muted small">마감된 시간대에 취소분이 나오면 사무실 PC 가 바로 잡고(15분) 폰으로 알립니다</span><span class="grow"></span>
+      <span class="muted small">마감된 시간대에 취소분이 나오면 사무실 PC 가 바로 잡고(15분) 웍스 'TierONE 알림' 방으로 직원 모두에게 알립니다</span><span class="grow"></span>
       ${worker === undefined ? "" : 살아있음 ? html`<${Badge} tone="green">감시 PC 연결됨<//>`
         : html`<${Badge} tone="red">감시 PC 꺼짐${연결초 !== null ? ` (${Math.round(연결초 / 60)}분 전)` : ""}<//>`}</div>
     ${worker !== undefined && !살아있음 && html`<p class="note bad">사무실 PC 의 감시 프로그램이 응답하지 않습니다. PC 가 켜져 있는지, 작업 스케줄러 '엔카 광고장 예약 감시'가 돌고 있는지 확인하세요. 요청은 그대로 두면 PC 가 켜질 때 시작합니다.</p>`}
@@ -57,7 +57,6 @@ export function ReservePage({ app }) {
       <div class="fgrid" style="margin-top:12px">
         <${Field} label="마무리" hint=${f.finish === "자동" ? "준비 중 — 엔카 예약 3단계(차량·정보 입력) 화면을 평일에 조사한 뒤 켭니다. 지금 고르면 확보까지만 하고 알립니다." : "잡으면 알림 → 15분 안에 엔카 앱에서 차량·정보 입력하고 확정"}>
           <${Seg} value=${f.finish} onChange=${v => set("finish", v)} options=${[["앱", "엔카 앱에서 마무리"], ["자동", "자동 확정 (준비 중)"]]} /><//>
-        <${Field} label="알림 토픽 (ntfy)" hint="비우면 사무실 기본 알림으로 갑니다"><input value=${f.topic} placeholder="사무실 기본" onInput=${e => set("topic", e.target.value)} /><//>
         <${Field} label="확인 간격 (초)" hint="3초 이상 · 기본 7초"><input inputmode="numeric" value=${f.interval} onInput=${e => set("interval", e.target.value.replace(/[^\d]/g, ""))} /><//>
       </div>
       <div class="bar"><span class="grow"></span><button class="btn primary" onClick=${start}>▶ 감시 시작</button></div>
