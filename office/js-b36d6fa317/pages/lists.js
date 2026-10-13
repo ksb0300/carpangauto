@@ -128,8 +128,8 @@ export function PurchasesPage({ app }) {
     const 예상 = !c.sale && !입력가 && n(c.ad_price) > 0;          // 판매가를 안 넣었으면 엔카 광고가로 '예상'
     const 판매가 = c.sale ? n(c.sale.sale_amount) : 입력가 || (예상 ? n(c.ad_price) : null);
     const 매도비 = c.sale ? n(c.sale.sale_fee) : 기본매도비;
-    const 추가수익 = c.sale ? n(c.sale.installment_income) + (c.settle?.other_revenue || []).reduce((t, x) => t + n(x.금액), 0)
-      : n(price["x" + c.id] ?? c.extra_income);
+    const 입력추가 = n(price["x" + c.id] ?? c.extra_income);          // 리스트에서 넣은 추가수익 (매도 뒤에도 넣을 수 있다)
+    const 추가수익 = c.sale ? n(c.sale.installment_income) + (c.settle?.other_revenue || []).reduce((t, x) => t + n(x.금액), 0) + 입력추가 : 입력추가;
     return { 재반, 총원가, 판매가, 매도비, 추가수익, 예상, 본전가: 총원가 - 매도비 - 추가수익, 마진: 판매가 ? 판매가 + 매도비 + 추가수익 - 총원가 : null };
   };
   const rows = useMemo(() => (d?.cars || []).filter(c => (f.status === "전체" || c.status === f.status) && match(f, c, dateOf(c)))
@@ -160,8 +160,8 @@ export function PurchasesPage({ app }) {
         <td><b>${c.plate}</b></td><td onClick=${e => office && e.stopPropagation()}>${office ? html`<${OwnerPick} app=${app} car=${c} onDone=${reload} />` : dealer[c.dealer_id] || "-"}</td>
         <td class="ellipsis">${c.car_name}</td>${W(c.purchase_amount)}
         <td class="r" title=${`비용 ${won(c.재반항목 - c.해지비용)} + 저당해지비용 ${won(c.해지비용)} + 재고이자 ${won(c.재고이자)}`}>${won(x.재반)}</td>${W(c.상품화비)}<td class="r"><b>${won(x.총원가)}</b></td>
-        <td class="r" onClick=${e => e.stopPropagation()}>${c.sale ? (x.추가수익 ? html`<span title="할부수익 + 정산 기타매출">${won(x.추가수익)}</span>` : html`<span class="muted">-</span>`)
-          : office ? html`<${Money} value=${price["x" + c.id] ?? c.extra_income ?? ""} placeholder="" style="width:84px" onInput=${v => typeField(c, "extra_income", "x" + c.id, v)} onKeyDown=${e => e.key === "Enter" && e.target.blur()} />` : (x.추가수익 ? won(x.추가수익) : "-")}</td>
+        <td class="r" onClick=${e => e.stopPropagation()}>${!office && c.sale ? (x.추가수익 ? won(x.추가수익) : html`<span class="muted">-</span>`)
+          : office ? html`${c.sale && x.추가수익 - n(price["x" + c.id] ?? c.extra_income) ? html`<small class="muted" title="할부수익 + 정산 기타매출">+${won(x.추가수익 - n(price["x" + c.id] ?? c.extra_income))} </small>` : ""}<${Money} value=${price["x" + c.id] ?? c.extra_income ?? ""} placeholder="" style="width:84px" onInput=${v => typeField(c, "extra_income", "x" + c.id, v)} onKeyDown=${e => e.key === "Enter" && e.target.blur()} />` : (x.추가수익 ? won(x.추가수익) : "-")}</td>
         <td class="r" onClick=${e => e.stopPropagation()}>${c.sale ? html`<span title=${`매도금액 (매도비 ${won(x.매도비)} 별도)`}>${won(x.판매가)}</span>`
           : office ? html`<${Money} value=${x.예상 ? 0 : x.판매가 ?? 0} placeholder=${c.ad_price ? won(c.ad_price) : "입력"}
               title=${c.ad_price ? `엔카 광고가 ${won(c.ad_price)}원 (${String(c.ad_price_at || "").slice(5, 10)} 확인) — 비워 두면 이 값으로 예상마진` : "엔카 광고가 없음"}
@@ -331,7 +331,7 @@ function LoansList({ app, tab }) {
       <tbody>${loans.map(l => html`<tr onClick=${() => go(`/car/${l.car.id}/loans`)}><td>${차줄(l.car)}</td><td>${dealer[l.car.dealer_id] || "-"}</td>
         <td>${lender[l.lender_id]}</td>${W(l.잔액)}<td>${l.start_date}</td><td class="r">${l.months}개월</td>
         <td class=${l.status === "진행중" && l.만기 < today() ? "red" : ""}>${l.만기}</td><td><span class=${"badge " + l.할일.tone}>${l.할일.text}</span></td>${W(l.캐피탈일이자)}${W(l.이자)}${hasDealer && W(l.미납, "red")}
-        <td><${LoanAction} app=${app} l=${l} lender=${d.lenders.find(x => x.id === l.lender_id)} onDone=${reload} /></td></tr>`)}</tbody>
+        <td><${LoanAction} app=${app} l=${l} lender=${d.lenders.find(x => x.id === l.lender_id)} car=${l.car} onDone=${reload} /></td></tr>`)}</tbody>
       <tfoot><tr><td colspan="3">${loans.length}건</td><td class="r">${won(sum("잔액"))}</td><td colspan="4"></td><td class="r">${won(sum("캐피탈일이자"))}</td>
         <td class="r">${won(sum("이자"))}</td>${hasDealer && html`<td class="r">${won(sum("미납"))}</td>`}<td></td></tr></tfoot></table></div>`}
     <${LenderLimits} d=${d} />`;
@@ -348,10 +348,11 @@ export function SalesPage({ app }) {
   const office = app.profile.role !== "dealer";
   const dealer = Object.fromEntries(app.dealers.map(x => [x.id, x.name]));
   if (!d) return html`<${Loading} />`;
+  const 입력추가 = c => n(c.extra_income);       // 정산(손익) 화면에서 넣은 추가수익
   const rows = d.cars.filter(c => c.sale && match(f, c, c.sale.sale_date)).sort(sorter(f, (c, s) => ({ 매도일: c.sale.sale_date, 매도금액: n(c.sale.sale_amount), 매입일: c.purchase_date }[s])));
   // 총마진 = 매도금액 + 매도비 + 추가수익(할부수익 + 정산 기타매출) − (매입가 + 비용 전체 + 재고이자) — 차량 리스트 마진과 같은 식
   const yr = c => c.model_year ? String(c.model_year).slice(0, 4) : "";
-  const 마진 = c => n(c.sale.sale_amount) + n(c.sale.sale_fee) + n(c.sale.installment_income) + (c.settle?.other_revenue || []).reduce((t, x) => t + n(x.금액), 0)
+  const 마진 = c => n(c.sale.sale_amount) + n(c.sale.sale_fee) + n(c.sale.installment_income) + (c.settle?.other_revenue || []).reduce((t, x) => t + n(x.금액), 0) + 입력추가(c)
     - n(c.purchase_amount) - c.상품화 - c.재고이자 - c.해지비용;
   const tot = k => rows.reduce((t, c) => t + n(k(c)), 0);
   return html`<div class="bar"><h2>매도차량 리스트</h2><span class="grow"></span>
@@ -365,10 +366,11 @@ export function SalesPage({ app }) {
       { cells: ["", rows.length + "대", tot(c => c.purchase_amount), tot(c => c.재고금융전체), tot(c => c.재고이자), tot(c => c.sale.sale_amount), tot(c => c.sale.sale_fee), tot(c => c.sale.perf_insurance), tot(마진)] }]} />
     ${!rows.length ? html`<${Empty}>조건에 맞는 매도 차량이 없습니다.<//>` : html`<div class="table-wrap"><table class="grid click carlist">
       <thead><tr><th>매입일</th><th>차량번호</th><th>차명</th><th>연식</th><th class="r">키로수</th><th>판매유형</th><th>매도담당</th><th class="r">매입가</th><th class="r">재고금융</th><th class="r" title="매입일부터 매도일(상환일)까지 자동계산">총납입이자</th>
-        <th class="r">상품화비용</th><th class="r">매도금액</th><th class="r">상사매도비</th><th class="r">성능보험료</th><th>매도일</th><th class="r" title="매도금액 + 매도비 + 추가수익(할부수익·기타매출) − 매입가 − 비용 − 재고이자">총마진</th><th title="(일부) 매출 발행일">매출발행</th><th title="(임시) 정산일">정산일</th></tr></thead>
+        <th class="r">상품화비용</th><th class="r">매도금액</th><th class="r">상사매도비</th><th class="r">성능보험료</th><th>매도일</th><th class="r" title="매도금액 + 매도비 + 추가수익(할부수익·기타매출·입력) − 매입가 − 비용 − 재고이자">총마진</th><th title="(일부) 매출 발행일">매출발행</th><th title="(임시) 정산일">정산일</th></tr></thead>
       <tbody>${rows.map(c => html`<tr onClick=${() => go(`/car/${c.id}/sale`)}><td>${c.purchase_date}</td><td><b>${c.plate}</b></td>
         <td class="ellipsis" title=${c.car_name}>${c.car_name}</td><td>${yr(c) || "-"}</td><td class="r">${c.mileage != null ? won(c.mileage) : "-"}</td><td>${c.sale.sale_type}</td>
         <td>${dealer[c.sale.dealer_id || c.dealer_id] || "-"}${c.sale.broker_dealer_id ? html`<br /><span class="muted small">알선 ${dealer[c.sale.broker_dealer_id]}</span>` : ""}</td>
         ${W(c.purchase_amount)}${W(c.재고금융전체)}${W(c.재고이자)}${W(c.상품화)}${W(c.sale.sale_amount)}${W(c.sale.sale_fee)}${W(c.sale.perf_insurance)}
-        <td>${c.sale.sale_date}</td><td class=${"r " + (마진(c) < 0 ? "red" : "blue")}><b>${won(마진(c))}</b></td><td>${c.매출발행일}</td><td>${c.settle ? html`${c.settle.settle_date}${!c.settle.finalized && html` <span class="badge amber">임시</span>`}` : ""}</td></tr>`)}</tbody></table></div>`}`;
+        <td>${c.sale.sale_date}</td>
+        <td class=${"r " + (마진(c) < 0 ? "red" : "blue")}><b>${won(마진(c))}</b></td><td>${c.매출발행일}</td><td>${c.settle ? html`${c.settle.settle_date}${!c.settle.finalized && html` <span class="badge amber">임시</span>`}` : ""}</td></tr>`)}</tbody></table></div>`}`;
 }
