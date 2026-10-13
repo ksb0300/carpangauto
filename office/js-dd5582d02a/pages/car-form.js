@@ -85,7 +85,7 @@ export function CarForm({ app, id }) {
       <${Field} label="차명" req wide hint=${f.fskey ? `통합키: ${f.fskey}` : "대충 적어도 됩니다 (예: 쏘렌토) — 엔카 광고가 올라가면 통합키로 차명이 자동으로 바뀝니다. 아래 목록에서 골라도 됩니다"}>
         <${KeyPicker} app=${app} f=${f} onPick=${k => setF(p => ({ ...p, ...keyPatch(k, p) }))} onText=${v => setF(p => ({ ...p, car_name: v, fskey: null }))} /><//>
       <${Field} label="차량번호" req><input placeholder="12가3456" value=${f.plate} onInput=${setT("plate")} required /><//>
-      <${Field} label="매입일(재고실행일)" req><input type="date" value=${f.purchase_date} onInput=${setT("purchase_date")} required /><//>
+      <${Field} label="매입일 (대금 지급일)" req hint="재고금융 실행일은 재고금융 탭에서 따로 — 재고금융이 없는 재고는 대시보드 '현금 차량 리스트'에 올라갑니다"><input type="date" value=${f.purchase_date} onInput=${setT("purchase_date")} required /><//>
       <${Field} label="매입가" req hint=${f.purchase_amount ? `공급가 ${won(vat.공급가)} / 부가세 ${won(vat.부가세)}` : "부가세 포함"}>
         <${Money} value=${f.purchase_amount} onInput=${setPrice} /><//>
       <${Field} label="매입담당" hint=${!f.dealer_id ? "" : partner ? "대표 — 상사매입비 없음, 손익이 본인 실적" : "딜러 — 상사매입비·딜러 정산 적용"}>

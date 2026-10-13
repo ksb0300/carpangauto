@@ -4,6 +4,7 @@
 // 목록 → 서류 보기·인쇄(PDF 저장).
 import { html, useState, useEffect, Loading, Empty, Badge, run, toast, go, won, Money, Field } from "../ui.js";
 import { q } from "../db.js";
+import { 주행공제 } from "../calc.js";
 
 const 매수자 = "김상혁 (티어원)", 매수자주소 = "부산광역시 기장군 장안읍 반룡산단3로 95, 604호, 605호(경동오토필드)";
 const 조항 = [
@@ -101,6 +102,7 @@ function SignView({ app, id }) {
       <button class="btn" onClick=${check}>${r.checked_at ? "확인 취소" : "확인함"}</button>
       <button class="btn primary" onClick=${() => window.print()}>인쇄·PDF 저장</button>
       ${admin && html`<button class="btn danger" onClick=${remove}>삭제</button>`}</div>
+    ${환불(r) && html`<${환불계산} r=${r} />`}
     ${환불(r) ? html`<${RefundPaper} r=${r} sig=${sig} 날짜=${날짜} TR=${TR} />` : html`<div class="sign-paper">
       <h1>비사업용 사실확인서</h1>
       <div class="sec">※ 매각차량</div>
@@ -125,6 +127,20 @@ function 고지표({ p }) {
       ${TR("성능보험", Number(p.insurance) > 0 ? `가입 (보험료 ${won(p.insurance)}원)` : "미가입")}${TR("차량 키", `${p.keys || 0}개`)}${(p.dest || p.move_km) && TR("인도 장소까지", [p.dest, p.move_km ? `${Number(p.move_km).toLocaleString()}km (TMAP 기준)` : ""].filter(Boolean).join(" · "))}${p.note && TR("특약", p.note)}</table>
     ${costs.length > 0 && html`<div class="sec">환불 때 돌려받지 못하는 비용 (예상)</div>
       <table>${costs.map(c => TR(c[0], won(c[1]) + "원"))}${TR(html`<b>합계</b>`, html`<b>${won(sum)}원</b>`)}</table>`}`;
+}
+
+function 환불계산({ r }) {
+  const p = r.prepared || {};
+  const [반납, set반납] = useState("");
+  const km = Number(String(반납).replace(/[^\d]/g, "")) || 0;
+  const x = km ? 주행공제({ 차량대금: p.price, 인도전: r.mileage, 반납: km, 이동: p.move_km, 기준: r.terms?.km_limit || 300 }) : null;
+  return html`<div class="card no-print"><b>환불 계산</b> <span class="muted small">반납 때 계기판 주행거리를 넣으면 약관 제3조 ③ 주행거리 공제가 나옵니다</span>
+    <div class="row" style="margin-top:8px;gap:8px;flex-wrap:wrap;align-items:center">
+      <input inputmode="numeric" placeholder="반납 때 주행거리 (km)" value=${반납} onInput=${e => set반납(e.target.value)} style="width:180px" />
+      ${x && html`<span>인도 후 주행 <b>${won(x.주행)}km</b> (${won(km)} − 인도 전 ${won(r.mileage)}${p.move_km ? ` − 이동 ${won(p.move_km)}` : ""})
+        · 초과 ${won(x.초과)}km${x.구간 ? ` → ${x.구간}구간` : ""} · <b class=${x.공제 ? "red" : "green"}>공제 ${won(x.공제)}원</b>
+        ${p.price ? html`<span class="muted small"> (차량대금 ${won(p.price)}원 기준)</span>` : html`<span class="red small"> 차량대금 정보 없음</span>`}</span>`}
+    </div></div>`;
 }
 
 /** 3일 환불 약정서 — 고객 사본(/sign/refund)과 같은 양식, 약관은 서명 때 원문(terms) */
