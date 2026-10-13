@@ -4,12 +4,13 @@ import { 대출이자, 미납이자, 대출상태, 연장조건, 해지수수료
 import { 조건요약, 할일, extendLoan, canExtend, RepayButton } from "./lenders.js";
 
 const MONTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 24, 36];
-const addMonths = (d, m) => { const x = new Date(d + "T00:00:00Z"); x.setUTCMonth(x.getUTCMonth() + Number(m)); return x.toISOString().slice(0, 10); };
+const addMonths = (d, m) => { const x = new Date(d + "T00:00:00Z"); if (isNaN(x)) return ""; x.setUTCMonth(x.getUTCMonth() + Number(m)); return x.toISOString().slice(0, 10); };   // 날짜 칸을 고치는 중(빈 값)이면 "" — 예전엔 여기서 오류가 나 화면이 멈췄다
 
 export function LoansTab({ app, car, loans, reload, locked, office }) {
   const [adding, setAdding] = useState(false);
   const edit = office && !locked;
-  const partnerCar = !!app.dealers.find(d => d.id === car.dealer_id)?.partner;   // 대표 차는 딜러 이자·이자마진이 없다
+  // 대표 차, 또는 딜러(대표 아닌 매입담당)가 아직 없으면 딜러 이자·이자마진 칸을 숨긴다
+  const partnerCar = !!app.dealers.find(d => d.id === car.dealer_id)?.partner || !app.dealers.some(d => d.active && !d.partner);
   const loanOf = l => ({ 대출금액: l.amount, 딜러이율: l.dealer_rate, 개월: l.months, 실행일: l.start_date,
     납입이자누계: l.payments.reduce((s, p) => s + Number(p.amount), 0) });
 
@@ -85,9 +86,13 @@ export function LoansTab({ app, car, loans, reload, locked, office }) {
 
 function LoanForm({ app, car, onDone }) {
   const active = app.lenders.filter(l => l.active);
-  const partner = !!app.dealers.find(d => d.id === car.dealer_id)?.partner;     // 대표 차는 딜러 이자가 없다
+  // 대표 차, 또는 딜러가 아직 없으면 딜러이율 칸 없이 0%
+  const partner = !!app.dealers.find(d => d.id === car.dealer_id)?.partner || !app.dealers.some(d => d.active && !d.partner);
   const def = l => ({ months: Number(l?.base_months) || 3, lender_rate: l?.base_rate != null ? String(Number(l.base_rate)) : "", rate_tiers: l?.rate_tiers || null });
-  const [f, setF] = useState({ lender_id: active[0]?.id, kind: "신규", amount: 0, start_date: today(), ...def(active[0]), dealer_rate: partner ? "0" : "", memo: "" });
+  // 기본 금융사: 마지막으로 등록한 금융사 → 없으면 지금까지 가장 많이 쓴 금융사 (목록 맨 앞 '대표자개인대출' 60개월이 잡히던 문제)
+  const last = (() => { try { return localStorage.getItem("loan-last-lender"); } catch { return null; } })();
+  const first = active.find(l => l.id === last) || active.find(l => l.name === "부산은행") || active[0];
+  const [f, setF] = useState({ lender_id: first?.id, kind: "신규", amount: 0, start_date: today(), ...def(first), dealer_rate: partner ? "0" : "", memo: "" });
   const [used, setUsed] = useState({});
   const set = k => v => setF(p => ({ ...p, [k]: v }));
   useEffect(() => { run(async () => {
@@ -101,12 +106,14 @@ function LoanForm({ app, car, onDone }) {
 
   const save = async e => {
     e.preventDefault();
-    if (!f.amount || f.dealer_rate === "") return toast("대출금액과 딜러이율은 꼭 입력하세요. (딜러에게 이자를 안 받으면 0)", "err");
+    if (!f.amount) return toast("대출금액을 입력하세요.", "err");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(f.start_date || "")) return toast("실행일을 입력하세요.", "err");
+    if (!partner && f.dealer_rate === "") return toast("딜러이율을 입력하세요. (딜러에게 이자를 안 받으면 0)", "err");
     if (lender?.credit_limit && f.amount > left && !confirm(`잔여한도(${won(left)})를 넘습니다. 그래도 등록할까요?`)) return;
     const ok = await run(() => q(app.db.from("car_loans").insert({ ...f, car_id: car.id, lender_rate: f.lender_rate === "" ? null : Number(f.lender_rate),
-      dealer_rate: Number(f.dealer_rate), memo: f.memo || null,
+      dealer_rate: Number(f.dealer_rate) || 0, memo: f.memo || null,
       base_months: Number(f.months), ext_rate: lender?.ext_rate ?? null })), "재고금융을 등록했습니다");
-    if (ok) onDone();
+    if (ok) { try { localStorage.setItem("loan-last-lender", f.lender_id); } catch {} onDone(); }
   };
   return html`<form class="subform" onSubmit=${save}>
     <div class="fgrid">
@@ -114,8 +121,8 @@ function LoanForm({ app, car, onDone }) {
         <${Select} value=${f.lender_id} onChange=${v => setF(p => ({ ...p, lender_id: v, ...def(app.lenders.find(l => l.id === v)) }))} options=${active.map(l => [l.id, l.name])} /><//>
       <${Field} label="유형"><${Seg} value=${f.kind} onChange=${set("kind")} options=${["신규", "추가", "연장"]} /><//>
       <${Field} label="대출금액" req><${Money} value=${f.amount} onInput=${set("amount")} /><//>
-      <${Field} label="실행일" req hint=${"만기 " + addMonths(f.start_date, f.months)}><input type="date" value=${f.start_date} onInput=${e => set("start_date")(e.target.value)} /><//>
-      <${Field} label="대출기간(개월)" req><${Select} value=${f.months} onChange=${v => set("months")(Number(v))} options=${MONTHS.map(m => [m, m + "개월"])} /><//>
+      <${Field} label="실행일" req hint=${addMonths(f.start_date, f.months) ? "만기 " + addMonths(f.start_date, f.months) : "날짜를 고르세요"}><input type="date" value=${f.start_date} onInput=${e => set("start_date")(e.target.value)} /><//>
+      <${Field} label="대출기간(개월)" req><${Select} value=${f.months} onChange=${v => set("months")(Number(v))} options=${[...new Set([...MONTHS, Number(f.months)])].sort((a, b) => a - b).map(m => [m, m + "개월"])} /><//>
       <${Field} label="캐피탈이율(연 %)" hint=${f.lender_rate ? `월 ${won(cp.월이자)} · 총 ${won(cp.총이자)}` : "재고금융사가 상사에 받는 이율"}>
         <input inputmode="decimal" value=${f.lender_rate} onInput=${e => set("lender_rate")(e.target.value)} /><//>
       ${!partner && html`<${Field} label="딜러이율(연 %)" req hint=${f.dealer_rate ? `일 ${won(dl.일이자)} · 월 ${won(dl.월이자)} · 총 ${won(dl.총이자)}` : "딜러에게 적용하는 이율"}>
