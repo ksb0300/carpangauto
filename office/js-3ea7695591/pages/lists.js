@@ -10,7 +10,7 @@ import { 대출상태 } from "../calc.js";
 
 const n = v => Math.round(Number(v) || 0);
 const days = (a, b = today()) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5);
-const addMonths = (d, m) => { const x = new Date(d + "T00:00:00Z"); x.setUTCMonth(x.getUTCMonth() + Number(m)); return x.toISOString().slice(0, 10); };
+const addMonths = (d, m) => { const x = new Date(d + "T00:00:00Z"); if (isNaN(x)) return ""; x.setUTCMonth(x.getUTCMonth() + Number(m)); return x.toISOString().slice(0, 10); };   // 날짜 칸을 고치는 중(빈 값)이면 "" — 예전엔 여기서 오류가 나 화면이 멈췄다
 
 // 상품화비용 = 수리비 + 도색광택 + 탁송유류 (예전 항목 이름도 같이). 나머지 비용(취득세·광고비·수수료·성능비·기타)은 재반비용.
 const 상품화항목 = new Set(["수리비", "도색광택", "탁송유류", "판금도장비", "기능수리/상품화", "광택/세차", "매입탁송비", "주유대"]);
