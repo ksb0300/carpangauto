@@ -9,7 +9,7 @@
 <link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="stylesheet" href="/assets/style.css?v=8bb9c7a9">
-<link rel="stylesheet" href="/sign/sign.css?v=1">
+<link rel="stylesheet" href="/sign/sign.css?v=2">
 </head>
 <body>
 
@@ -54,7 +54,9 @@
         <label>인도 때 안내 사항</label>
         <p class="hint" style="margin:0 0 12px">판매 담당자가 적은 내용입니다. 다른 점이 있으면 서명하기 전에 담당자에게 말씀해 주세요.</p>
         <div id="notice"></div>
-        <a class="ghostbtn perfbtn" id="perfBtn" target="_blank" rel="noopener" hidden>성능·상태점검기록부 보기</a>
+        <button type="button" class="ghostbtn perfbtn" id="perfBtn" hidden>성능·상태점검기록부 보기</button>
+        <div id="perfImgs" class="perfimgs" hidden></div>
+        <a id="perfPdf" class="hint perfpdf" target="_blank" rel="noopener" hidden>PDF 파일로 받기</a>
       </div>
 
       <div class="card">
@@ -110,6 +112,37 @@ var $ = function (id) { return document.getElementById(id); };
 var T = null;      // 서버에서 받은 약관 { ver, title, clauses, km_limit, seller... }
 var P = null;      // 사무실이 채운 고지 사항 (링크 ?t= 로 열었을 때) { price, keys, lien, insurance, costs, note }
 var TOKEN = new URLSearchParams(location.search).get("t") || "";
+var PERF = null;   // 성능·상태점검기록부 PDF 주소 (1시간짜리)
+/* 성능지 PDF 를 화면에 그림으로 — 다운로드 없이 바로 본다 (pdf.js) */
+function 성능지보기() {
+  var box = $("perfImgs"), btn = $("perfBtn");
+  if (box.dataset.done) { box.hidden = !box.hidden; btn.textContent = box.hidden ? "성능·상태점검기록부 보기" : "성능·상태점검기록부 접기"; return; }
+  btn.disabled = true; btn.textContent = "불러오는 중…";
+  var load = window.pdfjsLib ? Promise.resolve() : new Promise(function (ok, bad) {
+    var s = document.createElement("script"); s.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"; s.onload = ok; s.onerror = bad; document.head.appendChild(s);
+  });
+  load.then(function () {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    return pdfjsLib.getDocument(PERF).promise;
+  }).then(function (doc) {
+    var pages = []; for (var i = 1; i <= doc.numPages; i++) pages.push(i);
+    return pages.reduce(function (p, n) {
+      return p.then(function () { return doc.getPage(n); }).then(function (page) {
+        var vp = page.getViewport({ scale: 2 }), c = document.createElement("canvas");
+        c.width = vp.width; c.height = vp.height;
+        return page.render({ canvasContext: c.getContext("2d"), viewport: vp }).promise.then(function () {
+          var img = new Image(); img.src = c.toDataURL("image/jpeg", 0.85); img.alt = "성능·상태점검기록부 " + n + "쪽"; box.appendChild(img);
+        });
+      });
+    }, Promise.resolve());
+  }).then(function () {
+    box.dataset.done = "1"; box.hidden = false; $("perfPdf").hidden = false;
+    btn.disabled = false; btn.textContent = "성능·상태점검기록부 접기";
+  }).catch(function () {
+    btn.disabled = false; btn.textContent = "성능·상태점검기록부 보기 (PDF 열기)";
+    window.open(PERF, "_blank");
+  });
+}
 function won(n) { return Number(n || 0).toLocaleString() + "원"; }
 /* 인도 때 안내 사항 표 (고객 화면·사본 공통) */
 function 고지html(p) {
@@ -127,6 +160,7 @@ function 고지html(p) {
 function 비용합계(p) { return (p.costs || []).reduce(function (a, c) { return a + (Number(c[1]) || 0); }, 0); }
 var pad = SignPad($("pad"), function (ink) { $("padHint").textContent = ink ? "서명됨" : "서명 전"; });
 $("clear").onclick = function () { pad.clear(); };
+$("perfBtn").onclick = 성능지보기;
 
 function esc(v) { return String(v == null ? "" : v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
 function p2(n) { return String(n).padStart(2, "0"); }
@@ -160,7 +194,7 @@ fetch(API + (TOKEN ? "?t=" + encodeURIComponent(TOKEN) : "")).then(function (r) 
     ["carNo", "carName", "km"].forEach(function (i) { $(i).readOnly = true; $(i).classList.add("locked"); });
     $("notice").innerHTML = 고지html(P);
     $("noticeCard").hidden = false; $("agreeNotice").hidden = false;
-    if (res.perf) { $("perfBtn").href = res.perf; $("perfBtn").hidden = false; }
+    if (res.perf) { PERF = res.perf; $("perfBtn").hidden = false; $("perfPdf").href = res.perf; }
     var sum = 비용합계(P);
     if (sum) $("agree2Text").innerHTML = "환불하더라도 위 <b>돌려받지 못하는 비용(예상 " + won(sum) + ")</b>과 제3조의 비용은 매수인이 부담함을 확인했습니다.";
   }
