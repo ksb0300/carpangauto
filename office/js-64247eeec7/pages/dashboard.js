@@ -38,7 +38,8 @@ export function Dashboard({ app }) {
   const pay = id => d.payments.filter(p => p.loan_id === id).reduce((a, p) => a + Number(p.amount), 0);
   const act = d.loans.filter(l => l.status === "진행중" && car[l.car_id]);
   // 금융사 조건(기본만기·연장 가능 여부)으로 2주 안에 연장하거나 갚아야 할 것
-  const 챙길 = act.map(l => ({ l, h: 할일(l, d.lenders.find(x => x.id === l.lender_id), t) })).filter(x => ["red", "amber"].includes(x.h.tone));
+  const 챙길 = act.map(l => ({ l, h: car[l.car_id]?.status === "매도" ? { text: "매도됨 · 상환 처리", tone: "red" } : 할일(l, d.lenders.find(x => x.id === l.lender_id), t) }))
+    .filter(x => ["red", "amber"].includes(x.h.tone));
   const 현금차 = live.filter(c => c.status === "재고" && !act.some(l => l.car_id === c.id)).map(c => {
     const done = d.loans.filter(l => l.car_id === c.id && l.status === "상환완료").sort((a, b) => String(b.repaid_date).localeCompare(String(a.repaid_date)))[0];
     return { c, 사유: done ? `상환완료 ${done.repaid_date || ""} · ${d.lenders.find(x => x.id === done.lender_id)?.name || ""}` : "재고금융 없음",
@@ -119,7 +120,7 @@ export function Dashboard({ app }) {
 ${hasDealer && html`      <a class="stat" href="#/settlements"><span>이번 달 딜러 정산 지급</span><b>${won(s.정산.실지급)}</b><small>${s.정산.건수}건 · 원천징수 ${won(s.정산.세액)}</small></a>`}</div></div>` },
     loans_todo: { title: "재고금융 연장·상환 챙길 것", size: "half", render: () => card("재고금융 연장·상환 챙길 것",
       차표(챙길.map(x => ({ ...x, c: car[x.l.car_id] })), ["차량", "", "할 일", "금융사", "대출"],      // 버튼은 차량 바로 옆 — 위젯이 좁아도 안 가려지게
-        x => html`<td class="nowrap">${차줄(x.c)}</td><td><${LoanAction} app=${app} l=${x.l} lender=${d.lenders.find(l => l.id === x.l.lender_id)} onDone=${load} /></td>
+        x => html`<td class="nowrap">${차줄(x.c)}</td><td><${LoanAction} app=${app} l=${x.l} lender=${d.lenders.find(l => l.id === x.l.lender_id)} car=${x.c} onDone=${load} /></td>
           <td class="wrap"><span class=${"badge wrap " + x.h.tone}>${x.h.text}</span></td><td>${d.lenders.find(l => l.id === x.l.lender_id)?.name}</td><td class="r">${won(x.l.amount)}</td>`, "loans"),
       html`<a class="btn sm" href="#/loans/lenders">금융사별 현황</a>`) },
     cash_cars: { title: "현금 차량 리스트 (재고금융 없는 재고)", size: "half", render: () => card(`현금 차량 리스트 (재고금융 없음) — ${현금차.length}대 · ${won(현금차.reduce((a, x) => a + Number(x.c.purchase_amount), 0))}원`,

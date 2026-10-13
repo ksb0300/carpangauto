@@ -164,7 +164,10 @@ export function 기간이자(대출금액, 연이율, 실행일, 종료일, from
   const s = [실행일, from].sort()[1], e = [종료일 || to, to].sort()[0];
   if (!s || !e || s > e) return 0;
   const days = Math.round((Date.parse(e + "T00:00:00Z") - Date.parse(s + "T00:00:00Z")) / 86_400_000) + 1;
-  return Math.round((Number(대출금액) || 0) * ((Number(연이율) || 0) / 100) / 365 * days);
+  // 은행 방식: 하루 이율을 소수 9자리에서 버리고, 원금 × 하루 이율 × 일수를 원 단위 버림
+  // (2026-10-12 부산은행 상환 2건 출금액과 원 단위까지 일치 — 31,986,924 / 34,967,461)
+  const 일이율 = Math.floor((Number(연이율) || 0) / 100 / 365 * 1e9 + 1e-6) / 1e9;   // + 1e-6: 소수 오차(7.3% → 0.000199999…) 보정
+  return Math.floor((Number(대출금액) || 0) * 일이율 * days + 1e-6);
 }
 
 /**
@@ -204,7 +207,8 @@ const 일수 = (a, b) => Math.round((Date.parse(b + "T00:00:00Z") - Date.parse(a
 
 /** 대출 구간: 기본(실행일 ~ 연장 전날, 원금 전액·기본 이율) + 연장(연장 시작 ~, 먼저 갚은 원금 뺀 잔액·연장 이율) */
 export function 대출구간(l) {
-  const 끝 = l.repaid_date || null;
+  // 상환일 당일은 이자를 안 센다 — 은행은 실행일부터 상환일 전날까지 (2026-10-12 부산은행 상환 2건 출금액과 원 단위까지 맞춰 확인)
+  const 끝 = l.repaid_date ? 전날(l.repaid_date) : null;
   // 기간별 이율 (키움: 1~2개월 6.7% / 3~4개월 7.7% / 5~6개월 8.8%) — [[몇 개월까지, 연 %], …], 마지막 단계는 그 뒤로도 이어진다
   const tiers = Array.isArray(l.rate_tiers) ? l.rate_tiers : null;
   if (tiers?.length && !l.ext_start) {
@@ -225,7 +229,7 @@ export function 대출구간(l) {
   return segs;
 }
 
-/** [from, to] 기간에 걸친 재고금융 이자 (구간별 원금·이율, 양끝 포함 일할) */
+/** [from, to] 기간에 걸친 재고금융 이자 (구간별 원금·이율, 날짜 단위 일할 — 상환일 당일은 빠짐) */
 export function 재고금융이자(l, from, to) {
   return 대출구간(l).reduce((t, g) => t + 기간이자(g.원금, g.이율, g.from, g.to, from, to), 0);
 }
@@ -278,10 +282,10 @@ export function 엔카믿고수수료(판매가) {
   return Math.round(176_000 + (p - 10_000_000) * 0.0033);
 }
 
-/** 환불 때 주행거리 공제 — 약관 제3조 ③ (300km 넘은 거리 100km마다 차량대금 0.3%, 나머지는 100km로 셈, 최소 5만원) */
+/** 환불 때 주행거리 공제 — 약관 제3조 제2항 1호 (300km 까지 0, 그 뒤 100km 구간마다 차량대금 0.3% — 300~400km 1구간, 400~500km 2구간 …) */
 export function 주행공제({ 차량대금, 인도전, 반납, 이동 = 0, 기준 = 300 }) {
   const 주행 = Math.max(0, (Number(반납) || 0) - (Number(인도전) || 0) - (Number(이동) || 0));
   const 초과 = Math.max(0, 주행 - 기준), 구간 = Math.ceil(초과 / 100);
-  const 공제 = 초과 > 0 ? Math.max(50000, 구간 * Math.round((Number(차량대금) || 0) * 0.003)) : 0;
+  const 공제 = 구간 * Math.round((Number(차량대금) || 0) * 0.003);
   return { 주행, 초과, 구간, 공제 };
 }
