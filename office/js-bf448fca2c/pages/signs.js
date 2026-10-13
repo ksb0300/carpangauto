@@ -122,7 +122,7 @@ function 고지표({ p }) {
   const costs = (p.costs || []).filter(c => Number(c[1]) > 0), sum = costs.reduce((a, c) => a + Number(c[1]), 0);
   const TR = (k, v) => html`<tr><th>${k}</th><td>${v}</td></tr>`;
   return html`<table>${TR("판매금액", won(p.price) + "원")}${TR("성능·상태점검기록부", "교부함")}${TR("압류·저당", p.lien || "없음")}
-      ${TR("성능보험", Number(p.insurance) > 0 ? `가입 (보험료 ${won(p.insurance)}원)` : "미가입")}${TR("차량 키", `${p.keys || 0}개`)}${p.note && TR("특약", p.note)}</table>
+      ${TR("성능보험", Number(p.insurance) > 0 ? `가입 (보험료 ${won(p.insurance)}원)` : "미가입")}${TR("차량 키", `${p.keys || 0}개`)}${(p.dest || p.move_km) && TR("인도 장소까지", [p.dest, p.move_km ? `${Number(p.move_km).toLocaleString()}km (TMAP 기준)` : ""].filter(Boolean).join(" · "))}${p.note && TR("특약", p.note)}</table>
     ${costs.length > 0 && html`<div class="sec">환불 때 돌려받지 못하는 비용 (예상)</div>
       <table>${costs.map(c => TR(c[0], won(c[1]) + "원"))}${TR(html`<b>합계</b>`, html`<b>${won(sum)}원</b>`)}</table>`}`;
 }
@@ -135,7 +135,7 @@ function RefundPaper({ r, sig, 날짜, TR }) {
   return html`<div class="sign-paper">
     <h1>${t.title}</h1>
     <div class="sec">※ 매매 차량</div>
-    <table>${TR("차량번호", r.car_no)}${TR("차명", r.car_name)}${TR("주행거리", r.mileage != null ? `${Number(r.mileage).toLocaleString()} km (인도 때 계기판)` : "-")}${TR("환불기한", 기한)}</table>
+    <table>${TR("차량번호", r.car_no)}${TR("차명", r.car_name)}${TR("주행거리", r.mileage != null ? `${Number(r.mileage).toLocaleString()} km (인도 전 계기판)` : "-")}${TR("환불기한", 기한)}</table>
     ${r.prepared && html`<div class="sec">※ 인도 때 안내 사항</div><${고지표} p=${r.prepared} />`}
     <p>매도인 ${t.seller}(이하 '매도인')과 매수인은 위 차량의 매매에 관하여 다음과 같이 3일 환불을 약정합니다.</p>
     <ol class="terms">${t.clauses.map(([h, b], i) => html`<li><b>제${i + 1}조 (${h})</b><br />${b.split(String.fromCharCode(10)).map((x, j) => html`${j ? html`<br />` : ""}${x}`)}</li>`)}</ol>
@@ -170,17 +170,17 @@ export function RefundPrep({ app, car, sale, shareLink, onClose }) {
       q(app.db.from("car_loans").select("id").eq("car_id", car.id).eq("status", "진행중")),
       q(app.db.from("car_inspections").select("insur_price,recept_date").eq("car_id", car.id).order("recept_date", { ascending: false }).limit(1))]);
     const price = Number(sale?.sale_amount || car.ad_price || car.list_price || 0), insurance = Number(ins[0]?.insur_price || 0);
-    setF({ price, mileage: car.mileage ?? "", keys: 2, insurance, note: "",
+    setF({ price, mileage: car.mileage ?? "", keys: 2, insurance, note: "", dest: "", move_km: "",
       lien: loans.length ? "재고금융 저당 있음 — 대금을 받은 뒤 해지" : "없음",
-      이전비: Math.floor(price * 0.075), 매도비: 440000, 성능보험료: insurance, 탁송비: 0 });
+      매도비: 440000, 성능보험료: insurance, 탁송비: 0 });
   }); }, [car.id]);
   const url = t => `${location.origin}/sign/refund/?t=${t}`;
   const make = () => run(async () => {
     if (!f.price) throw new Error("판매금액을 넣어 주세요");
-    if (f.mileage === "" || f.mileage == null) throw new Error("인도 때 주행거리를 넣어 주세요");
+    if (f.mileage === "" || f.mileage == null) throw new Error("인도 전 주행거리를 넣어 주세요");
     const token = crypto.randomUUID().replace(/-/g, "");
-    const prepared = { price: f.price, keys: Number(f.keys) || 0, lien: f.lien.trim() || "없음", insurance: Number(f.insurance) || 0, note: f.note.trim(),
-      costs: [["이전등록비 (취득세·공채·대행 등)", f.이전비], ["매도비", f.매도비], ["성능보험료", f.성능보험료], ["탁송비", f.탁송비]].filter(c => Number(c[1]) > 0) };
+    const prepared = { price: f.price, keys: Number(f.keys) || 0, lien: f.lien.trim() || "없음", insurance: Number(f.insurance) || 0, note: f.note.trim(), dest: f.dest.trim(), move_km: Number(f.move_km) || 0,
+      costs: [["매도비", f.매도비], ["성능보험료", f.성능보험료], ["탁송비", f.탁송비]].filter(c => Number(c[1]) > 0) };
     await q(app.db.from("sign_docs").insert({ kind: "3일환불", car_id: car.id, car_no: car.plate, car_name: car.car_name, mileage: Number(String(f.mileage).replace(/[^\d]/g, "")),
       prepared, token, prepared_by: app.user.id, signed_at: null, agreed: false }));
     load();
@@ -196,9 +196,10 @@ export function RefundPrep({ app, car, sale, shareLink, onClose }) {
       <td class="r">${d.signature_path ? html`<a class="btn sm" href=${"#/signs/" + d.id}>약정서 보기</a>`
         : html`<button class="btn sm" onClick=${() => shareLink(url(d.token), `${car.plate} 3일 환불 약정서`)}>링크 다시 보내기</button>`}</td></tr>`)}</tbody></table>`}
     ${!f ? html`<${Loading} />` : html`<div class="fgrid">
-      <${Field} label="판매금액 (차량대금)"><${Money} value=${f.price} onInput=${v => setF(x => ({ ...x, price: v,
-        이전비: x.이전비 === Math.floor(x.price * 0.075) ? Math.floor(v * 0.075) : x.이전비 }))} /><//>
-      <${Field} label="인도 때 주행거리 (km)"><input inputmode="numeric" value=${f.mileage} onInput=${e => set("mileage", e.target.value.replace(/[^\d]/g, ""))} /><//>
+      <${Field} label="판매금액 (차량대금)"><${Money} value=${f.price} onInput=${v => set("price", v)} /><//>
+      <${Field} label="인도 전 주행거리 (km)" hint="매장에서 출발하기 전 계기판"><input inputmode="numeric" value=${f.mileage} onInput=${e => set("mileage", e.target.value.replace(/[^\d]/g, ""))} /><//>
+      <${Field} label="인도 장소 (있으면)"><input value=${f.dest} placeholder="예: 고객 자택 (부산 해운대구)" onInput=${e => set("dest", e.target.value)} /><//>
+      <${Field} label="인도 장소까지 거리 (TMAP, km)" hint="환불 조건 주행거리에서 빼는 거리"><input inputmode="numeric" value=${f.move_km} onInput=${e => set("move_km", e.target.value.replace(/[^\d]/g, ""))} /><//>
       <${Field} label="차량 키 (개)"><input inputmode="numeric" value=${f.keys} onInput=${e => set("keys", e.target.value.replace(/[^\d]/g, ""))} /><//>
       <${Field} label="압류·저당"><input value=${f.lien} onInput=${e => set("lien", e.target.value)} /><//>
       ${N("insurance", "성능보험료", "0이면 '미가입'으로 나옵니다")}
@@ -206,7 +207,6 @@ export function RefundPrep({ app, car, sale, shareLink, onClose }) {
     </div>
     <div class="sec small"><b>환불 때 돌려받지 못하는 비용 (예상)</b> — 0원인 항목은 약정서에 안 나옵니다</div>
     <div class="fgrid">
-      ${N("이전비", "이전등록비 (취득세·공채·대행)", `판매금액의 7.5% = ${won(Math.floor(f.price * 0.075))}원 (견적서와 같은 기준)`)}
       ${N("매도비", "매도비")}${N("성능보험료", "성능보험료")}${N("탁송비", "탁송비")}
     </div>
     <div class="bar"><span class="grow"></span><button class="btn primary" onClick=${make}>링크 만들어 보내기</button></div>`}
