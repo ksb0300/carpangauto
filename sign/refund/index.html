@@ -199,7 +199,7 @@ fetch(API + (TOKEN ? "?t=" + encodeURIComponent(TOKEN) : "")).then(function (r) 
     ["carNo", "carName", "km"].forEach(function (i) { $(i).readOnly = true; $(i).classList.add("locked"); });
     $("notice").innerHTML = 고지html(P);
     $("noticeCard").hidden = false; $("agreeNotice").hidden = false;
-    if (res.perf) { PERF = res.perf; $("perfBtn").hidden = false; $("perfPdf").href = res.perf; }
+    if (res.perf) { PERF = res.perf; $("perfBtn").hidden = false; $("perfPdf").href = res.perf; $("perfPdf").hidden = false; }   // 그림이 늦게 뜨면 PDF 로라도
     var sum = 비용합계(P);
   }
   $("clauses").innerHTML = 조항html(T, res.deadline);
