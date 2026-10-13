@@ -64,7 +64,9 @@
   .sf .sec{font-weight:700;font-size:13.5px;margin:16px 0 6px;color:var(--tx)}
   .perfbtn{display:block;width:100%;text-align:center;text-decoration:none;margin-top:4px;border-color:var(--pp)!important;color:#fff!important}
   .perfimgs{margin-top:12px;display:flex;flex-direction:column;gap:10px}
-  .perfimgs img{width:100%;border-radius:8px;background:#fff}
+  .perfimgs .pimg{overflow-x:auto;border-radius:8px;background:#fff;cursor:zoom-in}
+  .perfimgs .pimg img{width:100%;display:block}
+  .perfimgs .pimg.zoom{cursor:zoom-out} .perfimgs .pimg.zoom img{width:260%;max-width:none}
   .perfpdf{display:block;text-align:center;margin-top:8px;color:var(--tx3)}
   @media print{
     body *{visibility:hidden} .paper,.paper *{visibility:visible}

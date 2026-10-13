@@ -9,7 +9,7 @@
 <link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="stylesheet" href="/assets/style.css?v=8bb9c7a9">
-<link rel="stylesheet" href="/sign/sign.css?v=2">
+<link rel="stylesheet" href="/sign/sign.css?v=3">
 </head>
 <body>
 
@@ -131,12 +131,17 @@ function 성능지보기() {
         var vp = page.getViewport({ scale: 2 }), c = document.createElement("canvas");
         c.width = vp.width; c.height = vp.height;
         return page.render({ canvasContext: c.getContext("2d"), viewport: vp }).promise.then(function () {
-          var img = new Image(); img.src = c.toDataURL("image/jpeg", 0.85); img.alt = "성능·상태점검기록부 " + n + "쪽"; box.appendChild(img);
+          var img = new Image(); img.src = c.toDataURL("image/jpeg", 0.85); img.alt = "성능·상태점검기록부 " + n + "쪽";
+          var w = document.createElement("div"); w.className = "pimg"; w.appendChild(img);
+          w.onclick = function () { w.classList.toggle("zoom"); };   // 누르면 크게 (옆으로 밀어 보기)
+          box.appendChild(w);
         });
       });
     }, Promise.resolve());
   }).then(function () {
     box.dataset.done = "1"; box.hidden = false; $("perfPdf").hidden = false;
+    var tip = document.createElement("p"); tip.className = "hint"; tip.style.textAlign = "center"; tip.textContent = "그림을 누르면 크게 보입니다 (옆으로 밀어 보기) · 한 번 더 누르면 원래대로";
+    box.insertBefore(tip, box.firstChild);
     btn.disabled = false; btn.textContent = "성능·상태점검기록부 접기";
   }).catch(function () {
     btn.disabled = false; btn.textContent = "성능·상태점검기록부 보기 (PDF 열기)";
