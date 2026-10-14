@@ -70,6 +70,14 @@ button, .bar, .pages { -webkit-user-select: none; user-select: none; -webkit-tou
 .menu { position: absolute; right: 10px; top: 8px; z-index: 5; background: var(--bar); border-radius: 14px; padding: 10px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 10px 30px rgba(0,0,0,.5); min-width: 230px; }
 .menu .tb { width: 100%; text-align: left; }
 .menu small { color: var(--sub); padding: 0 4px; }
+/* 웍스로 상품화 지시 */
+#works { position: fixed; inset: 0; z-index: 25; background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.wk { background: var(--bar); border-radius: 18px; padding: 22px; width: min(460px, 100%); display: flex; flex-direction: column; gap: 12px; }
+.wk h2 { margin: 0; font-size: 20px; } .wk p { margin: 0; color: var(--sub); font-size: 14px; line-height: 1.6; }
+.wk label { display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 600; color: var(--sub); }
+.wk input, .wk textarea { font: inherit; font-size: 17px; color: #111; background: #fff; border: 0; border-radius: 10px; padding: 12px; }
+.wk textarea { min-height: 96px; resize: vertical; }
+.wk .row { display: flex; gap: 8px; } .wk .row .tb { flex: 1; }
 /* 연속 촬영 */
 #cam { position: fixed; inset: 0; z-index: 30; background: #000; display: flex; flex-direction: column; }
 #cam video { flex: 1; min-height: 0; width: 100%; object-fit: contain; background: #000; }
@@ -128,6 +136,8 @@ button, .bar, .pages { -webkit-user-select: none; user-select: none; -webkit-tou
       <small>카톡·문자·파일로 보냅니다</small>
       <button class="tb" id="sharePdf">PDF 한 파일로</button>
       <button class="tb" id="shareJpg">사진(JPG)으로</button>
+      <small style="margin-top:4px">사무실</small>
+      <button class="tb" id="worksBtn">웍스로 상품화 지시 (은수 님)</button>
     </div>
     <div class="menu" id="photoMenu" hidden style="top:auto;bottom:8px;left:10px;right:auto">
       <small>검수지 뒤에 사진 쪽으로 붙습니다</small>
@@ -138,6 +148,22 @@ button, .bar, .pages { -webkit-user-select: none; user-select: none; -webkit-tou
   <div class="pages" id="pages"></div>
 </section>
 <input type="file" id="fileIn" accept="image/*" multiple hidden>
+<section id="works" hidden>
+  <form class="wk" id="wkLogin" hidden>
+    <h2>업무관리 로그인</h2>
+    <p>웍스로 보내려면 처음 한 번 업무관리 계정으로 로그인해 주세요. 이 기기에 기억됩니다.</p>
+    <label>이메일<input type="email" id="wkEmail" autocomplete="username" required></label>
+    <label>비밀번호<input type="password" id="wkPw" autocomplete="current-password" required></label>
+    <div class="row"><button type="button" class="tb" data-close>취소</button><button class="tb pri" id="wkLoginBtn">로그인</button></div>
+  </form>
+  <form class="wk" id="wkSend" hidden>
+    <h2>웍스로 상품화 지시</h2>
+    <p id="wkInfo"></p>
+    <label>마감일<input type="date" id="wkDue"></label>
+    <label>지시 내용<textarea id="wkNote" placeholder="예) 앞범퍼 판금·도색, 실내 클리닝, 타이어 앞 2개 교체"></textarea></label>
+    <div class="row"><button type="button" class="tb" data-close>취소</button><button class="tb pri" id="wkSendBtn">은수 님께 보내기</button></div>
+  </form>
+</section>
 <section id="cam" hidden>
   <video id="camVideo" playsinline muted autoplay></video>
   <div class="cam-top"><button class="tb" id="camCancel">취소</button><span class="cam-count" id="camCount">0장</span></div>
@@ -257,7 +283,7 @@ function drawSheet(c) {
   c.fillStyle = "#16161a"; c.font = `800 21px ${F}`; c.fillText("종합", 40, 1110);
   c.font = `600 18px ${F}`; c.fillText("사고 판단", 120, 1110);
   [["무사고", 240], ["단순교환", 370], ["사고", 520]].forEach(([t, x]) => { check(c, x, 1091); c.fillStyle = "#1d1d22"; c.fillText(t, x + 34, 1110); });
-  box(c, 40, 1126, 450, 78, "예상 상품화 비용", "원"); box(c, 510, 1126, 450, 78, "제시 매입가", "원");
+  box(c, 40, 1126, 450, 78, "예상 상품화 비용", "만원"); box(c, 510, 1126, 450, 78, "제시 매입가", "만원");
   box(c, 40, 1214, 920, 150, "메모");
   c.lineWidth = 1; c.strokeStyle = "#e5e5ea"; [1262, 1300, 1338].forEach(ly => { c.beginPath(); c.moveTo(56, ly); c.lineTo(944, ly); c.stroke(); });
   c.fillStyle = "#9a9aa3"; c.font = `500 14px ${F}`; c.fillText("TierONE (티어원) · 051-711-7818 · 부산광역시 기장군 장안읍 반룡산단3로 95 (경동오토필드)", 40, 1394);
@@ -436,7 +462,7 @@ function drawP2(c) {
   title(c, "판정", 40, y + 24, 21);
   [["매입", 130], ["조건부 매입", 250], ["보류", 410], ["매입 안 함", 520]].forEach(([t, x]) => { check(c, x, y + 4, 24); c.fillStyle = "#1d1d22"; c.font = `600 17px ${F}`; c.fillText(t, x + 32, y + 24); });
   y += 44;
-  box(c, 40, y, 450, 74, "예상 상품화 비용", "원"); box(c, 510, y, 450, 74, "제시 매입가", "원");
+  box(c, 40, y, 450, 74, "예상 상품화 비용", "만원"); box(c, 510, y, 450, 74, "제시 매입가", "만원");
   y += 86;
   box(c, 40, y, 920, 1384 - y, "메모 (주의·불량 내용, 고객 요청, 협의)");
   c.lineWidth = 1; c.strokeStyle = "#e5e5ea";
@@ -664,6 +690,62 @@ $("fileIn").onchange = async () => {
     } catch { toast("넣을 수 없는 사진이 있습니다"); }
   }
   afterPhotos(n);
+};
+
+/* ───────── 웍스로 상품화 지시 ─────────
+   업무관리 계정(공동대표·사무장)으로 로그인 → 검수지 PDF 를 업무관리 저장소(car-files/inspect/…)에 올리고
+   서버 함수 works-send 가 웍스 봇으로 은수 님께 요약 + PDF 를 보낸다 (웍스 '할 일' 등록은 권한이 켜져 있을 때만). */
+const SB_URL = "https://fwqtyyjhfewpxihpaasu.supabase.co", SB_KEY = "sb_publishable_op7s3siOFMjUk99QfFbVZw_mmRBmZl1";
+let sb = null;
+async function supa() {
+  if (sb) return sb;
+  const { createClient } = await import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/+esm");
+  sb = createClient(SB_URL, SB_KEY, { auth: { persistSession: true, autoRefreshToken: true, storageKey: "tierone-inspect-auth" } });
+  return sb;
+}
+const addDays = n => { const d = new Date(Date.now() + n * 864e5); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+async function openWorks() {
+  $("shareMenu").hidden = true;
+  if (!navigator.onLine) return toast("인터넷이 연결돼야 웍스로 보낼 수 있습니다");
+  let session = null;
+  try { session = (await (await supa()).auth.getSession()).data.session; } catch { return toast("연결이 안 됩니다. 잠시 후 다시 해 주세요"); }
+  $("works").hidden = false; $("wkLogin").hidden = !!session; $("wkSend").hidden = !session;
+  if (session) showWorksForm(); else setTimeout(() => $("wkEmail").focus(), 50);
+}
+function showWorksForm() {
+  const f = sheet.fields || {};
+  $("wkInfo").textContent = `${f.plate || "차량번호 미입력"}${f.km ? " · " + kmText(f.km) + "km" : ""} — 검수지 ${sheet.pages.length}쪽을 PDF 로 붙여 보냅니다.`;
+  if (!$("wkDue").value) $("wkDue").value = addDays(2);
+  $("wkLogin").hidden = true; $("wkSend").hidden = false;
+}
+$("worksBtn").onclick = openWorks;
+document.querySelectorAll("#works [data-close]").forEach(b => b.onclick = () => { $("works").hidden = true; });
+$("wkLogin").onsubmit = async e => {
+  e.preventDefault(); $("wkLoginBtn").disabled = true;
+  const { error } = await (await supa()).auth.signInWithPassword({ email: $("wkEmail").value.trim(), password: $("wkPw").value });
+  $("wkLoginBtn").disabled = false;
+  if (error) return toast(/Invalid/i.test(error.message) ? "이메일 또는 비밀번호가 맞지 않습니다" : error.message);
+  $("wkPw").value = ""; showWorksForm();
+};
+$("wkSend").onsubmit = async e => {
+  e.preventDefault();
+  const btn = $("wkSendBtn"); btn.disabled = true; btn.textContent = "보내는 중…";
+  try {
+    const db = await supa(), f = sheet.fields || {};
+    await makeThumb(); save();
+    const ps = await jpgs();
+    const pdf = await makePdf(await Promise.all(ps.map(async ({ c, blob }) => ({ jpg: new Uint8Array(await blob.arrayBuffer()), iw: c.width, ih: c.height }))));
+    const path = `inspect/${sheet.id}/${stamp()}.pdf`;
+    const up = await db.storage.from("car-files").upload(path, pdf, { contentType: "application/pdf", upsert: true });
+    if (up.error) throw new Error(/row-level|policy|Unauthorized/i.test(up.error.message) ? "이 계정은 보낼 권한이 없습니다" : up.error.message);
+    const { data, error } = await db.functions.invoke("works-send", { body: { path, plate: f.plate || "", km: f.km || "", date: f.date || "", due: $("wkDue").value, note: $("wkNote").value.trim(), toSelf: new URLSearchParams(location.search).has("works-test") } });
+    if (error || !data || !data.ok) throw new Error((data && data.msg) || (error && error.message) || "보내지 못했습니다");
+    sheet.works = [...(sheet.works || []), { at: Date.now(), path, task: data.task }]; save();
+    $("works").hidden = true; $("wkNote").value = "";
+    toast(data.task === "created" ? "은수 님께 보내고 웍스 할 일에 등록했습니다" : "은수 님께 웍스로 보냈습니다");
+  } catch (err) {
+    toast("웍스로 보내지 못했습니다: " + (err.message || err));
+  } finally { btn.disabled = false; btn.textContent = "은수 님께 보내기"; }
 };
 
 /* ───────── 연속 촬영 ─────────
