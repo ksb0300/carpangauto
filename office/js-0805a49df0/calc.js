@@ -234,10 +234,21 @@ export function 재고금융이자(l, from, to) {
   return 대출구간(l).reduce((t, g) => t + 기간이자(g.원금, g.이율, g.from, g.to, from, to), 0);
 }
 
-/** 만기일 — 금융사가 '매월 N일'로 고정하면 (실행월 + 개월)의 N일, 실행일이 기준일보다 늦으면 한 달 더. 아니면 실행일 + 개월
- *  예) 부산은행 10일·15일까지 5개월: 6/15 → 11/10, 9/17 → 3/10 / KB국민 10일·20일까지 3개월: 9/18 → 12/10, 9/29 → 1/10 */
-export function 만기계산(실행일, 개월, 고정일, 기준일) {
+/** 만기일 — 금융사가 '매월 N일'로 고정하면:
+ *   최소일수가 있으면 실행일부터 그 날수 이상 지난 첫 N일 (KB 10일·74일: 9/22 → 12/10, 9/28 → 1/10 / 부산 10일·147일 / JB 14일·78일)
+ *   기준일만 있으면 (실행월 + 개월)의 N일, 실행일이 기준일보다 늦으면 한 달 더
+ *  고정일이 없으면 실행일 + 개월 */
+export function 만기계산(실행일, 개월, 고정일, 기준일, 최소일수) {
   if (!고정일 || !실행일) return 더하기월(실행일, 개월);
+  if (최소일수) {
+    const [y, m] = 실행일.split("-").map(Number);
+    for (let k = 0; k < 40; k++) {
+      const 달 = new Date(Date.UTC(y, m - 1 + k, 1)), 말일 = new Date(Date.UTC(달.getUTCFullYear(), 달.getUTCMonth() + 1, 0)).getUTCDate();
+      달.setUTCDate(Math.min(Number(고정일), 말일));
+      const d = 달.toISOString().slice(0, 10);
+      if (일수(실행일, d) >= Number(최소일수)) return d;
+    }
+  }
   const [y, m, d] = 실행일.split("-").map(Number);
   const 더 = Number(개월 || 0) + (기준일 && d > Number(기준일) ? 1 : 0);
   const 달 = new Date(Date.UTC(y, m - 1 + 더, 1)), 말일 = new Date(Date.UTC(달.getUTCFullYear(), 달.getUTCMonth() + 1, 0)).getUTCDate();
@@ -248,7 +259,9 @@ export function 만기계산(실행일, 개월, 고정일, 기준일) {
 /** 대출 진행 상태 — 기본만기·최종만기·단계·남은 날 */
 export function 대출상태(l, 오늘) {
   const 기본 = Number(l.base_months ?? l.months) || 0;
-  const 기본만기 = 만기계산(l.start_date, 기본, l.due_day, l.due_cutoff), 최종만기 = 만기계산(l.start_date, l.months, l.due_day, l.due_cutoff);
+  const 기본만기 = 만기계산(l.start_date, 기본, l.due_day, l.due_cutoff, l.due_min_days);
+  // 고정일 금융사는 연장하면 만기에서 그대로 개월 수만큼 (같은 날) — 114나7878: 10/10 → 12/10
+  const 최종만기 = l.due_day ? 더하기월(기본만기, (Number(l.months) || 0) - 기본) : 만기계산(l.start_date, l.months);
   const 연장됨 = !!l.ext_start || Number(l.months) > 기본;
   const 만기 = 연장됨 ? 최종만기 : 기본만기;
   return { 기본만기, 최종만기, 연장됨, 단계: 연장됨 ? "연장" : "기본", 만기, 남은일: 일수(오늘, 만기),

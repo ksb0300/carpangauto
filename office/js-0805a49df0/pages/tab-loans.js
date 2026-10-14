@@ -114,7 +114,7 @@ function LoanForm({ app, car, onDone }) {
     if (lender?.credit_limit && f.amount > left && !confirm(`잔여한도(${won(left)})를 넘습니다. 그래도 등록할까요?`)) return;
     const ok = await run(() => q(app.db.from("car_loans").insert({ ...f, car_id: car.id, lender_rate: f.lender_rate === "" ? null : Number(f.lender_rate),
       dealer_rate: Number(f.dealer_rate) || 0, memo: f.memo || null,
-      base_months: Number(f.months), ext_rate: lender?.ext_rate ?? null, due_day: lender?.due_day ?? null, due_cutoff: lender?.due_cutoff ?? null })), "재고금융을 등록했습니다");
+      base_months: Number(f.months), ext_rate: lender?.ext_rate ?? null, due_day: lender?.due_day ?? null, due_cutoff: lender?.due_cutoff ?? null, due_min_days: lender?.due_min_days ?? null })), "재고금융을 등록했습니다");
     if (ok) { try { localStorage.setItem("loan-last-lender", f.lender_id); } catch {} onDone(); }
   };
   return html`<form class="subform" onSubmit=${save}>
@@ -123,7 +123,7 @@ function LoanForm({ app, car, onDone }) {
         <${Select} value=${f.lender_id} onChange=${v => setF(p => ({ ...p, lender_id: v, ...def(app.lenders.find(l => l.id === v)) }))} options=${active.map(l => [l.id, l.name])} /><//>
       <${Field} label="유형"><${Seg} value=${f.kind} onChange=${set("kind")} options=${["신규", "추가", "연장"]} /><//>
       <${Field} label="대출금액" req><${Money} value=${f.amount} onInput=${set("amount")} /><//>
-      <${Field} label="실행일" req hint=${/^\d{4}-\d{2}-\d{2}$/.test(f.start_date || "") ? "만기 " + 만기계산(f.start_date, f.months, lender?.due_day, lender?.due_cutoff) + (lender?.due_day ? ` (${lender.name} 매월 ${lender.due_day}일 고정)` : "") : "날짜를 고르세요"}><input type="date" value=${f.start_date} onInput=${e => set("start_date")(e.target.value)} /><//>
+      <${Field} label="실행일" req hint=${/^\d{4}-\d{2}-\d{2}$/.test(f.start_date || "") ? "만기 " + 만기계산(f.start_date, f.months, lender?.due_day, lender?.due_cutoff, lender?.due_min_days) + (lender?.due_day ? ` (${lender.name} 매월 ${lender.due_day}일 고정)` : "") : "날짜를 고르세요"}><input type="date" value=${f.start_date} onInput=${e => set("start_date")(e.target.value)} /><//>
       <${Field} label="대출기간(개월)" req><${Select} value=${f.months} onChange=${v => set("months")(Number(v))} options=${[...new Set([...MONTHS, Number(f.months)])].sort((a, b) => a - b).map(m => [m, m + "개월"])} /><//>
       <${Field} label="캐피탈이율(연 %)" hint=${f.lender_rate ? `월 ${won(cp.월이자)} · 총 ${won(cp.총이자)}` : "재고금융사가 상사에 받는 이율"}>
         <input inputmode="decimal" value=${f.lender_rate} onInput=${e => set("lender_rate")(e.target.value)} /><//>

@@ -1547,3 +1547,8 @@ create trigger cars_link_checks after insert on cars for each row execute functi
 -- 매도 때 자동차등록증(새 주인 명의)도 첨부 — 웍스 '매도' 게시판에서 가져온다 (works_reg_sync.py)
 alter table car_files drop constraint if exists car_files_kind_check;
 alter table car_files add constraint car_files_kind_check check (kind in ('제시', '매도', '정산', '성능', '등록증', '매도등록증', '기타'));
+
+
+-- 20261014000002_reserve_interval_3.sql
+-- 광고장 예약 확인 간격 기본값 3초 (사용자 2026-10-14)
+alter table encar_reserve_jobs alter column interval_s set default 3;
