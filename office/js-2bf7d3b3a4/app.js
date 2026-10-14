@@ -17,6 +17,8 @@ import { LenderEdit } from "./pages/lenders.js";
 import { StatsPage } from "./pages/stats.js";
 import { SignsPage } from "./pages/signs.js";
 import { ReservePage } from "./pages/reserve.js";
+import { ChecksPage, CheckEdit } from "./pages/checks.js";
+import { startSync } from "./check-store.js";
 
 function useHash() {
   const [h, setH] = useState(location.hash.slice(1) || "/");
@@ -79,7 +81,7 @@ function Shell({ app, children, path }) {
   const { profile, db } = app;
   const office = profile.role !== "dealer";
   const nav = office
-    ? [["/purchases", "리스트"], ["/sales", "매도차량"], ["/loans", "재고금융"],
+    ? [["/purchases", "리스트"], ["/sales", "매도차량"], ["/checks", "차량검수"], ["/loans", "재고금융"],
        ["/bank", "자금관리"], ["/reports", "종합업무현황"], ["/stats", "통계"], ["/settings", "환경설정"]]
     : [["/purchases", "내 제시차량"], ["/sales", "매도차량"], ["/settlements", "정산내역"], ["/brokerage", "알선"], ["/reports", "내 실적"]];
   // 지금 잘 안 쓰는 메뉴는 '기타'로 (사용자 2026-10-05) — 화면은 그대로 있다
@@ -91,7 +93,7 @@ function Shell({ app, children, path }) {
   return html`<div class="shell">
     <header class="top">
       <a class="brand" href="#/">TierONE <span>업무관리</span></a>
-      <nav>${nav.map(([p, l]) => html`<a href=${"#" + p} class=${path.startsWith(p) || (p === "/purchases" && (path.startsWith("/car/") || path.startsWith("/cars"))) || (p === "/dashboard" && path === "/") ? "on" : ""}>${l}</a>`)}
+      <nav>${nav.map(([p, l]) => html`<a href=${"#" + p} class=${path.startsWith(p) || (p === "/purchases" && (path.startsWith("/car/") || path.startsWith("/cars"))) || (p === "/dashboard" && path === "/") || (p === "/checks" && path.startsWith("/check/")) ? "on" : ""}>${l}</a>`)}
         ${etc.length > 0 && html`<a href="#" class=${etc.some(([p]) => path.startsWith(p)) ? "on" : ""} onClick=${e => { e.preventDefault(); e.stopPropagation();
           const r = e.currentTarget.getBoundingClientRect(); setEtcAt(etcAt ? null : { left: r.left, top: r.bottom + 4 }); }}>기타 ▾</a>`}</nav>
       ${etcAt && html`<div class="etc-menu" style=${`left:${Math.min(etcAt.left, innerWidth - 170)}px;top:${etcAt.top}px`}>
@@ -120,6 +122,8 @@ function Router({ app }) {
   else if (a === "purchases") page = html`<${PurchasesPage} app=${app} />`;
   else if (a === "costs") page = html`<${CostsPage} app=${app} tab=${b || "car"} />`;
   else if (a === "signs") page = html`<${SignsPage} app=${app} id=${b} />`;
+  else if (a === "checks") page = html`<${ChecksPage} app=${app} />`;
+  else if (a === "check") page = html`<${CheckEdit} app=${app} id=${b} />`;
   else if (a === "reserve") page = html`<${ReservePage} app=${app} />`;
   else if (a === "stats") page = html`<${StatsPage} app=${app} />`;
   else if (a === "loans" && b === "lender") page = html`<${LenderEdit} app=${app} id=${c} />`;
@@ -165,7 +169,7 @@ function App() {
     ]);
     const next = { db: d, user: session.user, profile, settings, dealers, lenders, parking };
     next.reload = () => load(d);
-    setNeedLogin(false); setApp(next);
+    setNeedLogin(false); setApp(next); startSync(next);
     if (sessionStorage.getItem("carpang-demo-upgraded")) { sessionStorage.removeItem("carpang-demo-upgraded"); toast("새 버전이라 데모 데이터를 처음 상태로 다시 만들었습니다."); }
   };
 

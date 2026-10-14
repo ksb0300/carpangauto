@@ -13,7 +13,9 @@ const blank = () => ({ _new: ++tmp, item: "기타비용", paid_by: "딜러", tax
 export function CostsTab({ app, car, costs, reload, locked, office }) {
   const [rows, setRows] = useState(costs.map(c => ({ ...c })));
   const [busy, setBusy] = useState(false);
-  const edit = !locked && office;
+  // 공동대표 차는 손익을 그때그때 다시 계산하므로 확정 뒤에도 고친다 (딜러 차는 딜러 지급액이 정해져 잠금)
+  const partner = !!app.dealers.find(d => d.id === car.dealer_id)?.partner;
+  const edit = (!locked || partner) && office;
   const upd = (i, k, v) => setRows(rs => rs.map((r, j) => j === i ? { ...r, [k]: v } : r));
   const dirty = JSON.stringify(rows) !== JSON.stringify(costs);
 
@@ -49,7 +51,8 @@ export function CostsTab({ app, car, costs, reload, locked, office }) {
 
   return html`<div class="card">
     <div class="bar"><h3>상품화비용</h3>
-      ${locked && html`<span class="muted">정산완료된 차량이라 잠겨 있습니다 (정산 탭에서 확정 해제)</span>`}
+      ${locked && (partner ? html`<span class="muted small">손익확정된 차 — 고치면 손익·대표 실적이 바로 바뀝니다 (변경 기록이 남습니다)</span>`
+        : html`<span class="muted">정산완료된 차량이라 잠겨 있습니다 (정산 탭에서 확정 해제)</span>`)}
       <span class="grow"></span>
       ${edit && html`<button class="btn" onClick=${() => setRows(r => [...r, blank()])}>+ 비용 추가</button>
         <button class="btn primary" disabled=${!dirty || busy} onClick=${save}>${busy ? "저장 중…" : "저장"}</button>`}

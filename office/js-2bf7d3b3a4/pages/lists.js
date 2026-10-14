@@ -345,16 +345,10 @@ export function SalesPage({ app }) {
     return { ...initF("매도일", "매도일"), useDate: !loadQ(),   // 검색어를 들고 돌아왔으면 기간 없이 (예전에 판 차도 보이게)
       period: { ...initPeriod("직접"), mode: "직접", from: d.toISOString().slice(0, 10), to: t } }; });
   const [pick, setPick] = useState(false);
-  const [ex, setEx] = useState({});        // 추가수익 입력 중인 값
   const office = app.profile.role !== "dealer";
   const dealer = Object.fromEntries(app.dealers.map(x => [x.id, x.name]));
   if (!d) return html`<${Loading} />`;
-  const 입력추가 = c => n(ex[c.id] ?? c.extra_income);
-  const typeEx = (c, v) => {      // 입력을 멈추고 0.8초 뒤 자동 저장 (정산 확정과 상관없이)
-    setEx(p => ({ ...p, [c.id]: v }));
-    clearTimeout(priceTimers["ex" + c.id]);
-    priceTimers["ex" + c.id] = setTimeout(() => run(async () => { await q(app.db.from("cars").update({ extra_income: v || null }).eq("id", c.id)); c.extra_income = v || null; }), 800);
-  };
+  const 입력추가 = c => n(c.extra_income);       // 정산(손익) 화면에서 넣은 추가수익
   const rows = d.cars.filter(c => c.sale && match(f, c, c.sale.sale_date)).sort(sorter(f, (c, s) => ({ 매도일: c.sale.sale_date, 매도금액: n(c.sale.sale_amount), 매입일: c.purchase_date }[s])));
   // 총마진 = 매도금액 + 매도비 + 추가수익(할부수익 + 정산 기타매출) − (매입가 + 비용 전체 + 재고이자) — 차량 리스트 마진과 같은 식
   const yr = c => c.model_year ? String(c.model_year).slice(0, 4) : "";
@@ -372,14 +366,11 @@ export function SalesPage({ app }) {
       { cells: ["", rows.length + "대", tot(c => c.purchase_amount), tot(c => c.재고금융전체), tot(c => c.재고이자), tot(c => c.sale.sale_amount), tot(c => c.sale.sale_fee), tot(c => c.sale.perf_insurance), tot(마진)] }]} />
     ${!rows.length ? html`<${Empty}>조건에 맞는 매도 차량이 없습니다.<//>` : html`<div class="table-wrap"><table class="grid click carlist">
       <thead><tr><th>매입일</th><th>차량번호</th><th>차명</th><th>연식</th><th class="r">키로수</th><th>판매유형</th><th>매도담당</th><th class="r">매입가</th><th class="r">재고금융</th><th class="r" title="매입일부터 매도일(상환일)까지 자동계산">총납입이자</th>
-        <th class="r">상품화비용</th><th class="r">매도금액</th><th class="r">상사매도비</th><th class="r">성능보험료</th><th>매도일</th><th class="r" title="할부수익·정산 기타매출 말고 더 들어온 돈 — 여기서 바로 입력 (정산 확정과 상관없이)">추가수익</th><th class="r" title="매도금액 + 매도비 + 추가수익(할부수익·기타매출·입력) − 매입가 − 비용 − 재고이자">총마진</th><th title="(일부) 매출 발행일">매출발행</th><th title="(임시) 정산일">정산일</th></tr></thead>
+        <th class="r">상품화비용</th><th class="r">매도금액</th><th class="r">상사매도비</th><th class="r">성능보험료</th><th>매도일</th><th class="r" title="매도금액 + 매도비 + 추가수익(할부수익·기타매출·입력) − 매입가 − 비용 − 재고이자">총마진</th><th title="(일부) 매출 발행일">매출발행</th><th title="(임시) 정산일">정산일</th></tr></thead>
       <tbody>${rows.map(c => html`<tr onClick=${() => go(`/car/${c.id}/sale`)}><td>${c.purchase_date}</td><td><b>${c.plate}</b></td>
         <td class="ellipsis" title=${c.car_name}>${c.car_name}</td><td>${yr(c) || "-"}</td><td class="r">${c.mileage != null ? won(c.mileage) : "-"}</td><td>${c.sale.sale_type}</td>
         <td>${dealer[c.sale.dealer_id || c.dealer_id] || "-"}${c.sale.broker_dealer_id ? html`<br /><span class="muted small">알선 ${dealer[c.sale.broker_dealer_id]}</span>` : ""}</td>
         ${W(c.purchase_amount)}${W(c.재고금융전체)}${W(c.재고이자)}${W(c.상품화)}${W(c.sale.sale_amount)}${W(c.sale.sale_fee)}${W(c.sale.perf_insurance)}
         <td>${c.sale.sale_date}</td>
-        <td class="r nowrap" onClick=${e => office && e.stopPropagation()}>${(n(c.sale.installment_income) + (c.settle?.other_revenue || []).reduce((t, x) => t + n(x.금액), 0)) ? html`<small class="muted" title="할부수익 + 정산 기타매출">+${won(n(c.sale.installment_income) + (c.settle?.other_revenue || []).reduce((t, x) => t + n(x.금액), 0))} </small>` : ""}${office
-          ? html`<${Money} value=${ex[c.id] ?? c.extra_income ?? ""} placeholder="" style="width:84px" onInput=${v => typeEx(c, v)} onKeyDown=${e => e.key === "Enter" && e.target.blur()} />`
-          : (n(c.extra_income) ? won(c.extra_income) : "")}</td>
         <td class=${"r " + (마진(c) < 0 ? "red" : "blue")}><b>${won(마진(c))}</b></td><td>${c.매출발행일}</td><td>${c.settle ? html`${c.settle.settle_date}${!c.settle.finalized && html` <span class="badge amber">임시</span>`}` : ""}</td></tr>`)}</tbody></table></div>`}`;
 }

@@ -1485,3 +1485,65 @@ update car_loans cl set due_min_days = l.due_min_days
 -- KB 은행 기록과 다른 진행중 대출: 331더9360 실행일 10/8 → 10/12 (KB 화면 신청일자·대출일자 26.10.12)
 update car_loans cl set start_date = '2026-10-12'
   from cars c where c.id = cl.car_id and replace(c.plate, ' ', '') = '331더9360' and cl.status = '진행중';
+
+
+-- 20261013000006_kb_ext_rates.sql
+-- KB 화면(2026-10-13) 기준: 연장된 진행중 대출 2건의 처음 실행분 이율과 연장 시작일
+--   114나7878: 신규 7/10~10/10 7.1%, 연장 10/10부터 7.4%
+--   136어3189: 신규 6/12~ 6.9%, 연장 9/8부터 7.4% (KB 연장 대출일자 26.09.08)
+update car_loans cl set lender_rate = 7.1
+  from cars c where c.id = cl.car_id and replace(c.plate, ' ', '') = '114나7878' and cl.status = '진행중';
+update car_loans cl set lender_rate = 6.9, ext_start = '2026-09-08'
+  from cars c where c.id = cl.car_id and replace(c.plate, ' ', '') = '136어3189' and cl.status = '진행중';
+
+
+-- 20261013000007_car_checks.sql
+-- 차량 검수 (태블릿 점검표): 매입·대차 고객 차·상품화·출고 전 점검.
+-- 점검 내용은 data(jsonb) 하나에 — 항목·외판 기호·타이어·사진 경로·판정·상품화 비용·제시가·메모 (모양은 _shared/check-calc.js 빈검수data).
+-- 태블릿이 인터넷 없이도 쓰게 id 는 기기에서 만들고(uuid), 연결되면 upsert 로 올린다. updated_at 도 기기가 고친 시각을 그대로 쓴다.
+-- 사진은 car-files 버킷 check/<검수id>/<파일> (사무실만 접근). 고객 링크(token)는 서버 함수 check 가 골라낸 값만 보여 준다.
+create table car_checks (
+  id           uuid primary key default gen_random_uuid(),
+  car_id       uuid references cars(id) on delete set null,     -- 같은 번호판의 우리 차 (자동 연결)
+  plate        text not null default '',
+  car_name     text not null default '',
+  kind         text not null default '매입' check (kind in ('매입', '대차', '상품화', '출고')),
+  status       text not null default '진행' check (status in ('진행', '완료')),
+  data         jsonb not null default '{}',
+  token        text unique,                                     -- 고객 링크 열쇠
+  shared_at    timestamptz,
+  completed_at timestamptz,
+  created_by   uuid references auth.users(id) default auth.uid(),
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now()
+);
+create index car_checks_updated on car_checks (updated_at desc);
+create index car_checks_car on car_checks (car_id);
+alter table car_checks enable row level security;
+create policy office_all on car_checks for all to authenticated using (is_office()) with check (is_office());
+
+-- 번호판이 같은 차가 있으면 연결 (검수를 먼저 하고 나중에 제시 등록해도 아래 cars 트리거가 잇는다)
+create or replace function car_checks_link() returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if new.car_id is null and new.plate <> '' then
+    select id into new.car_id from cars
+     where deleted_at is null and regexp_replace(plate, '\s', '', 'g') = regexp_replace(new.plate, '\s', '', 'g')
+     order by purchase_date desc limit 1;
+  end if;
+  return new;
+end $$;
+create trigger car_checks_link before insert or update of plate, car_id on car_checks for each row execute function car_checks_link();
+
+create or replace function cars_link_checks() returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  update car_checks set car_id = new.id
+   where car_id is null and plate <> '' and regexp_replace(plate, '\s', '', 'g') = regexp_replace(new.plate, '\s', '', 'g');
+  return new;
+end $$;
+create trigger cars_link_checks after insert on cars for each row execute function cars_link_checks();
+
+
+-- 20261014000001_reg_cert_sale.sql
+-- 매도 때 자동차등록증(새 주인 명의)도 첨부 — 웍스 '매도' 게시판에서 가져온다 (works_reg_sync.py)
+alter table car_files drop constraint if exists car_files_kind_check;
+alter table car_files add constraint car_files_kind_check check (kind in ('제시', '매도', '정산', '성능', '등록증', '매도등록증', '기타'));
