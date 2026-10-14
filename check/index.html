@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>차량 검수 결과 · TierONE</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0a0a0c">
+<link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="/assets/style.css?v=8bb9c7a9">
+<style>
+/* 고객용 검수 결과 — 홈페이지와 같은 어두운 바탕. 좋음·주의·불량 색은 어두운 바탕에서 읽히는 밝은 톤 */
+.ck{max-width:760px;margin:0 auto;--ok:#4cc27f;--warn:#f0a93a;--bad:#ff6f64;--minor:#7fa6ff}
+.ck .t-ok{--tone:var(--ok)}.ck .t-warn{--tone:var(--warn)}.ck .t-bad{--tone:var(--bad)}.ck .t-minor{--tone:var(--minor)}.ck .t-muted{--tone:var(--tx3)}
+.ck .box{background:var(--bk2);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px}
+.ck h3{font-size:15px;margin:0 0 12px;color:var(--tx)}
+.ck .plate{display:inline-block;background:#fff;color:#111;border:2px solid #222;border-radius:6px;padding:1px 10px;font-weight:800;font-size:20px;letter-spacing:.03em}
+.ck .head{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px}
+.ck .head b{font-size:19px}
+.ck .meta{color:var(--tx2);font-size:14px;margin-top:8px}
+.ck .acc{border-left:0;border-radius:14px;padding:16px 18px;background:color-mix(in srgb,var(--tone) 14%,var(--bk2));border:1px solid color-mix(in srgb,var(--tone) 40%,transparent)}
+.ck .acc b{display:block;color:var(--tone);font-size:20px}
+.ck .acc span{color:var(--tx2);font-size:14px}
+.ck .nums{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.ck .nums div{background:var(--bk3);border-radius:10px;padding:12px;text-align:center}
+.ck .nums b{display:block;font-size:24px;color:var(--tone,var(--tx));font-variant-numeric:tabular-nums}
+.ck .nums small{color:var(--tx3);font-size:12.5px}
+.ck .pill{display:inline-block;padding:1px 9px;border-radius:999px;font-size:12px;font-weight:700;color:var(--tone);background:color-mix(in srgb,var(--tone) 16%,transparent);white-space:nowrap}
+.ck .row{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line)}
+.ck .row:first-of-type{border-top:0}
+.ck .row .n{flex:1;min-width:0}
+.ck .row .n small{display:block;color:var(--tx2);font-size:13.5px;margin-top:2px}
+.ck .sec{margin-top:14px}.ck .sec:first-child{margin-top:0}
+.ck .sec h4{margin:0 0 4px;font-size:13px;color:var(--tx3);letter-spacing:.04em}
+.ck .oks{color:var(--tx3);font-size:13.5px;padding:8px 0 0}
+.ck .body{display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:620px){.ck .body{grid-template-columns:minmax(0,1fr)}.ck .nums{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)}}
+.ck svg{width:100%;max-width:300px;height:auto;display:block;margin:0 auto}
+.ck .pnl{fill:var(--bk3);stroke:rgba(255,255,255,.22);stroke-width:1.5}
+.ck .pnl.t-bad,.ck .pnl.t-warn,.ck .pnl.t-minor{fill:color-mix(in srgb,var(--tone) 22%,var(--bk3));stroke:var(--tone)}
+.ck .glass{fill:#26303d}.ck .wheel{fill:#000}
+.ck .plbl{font-size:11px;font-weight:600;fill:var(--tx3);text-anchor:middle}
+.ck .pcode{font-weight:800;text-anchor:middle;fill:var(--tone)}
+.ck .cap{display:flex;justify-content:space-between;max-width:300px;margin:4px auto 0;font-size:12px;color:var(--tx3)}
+.ck .legend{font-size:13px;color:var(--tx3);margin-top:10px;line-height:1.6}
+.ck .tires{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+.ck .tire{background:var(--bk3);border-radius:10px;padding:12px}
+.ck .tire b{display:flex;justify-content:space-between;gap:6px;margin-bottom:4px}
+.ck .tire span{color:var(--tx2);font-size:13.5px}
+.ck .photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,150px),1fr));gap:10px}
+.ck .photos button{border:0;padding:0;background:var(--bk3);border-radius:10px;overflow:hidden;cursor:pointer;color:var(--tx2);font:inherit;font-size:12.5px;text-align:left}
+.ck .photos img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block}
+.ck .photos span{display:block;padding:6px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ck .money{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.ck .money:first-of-type{border-top:0}
+.ck .money b{font-size:22px;font-variant-numeric:tabular-nums}
+.ck .foot{color:var(--tx3);font-size:13px;text-align:center;line-height:1.7;margin-top:6px}
+.ck .err{background:rgba(255,80,80,.1);border:1px solid rgba(255,80,80,.3);color:#ff9c9c;padding:16px;border-radius:12px;font-size:15px}
+.ck .pen,.light .pen{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.ck .photos button{position:relative}
+.ck .markov{position:absolute;left:0;top:0;width:100%;aspect-ratio:4/3;pointer-events:none}
+.ck .markbadge{position:absolute;top:6px;left:6px;background:rgba(0,0,0,.7);color:#fff;font-size:11px;padding:1px 7px;border-radius:999px}
+.light svg{width:100%;height:100%}
+.light[hidden]{display:none}
+.light{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;padding:16px}
+.light img{max-width:100%;max-height:100%;object-fit:contain;border-radius:6px}
+.light p{position:absolute;bottom:16px;left:0;right:0;text-align:center;color:#ddd;font-size:14px;margin:0}
+</style>
+</head>
+<body>
+
+<section class="full short" style="padding-top:calc(var(--nav) + 44px)">
+  <div class="wrap">
+    <p class="eyebrow">Inspection</p>
+    <h1 class="t">차량 검수 결과</h1>
+    <p class="s">TierONE 이 직접 확인한 차량 상태입니다. 궁금한 점은 담당자에게 편하게 물어보세요.</p>
+    <div class="ck" id="out"><p style="color:var(--tx3)">불러오는 중…</p></div>
+  </div>
+</section>
+<div class="light" id="light" hidden><img id="lightImg" alt=""><svg id="lightSvg" hidden preserveAspectRatio="xMidYMid meet"></svg><p id="lightCap"></p></div>
+
+<script src="/assets/site.js?v=0f0f056c"></script>
+<script type="module">
+import { 점검항목, 구역, 상태이름, 기호, 가장나쁜색, 외판, 골격, 타이어위치, 타이어상태, 타이어연수, 진행, 사고판단, 기타외판, 종류, 검수정리, 선점 } from "./check-calc.js?v=2";
+const API = "https://fwqtyyjhfewpxihpaasu.supabase.co/functions/v1/check";
+const out = document.getElementById("out");
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const 원 = n => Number(n || 0).toLocaleString("ko-KR");
+// 사무실이 펜으로 그린 선 (도면·사진 위)
+const 선들 = list => (list || []).map(x => `<polyline class="pen" points="${선점(x.p)}" stroke="${esc(x.c)}" stroke-width="${+x.w}"/>`).join("");
+const 날짜 = iso => { const d = new Date(iso); return isNaN(d) ? "" : `${d.getFullYear()}. ${d.getMonth() + 1}. ${d.getDate()}.`; };
+
+function render(c, until) {
+  const d = 검수정리(c), st = 진행(d), acc = 사고판단(d), etc = 기타외판(d);
+  const 매입류 = c.kind === "매입" || c.kind === "대차";
+  const info = [c.info.year, c.info.km ? 원(String(c.info.km).replace(/\D/g, "")) + "km" : "", c.info.fuel, c.info.color].filter(Boolean).join(" · ");
+  const svg = `<svg viewBox="0 0 340 600" role="img" aria-label="외판 상태 도면, 위가 앞쪽">
+    ${[[8, 96], [8, 452], [318, 96], [318, 452]].map(([x, y]) => `<rect class="wheel" x="${x}" y="${y}" width="14" height="58" rx="4"/>`).join("")}
+    <path class="glass" d="M106 196 H234 L226 236 H114 Z"/><path class="glass" d="M114 386 H226 L234 420 H106 Z"/>
+    ${외판.map(p => { const cs = d.panels[p.k] || [], t = 가장나쁜색(cs), sill = p.k.startsWith("sill"), label = p.s ?? p.n;
+      return `<path class="pnl ${t ? "t-" + t : ""}" d="${p.d}"><title>${esc(p.n)}${cs.length ? " " + cs.map(x => 기호[x]).join(", ") : ""}</title></path>`
+        + (cs.length ? `<text class="pcode t-${t}" x="${p.cx}" y="${sill ? p.cy + 5 : p.cy + 2}" font-size="${sill ? 11 : 15}">${sill ? cs[0] : cs.join("")}</text>` + (label && !sill ? `<text class="plbl" x="${p.cx}" y="${p.cy + 18}">${label}</text>` : "")
+          : label ? `<text class="plbl" x="${p.cx}" y="${p.cy + 4}">${label}</text>` : "");
+    }).join("")}${선들(d.sketch)}</svg>`;
+  const marked = [...외판.map(p => [p.n, d.panels[p.k]]), ...골격.map(f => [f.n, d.frame[f.k]])].filter(([, cs]) => cs && cs.length);
+  const secs = 구역.filter(([k]) => 점검항목[k]).map(([k, name]) => {
+    const rows = 점검항목[k].filter(([key]) => d.items[key]?.s);
+    if (!rows.length) return "";
+    const bad = rows.filter(([key]) => d.items[key].s !== "ok"), ok = rows.filter(([key]) => d.items[key].s === "ok");
+    return `<div class="sec"><h4>${name}</h4>
+      ${bad.map(([key, n]) => { const v = d.items[key]; return `<div class="row"><span class="pill t-${v.s}">${상태이름[v.s]}</span><div class="n"><b>${n}</b>${v.note ? `<small>${esc(v.note)}</small>` : ""}</div></div>`; }).join("")}
+      ${ok.length ? `<div class="oks">양호: ${ok.map(([, n]) => n).join(", ")}</div>` : ""}</div>`;
+  }).join("");
+  const tires = 타이어위치.map(([p, l]) => { const t = d.tires[p], s = 타이어상태(t), age = 타이어연수(t.dot);
+    return s ? `<div class="tire"><b>${l}<span class="pill t-${s}">${상태이름[s]}</span></b><span>트레드 ${esc(t.mm)}mm${age != null ? ` · 생산 ${Math.floor(age)}년` : ""}</span></div>` : ""; }).join("");
+  out.innerHTML = `
+    <div class="box"><div class="head"><span class="plate">${esc(c.plate || "")}</span><b>${esc(c.car_name || "")}</b></div>
+      <div class="meta">${esc(info)}</div>
+      <div class="meta">${esc(종류[c.kind] || "검수")} · ${날짜(c.completed_at || c.created_at)}${c.info.inspector ? " · 검수 " + esc(c.info.inspector) : ""}${c.status !== "완료" ? " · 검수 중 (내용이 더 채워질 수 있습니다)" : ""}</div></div>
+    <div class="box acc t-${acc.tone}"><b>${acc.label}</b><span>${acc.parts.length ? esc(acc.parts.join(" · ")) : "외판 교환·판금이나 골격 수리 흔적이 없습니다."}</span></div>
+    <div class="box"><div class="nums">
+      <div><b>${st.done}</b><small>확인 항목</small></div>
+      <div class="t-bad"><b>${st.bad}</b><small>불량</small></div>
+      <div class="t-warn"><b>${st.warn}</b><small>주의</small></div></div></div>
+    <div class="box"><h3>외판·골격</h3><div class="body"><div>${svg}<div class="cap"><span>← 운전석</span><span>▲ 앞</span><span>조수석 →</span></div></div>
+      <div>${marked.length ? marked.map(([n, cs]) => { const t = 가장나쁜색(cs); return `<div class="row"><span class="pill t-${t}">${cs.join("")}</span><div class="n"><b>${esc(n)}</b><small>${cs.map(x => 기호[x]).join(", ")}</small></div></div>`; }).join("")
+        : `<p style="color:var(--tx2);margin:0">표시된 부위가 없습니다.</p>`}
+      <p class="legend">X 교환 · W 판금·용접 · A 흠집 · U 요철 · C 부식 · T 손상<br>기호는 성능·상태점검기록부와 같습니다.</p></div></div></div>
+    ${tires ? `<div class="box"><h3>타이어</h3><div class="tires">${tires}</div></div>` : ""}
+    ${secs ? `<div class="box"><h3>점검 항목</h3>${secs}</div>` : ""}
+    ${c.photos.length ? `<div class="box"><h3>사진 ${c.photos.length}장</h3><div class="photos">${c.photos.map((p, i) => `<button type="button" data-i="${i}"><img src="${esc(p.url)}" alt="${esc(p.label)}" loading="lazy">${p.mark && p.mark.s.length ? `<svg class="markov" viewBox="0 0 ${+p.mark.w} ${+p.mark.h}" preserveAspectRatio="xMidYMid slice">${선들(p.mark.s)}</svg><span class="markbadge">표시</span>` : ""}<span>${esc(p.label)}</span></button>`).join("")}</div></div>` : ""}
+    ${c.cost || (매입류 && c.price) ? `<div class="box"><h3>금액</h3>
+      ${c.cost ? `<div class="money"><span>예상 상품화 비용</span><b>${원(c.cost)}원</b></div>` : ""}
+      ${매입류 && c.price ? `<div class="money"><span>제시 매입가</span><b>${원(c.price)}원</b></div>` : ""}
+      <p class="legend" style="margin-top:4px">상품화 비용은 위 불량·주의 항목을 고치는 데 드는 예상 금액입니다.</p></div>` : ""}
+    <p class="foot">TierONE (티어원) · 051-711-7818<br>부산광역시 기장군 장안읍 반룡산단3로 95, 604호, 605호(경동오토필드)<br>이 링크는 ${날짜(until)}까지 열립니다.</p>`;
+  out.querySelectorAll(".photos button").forEach(b => b.onclick = () => {
+    const p = c.photos[+b.dataset.i];
+    const img = document.getElementById("lightImg"), svg = document.getElementById("lightSvg");
+    if (p.mark && p.mark.s.length) {     // 표시가 있으면 사진과 선을 한 그림으로
+      img.hidden = true; svg.hidden = false; svg.setAttribute("viewBox", `0 0 ${+p.mark.w} ${+p.mark.h}`);
+      svg.innerHTML = `<image href="${esc(p.url)}" width="${+p.mark.w}" height="${+p.mark.h}"/>` + 선들(p.mark.s);
+    } else { svg.hidden = true; img.hidden = false; img.src = p.url; }
+    document.getElementById("lightCap").textContent = p.label;
+    document.getElementById("light").hidden = false;
+  });
+}
+document.getElementById("light").onclick = e => { e.currentTarget.hidden = true; };
+
+const t = new URLSearchParams(location.search).get("t") || "";
+fetch(API + "?t=" + encodeURIComponent(t)).then(r => r.json()).then(j => {
+  if (!j.ok) { out.innerHTML = `<div class="err">${esc(j.msg || "열 수 없는 링크입니다.")}</div>`; return; }
+  render(j.check, j.until);
+}).catch(() => { out.innerHTML = `<div class="err">불러오지 못했습니다. 인터넷 연결을 확인하고 새로고침해 주세요.</div>`; });
+</script>
+</body>
+</html>
