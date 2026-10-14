@@ -136,6 +136,7 @@ button, .bar, .pages { -webkit-user-select: none; user-select: none; -webkit-tou
       <small>카톡·문자·파일로 보냅니다</small>
       <button class="tb" id="sharePdf">PDF 한 파일로</button>
       <button class="tb" id="shareJpg">사진(JPG)으로</button>
+      <button class="tb" id="shareOne">문자용 (한 장 사진)</button>
       <small style="margin-top:4px">사무실</small>
       <button class="tb" id="worksBtn">웍스로 상품화 지시 (은수 님)</button>
     </div>
@@ -858,6 +859,19 @@ $("shareJpg").onclick = async () => {
   $("shareMenu").hidden = true; toast("사진 만드는 중…");
   const ps = await jpgs(), t = stamp();
   sendFiles(ps.map((p, i) => new File([p.blob], `검수지_${t}${ps.length > 1 ? "_" + (i + 1) : ""}.jpg`, { type: "image/jpeg" })), "차량 검수지");
+};
+// 문자(MMS)는 PDF·여러 장을 제대로 못 보낸다 → 검수지 쪽(사진 쪽 빼고)을 세로로 이어 붙인 사진 한 장
+$("shareOne").onclick = async () => {
+  $("shareMenu").hidden = true; toast("사진 만드는 중…");
+  await makeThumb(); save();
+  const W = 1240, GAP = 24, cs = [];
+  for (const pg of sheet.pages.filter(p => p.kind !== "photo")) cs.push(await renderPage(pg, W));
+  const out = document.createElement("canvas"); out.width = W; out.height = cs.reduce((h, c) => h + c.height, 0) + GAP * (cs.length - 1);
+  const x = out.getContext("2d"); x.fillStyle = "#d4d4da"; x.fillRect(0, 0, out.width, out.height);
+  let y = 0; for (const c of cs) { x.drawImage(c, 0, y); y += c.height + GAP; }
+  const blob = await new Promise(r => out.toBlob(r, "image/jpeg", 0.85));
+  const plate = ((sheet.fields || {}).plate || "").replace(/\s/g, "");
+  sendFiles([new File([blob], `검수지_${plate || stamp()}.jpg`, { type: "image/jpeg" })], "차량 검수지");
 };
 /** JPG 쪽들로 PDF 한 파일 (A4 너비, 쪽 높이는 그림 비율대로) */
 async function makePdf(pages) {
