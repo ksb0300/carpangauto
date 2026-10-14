@@ -70,20 +70,6 @@ button, .bar, .pages { -webkit-user-select: none; user-select: none; -webkit-tou
 .menu { position: absolute; right: 10px; top: 8px; z-index: 5; background: var(--bar); border-radius: 14px; padding: 10px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 10px 30px rgba(0,0,0,.5); min-width: 230px; }
 .menu .tb { width: 100%; text-align: left; }
 .menu small { color: var(--sub); padding: 0 4px; }
-/* 번호판·숫자 입력판 (아이패드 키보드 대신) */
-#pad { position: fixed; left: 0; right: 0; bottom: 0; z-index: 26; background: #1a1d24; border-top: 1px solid #333844;
-  padding: 12px 12px calc(env(safe-area-inset-bottom, 0px) + 12px); display: flex; flex-direction: column; gap: 10px; box-shadow: 0 -10px 30px rgba(0,0,0,.4); }
-.pad-top { display: flex; align-items: center; gap: 10px; }
-.pad-top b { font-size: 14px; color: var(--sub); }
-.pad-val { flex: 1; min-width: 0; background: #fff; color: #111; border-radius: 10px; padding: 8px 14px; font-size: 30px; font-weight: 800; letter-spacing: .04em; min-height: 54px; white-space: nowrap; overflow: hidden; }
-.pad-val:empty::before { content: "—"; color: #c4c4cc; }
-.pad-body { display: flex; gap: 12px; align-items: flex-start; justify-content: center; }
-.pad-letters { display: grid; grid-template-columns: repeat(10, 1fr); gap: 6px; flex: 1; max-width: 640px; }
-.pad-nums { display: grid; grid-template-columns: repeat(3, 76px); gap: 6px; flex: none; }
-.pad button { height: 54px; border: 0; border-radius: 10px; background: #2c313b; color: #fff; font-size: 22px; font-weight: 700; padding: 0; touch-action: manipulation; }
-.pad button:active { background: #4b5263; }
-.pad .k-sm { font-size: 16px; } .pad .k-pri { background: var(--pp); } .pad .k-on { background: #fff; color: #111; }
-@media (max-width: 700px) { .pad-body { flex-direction: column; align-items: stretch; } .pad-nums { grid-template-columns: repeat(3, 1fr); } }
 /* 웍스로 상품화 지시 */
 #works { position: fixed; inset: 0; z-index: 25; background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center; padding: 16px; }
 .wk { background: var(--bar); border-radius: 18px; padding: 22px; width: min(460px, 100%); display: flex; flex-direction: column; gap: 12px; }
@@ -143,8 +129,8 @@ button, .bar, .pages { -webkit-user-select: none; user-select: none; -webkit-tou
   </div>
   <div class="stage" id="stage">
     <canvas id="cv"></canvas>
-    <input id="fPlate" class="fld" data-f="plate" data-pad="plate" placeholder="눌러서 입력" readonly inputmode="none" aria-label="차량번호">
-    <input id="fKm" class="fld" data-f="km" data-pad="km" placeholder="눌러서 입력" readonly inputmode="none" aria-label="주행거리 km">
+    <input id="fPlate" class="fld" data-f="plate" placeholder="12가 3456" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="차량번호">
+    <input id="fKm" class="fld" data-f="km" inputmode="numeric" placeholder="0" autocomplete="off" aria-label="주행거리 km">
     <input id="fDate" class="fld" data-f="date" type="date" aria-label="검수일">
     <div class="menu" id="shareMenu" hidden>
       <small>카톡·문자·파일로 보냅니다</small>
@@ -162,11 +148,6 @@ button, .bar, .pages { -webkit-user-select: none; user-select: none; -webkit-tou
   <div class="pages" id="pages"></div>
 </section>
 <input type="file" id="fileIn" accept="image/*" multiple hidden>
-<section id="pad" class="pad" hidden>
-  <div class="pad-top"><b id="padLabel">차량번호</b><div class="pad-val" id="padVal"></div>
-    <button class="k-sm" style="width:84px" id="padClear">지우기</button><button class="k-pri k-sm" style="width:96px" id="padDone">완료</button></div>
-  <div class="pad-body"><div class="pad-letters" id="padLetters"></div><div class="pad-nums" id="padNums"></div></div>
-</section>
 <section id="works" hidden>
   <form class="wk" id="wkLogin" hidden>
     <h2>업무관리 로그인</h2>
@@ -547,48 +528,7 @@ function placeFields() {
     if (el.value !== shown) el.value = shown;
   }
 }
-/* ───────── 번호판·숫자 입력판 ─────────
-   애플펜슬로 입력칸을 누르면 아이패드가 키보드를 숨기고 손글씨 막대만 띄운다 → 시스템 키보드를 아예 안 쓰고 앱 입력판으로 넣는다.
-   펜이든 손가락이든 누르는 대로 바로 들어간다. */
-const PLATE_LETTERS = "가나다라마거너더러머버서어저고노도로모보소오조구누두루무부수우주하허호배바사아자".split("");
-const REGIONS = ["서울", "부산", "대구", "인천", "광주", "대전", "울산", "세종", "경기", "강원", "충북", "충남", "전북", "전남", "경북", "경남", "제주"];
-let padField = null, padRegion = false;
-function padRender() {
-  const f = padField, v = (sheet.fields || {})[f] || "";
-  $("padLabel").textContent = f === "km" ? "주행거리 (km)" : "차량번호";
-  $("padVal").textContent = f === "km" ? kmText(v) : v;
-  $("padLetters").hidden = f !== "plate";
-  if (f === "plate") $("padLetters").innerHTML = (padRegion ? REGIONS : PLATE_LETTERS).map(t => `<button data-k="${t}"${padRegion ? ' class="k-sm"' : ""}>${t}</button>`).join("")
-    + `<button class="k-sm${padRegion ? " k-on" : ""}" data-k="#region" style="grid-column: span 2">${padRegion ? "글자로" : "지역명"}</button>`;
-  $("padNums").innerHTML = ["1", "2", "3", "4", "5", "6", "7", "8", "9", f === "km" ? "000" : "", "0", "⌫"].map(t => t ? `<button data-k="${t}"${t === "000" ? ' class="k-sm"' : ""}>${t}</button>` : "<span></span>").join("");
-}
-function padSet(v) {
-  if (padField === "km") v = v.replace(/\D/g, "").replace(/^0+(?=\d)/, "").slice(0, 7);
-  else v = v.slice(0, 14);
-  sheet.fields = { ...(sheet.fields || {}), [padField]: v }; save(); placeFields(); padRender();
-}
-function padOpen(f) { padField = f; padRegion = false; $("pad").hidden = false; $("shareMenu").hidden = true; $("photoMenu").hidden = true; padRender(); }
-function padClose() { $("pad").hidden = true; padField = null; }
-$("pad").addEventListener("click", e => {
-  const b = e.target.closest("button"); if (!b || !padField) return;
-  const v = (sheet.fields || {})[padField] || "", k = b.dataset.k;
-  if (b.id === "padDone") return padClose();
-  if (b.id === "padClear") return padSet("");
-  if (k === "⌫") return padSet(v.slice(0, -([...REGIONS].some(r => v.endsWith(r) && v === r) ? 2 : 1)));
-  if (k === "#region") { padRegion = !padRegion; return padRender(); }
-  if (REGIONS.includes(k)) { padRegion = false; return padSet(k + v.replace(new RegExp("^(" + REGIONS.join("|") + ")"), "")); }
-  if (k) padSet(v + k);
-});
-for (const el of document.querySelectorAll(".fld[data-pad]")) {
-  // 누르는 순간 포커스를 막아야 아이패드 키보드·손글씨 막대가 안 뜬다
-  el.addEventListener("pointerdown", e => { e.preventDefault(); padOpen(el.dataset.pad); });
-  el.addEventListener("focus", () => { el.blur(); padOpen(el.dataset.pad); });
-}
-// 검수지에 펜을 대거나 다른 쪽으로 가면 입력판 닫기
-$("cv").addEventListener("pointerdown", () => { if (padField) padClose(); }, true);
-$("pages").addEventListener("click", () => { if (padField) padClose(); }, true);
-
-for (const el of document.querySelectorAll(".fld:not([data-pad])")) {
+for (const el of document.querySelectorAll(".fld")) {
   el.addEventListener("input", () => {
     if (!sheet) return;
     let v = el.value;
