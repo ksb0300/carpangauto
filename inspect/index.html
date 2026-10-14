@@ -1,0 +1,706 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TierONE 검수">
+<meta name="theme-color" content="#111318">
+<meta name="robots" content="noindex">
+<title>TierONE 검수지</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<style>
+/* 종이 검수지 + 펜. 앱 틀은 어둡게, 검수지는 흰 종이. 글꼴은 기기 기본(인터넷 없이도 같게) */
+:root { --bg: #111318; --bar: #1a1d24; --btn: #272b34; --ink: #f3f4f6; --sub: #9ca3af; --pp: #7c3aed; }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); overscroll-behavior: none;
+  font-family: -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif; -webkit-tap-highlight-color: transparent; }
+button { font: inherit; color: inherit; cursor: pointer; }
+/* 아이패드는 '확대 금지'를 무시하고 빠른 두 번 탭을 확대로 받는다 → 두 번 탭 확대만 끈다 (검수지 캔버스는 아래에서 터치 전부 끔) */
+html, body, button, .bar, .pages, #home { touch-action: manipulation; }
+button, .bar, .pages { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+[hidden] { display: none !important; }
+
+/* 목록 */
+#home { min-height: 100%; padding: calc(env(safe-area-inset-top, 0px) + 20px) 16px calc(env(safe-area-inset-bottom, 0px) + 28px); max-width: 1100px; margin: 0 auto; }
+.hd { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+.hd svg { width: 30px; height: 26px; }
+.hd h1 { font-size: 22px; margin: 0; flex: 1; }
+.new { min-height: 56px; padding: 0 24px; border: 0; border-radius: 14px; background: var(--pp); color: #fff; font-size: 18px; font-weight: 700; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 14px; }
+.card { position: relative; background: var(--bar); border-radius: 14px; overflow: hidden; border: 0; padding: 0; text-align: left; display: flex; flex-direction: column; }
+.card img { width: 100%; aspect-ratio: 10 / 3; object-fit: cover; object-position: top; background: #fff; display: block; }
+.card .meta { padding: 10px 14px 12px; display: flex; gap: 10px; align-items: baseline; }
+.card .meta b { font-size: 16px; } .card .meta span { color: var(--sub); font-size: 14px; }
+.card .del { position: absolute; right: 8px; bottom: 8px; border: 0; background: transparent; color: var(--sub); font-size: 14px; padding: 6px 10px; }
+.empty { color: var(--sub); text-align: center; padding: 60px 20px; line-height: 1.8; background: var(--bar); border-radius: 14px; }
+.tip { color: var(--sub); font-size: 14px; line-height: 1.7; margin-top: 24px; }
+.linkbtn { border: 0; background: none; color: #c4b5fd; text-decoration: underline; padding: 0; font-size: 14px; }
+
+/* 검수지 */
+#editor { position: fixed; inset: 0; display: flex; flex-direction: column; }
+.bar { display: flex; align-items: center; gap: 6px; padding: calc(env(safe-area-inset-top, 0px) + 8px) 10px 8px; background: var(--bar); overflow-x: auto; scrollbar-width: none; flex: none; }
+.bar::-webkit-scrollbar { display: none; }
+.tb { flex: none; min-width: 48px; height: 50px; border: 0; border-radius: 12px; background: var(--btn); font-size: 15px; font-weight: 600; padding: 0 12px; white-space: nowrap; }
+.tb.on { background: #fff; color: #111; }
+.tb.pri { background: var(--pp); color: #fff; }
+.sw { flex: none; width: 42px; height: 42px; border-radius: 50%; border: 4px solid var(--btn); background: var(--c); padding: 0; }
+.sw.on { border-color: #fff; }
+.wb { flex: none; width: 46px; height: 50px; border: 0; border-radius: 12px; background: var(--btn); display: flex; align-items: center; justify-content: center; padding: 0; }
+.wb i { display: block; width: 24px; border-radius: 4px; background: #fff; }
+.wb.on { background: #fff; } .wb.on i { background: #111; }
+.gap { flex: 1; min-width: 4px; }
+.sep { flex: none; width: 1px; height: 30px; background: #3a3f4a; }
+.stage { flex: 1; min-height: 0; position: relative; touch-action: none; overflow: hidden; }
+#cv { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.pages { display: flex; gap: 8px; padding: 8px 10px calc(env(safe-area-inset-bottom, 0px) + 8px); background: var(--bar); overflow-x: auto; flex: none; scrollbar-width: none; }
+.pages::-webkit-scrollbar { display: none; }
+.pg { flex: none; height: 46px; padding: 0 16px; border: 0; border-radius: 10px; background: var(--btn); font-weight: 600; display: flex; align-items: center; gap: 10px; }
+.pg.on { background: #fff; color: #111; }
+.pg .x { color: #ef4444; font-weight: 800; padding-left: 4px; }
+.menu { position: absolute; right: 10px; top: 8px; z-index: 5; background: var(--bar); border-radius: 14px; padding: 10px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 10px 30px rgba(0,0,0,.5); min-width: 230px; }
+.menu .tb { width: 100%; text-align: left; }
+.menu small { color: var(--sub); padding: 0 4px; }
+.toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 80px); transform: translateX(-50%); background: #fff; color: #111; padding: 12px 18px; border-radius: 12px; font-weight: 600; z-index: 20; max-width: calc(100% - 32px); }
+</style>
+</head>
+<body>
+
+<section id="home">
+  <div class="hd">
+    <svg viewBox="0 0 176 148" aria-hidden="true"><rect x="0" y="90" width="52" height="58" rx="6" fill="#4C03CA"/><rect x="62" y="48" width="52" height="100" rx="6" fill="#5901D9"/><rect x="124" y="0" width="52" height="148" rx="6" fill="#6502E8"/></svg>
+    <h1>검수지</h1>
+    <button class="new" id="newBtn">+ 새 검수지</button>
+  </div>
+  <div id="list"></div>
+  <p class="tip">펜으로만 써집니다. 손바닥·손가락은 검수지 위에서 무시되니 손을 올려놓고 쓰셔도 됩니다.<br>
+    굿노트·삼성노트에서 쓰고 싶으면 <button class="linkbtn" id="blankPdf">빈 검수지 PDF 받기</button> 를 눌러 그 앱에 넣으세요.<br>
+    처음 한 번 <b>홈 화면에 추가</b>(아이패드: 사파리 공유 버튼 → 홈 화면에 추가 / 갤럭시: 크롬 메뉴 → 홈 화면에 추가)하면 인터넷 없이도 열리고 기록이 지워지지 않습니다.</p>
+</section>
+
+<section id="editor" hidden>
+  <div class="bar" id="bar">
+    <button class="tb" id="backBtn" aria-label="목록으로">‹ 목록</button>
+    <span class="sep"></span>
+    <button class="sw on" data-color="#1b1b1f" style="--c:#1b1b1f" aria-label="검정 펜"></button>
+    <button class="sw" data-color="#e0262b" style="--c:#e0262b" aria-label="빨강 펜"></button>
+    <button class="sw" data-color="#1f5fd6" style="--c:#1f5fd6" aria-label="파랑 펜"></button>
+    <span class="sep"></span>
+    <button class="wb" data-w="1.5" aria-label="가는 펜"><i style="height:2px"></i></button>
+    <button class="wb on" data-w="2.6" aria-label="보통 펜"><i style="height:4px"></i></button>
+    <button class="wb" data-w="4.6" aria-label="굵은 펜"><i style="height:7px"></i></button>
+    <span class="sep"></span>
+    <button class="tb" id="eraserBtn">지우개</button>
+    <button class="tb" id="undoBtn">되돌리기</button>
+    <span class="gap"></span>
+    <button class="tb" id="fingerBtn" title="펜이 없을 때만 켜세요" aria-pressed="false">손가락</button>
+    <button class="tb pri" id="shareBtn">보내기</button>
+  </div>
+  <div class="stage" id="stage">
+    <canvas id="cv"></canvas>
+    <div class="menu" id="shareMenu" hidden>
+      <small>카톡·문자·파일로 보냅니다</small>
+      <button class="tb" id="sharePdf">PDF 한 파일로</button>
+      <button class="tb" id="shareJpg">사진(JPG)으로</button>
+    </div>
+  </div>
+  <div class="pages" id="pages"></div>
+</section>
+<input type="file" id="fileIn" accept="image/*" multiple hidden>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+"use strict";
+const F = '-apple-system, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif';
+const PW = 1000, PH = 1414;                     // 검수지 한 장 (A4 세로 비율) 단위 좌표
+const PEN_W = 2.6;                              // 보통 펜 굵기(단위). 선마다 w 로 저장, 누르는 힘에 따라 0.4~1.25배
+const $ = id => document.getElementById(id);
+const uuid = () => crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+let toastT;
+const toast = m => { const t = $("toast"); t.textContent = m; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 2400); };
+
+/* ───────── 기기 저장 (IndexedDB) ───────── */
+const dbp = new Promise((ok, bad) => {
+  const r = indexedDB.open("tierone-sheets", 1);
+  r.onupgradeneeded = () => { r.result.createObjectStore("sheets", { keyPath: "id" }); r.result.createObjectStore("photos", { keyPath: "id" }); };
+  r.onsuccess = () => ok(r.result); r.onerror = () => bad(r.error);
+});
+async function tx(store, mode, fn) {
+  const d = await dbp;
+  return new Promise((ok, bad) => { const t = d.transaction(store, mode); const r = fn(t.objectStore(store)); t.oncomplete = () => ok(r && r.result); t.onerror = () => bad(t.error); });
+}
+const put = (s, v) => tx(s, "readwrite", o => o.put(v));
+const get = (s, k) => tx(s, "readonly", o => o.get(k));
+const del = (s, k) => tx(s, "readwrite", o => o.delete(k));
+const all = s => tx(s, "readonly", o => o.getAll());
+if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+
+/* ───────── 검수지 양식 그리기 (단위 좌표 1000×1414) ───────── */
+const PANELS = [
+  ["앞범퍼", "M62 54 Q62 20 122 16 H218 Q278 20 278 54 Z", 170, 40],
+  ["후드", "M112 62 H228 Q234 62 234 68 L236 188 H104 L106 68 Q106 62 112 62 Z", 170, 128],
+  ["앞휀더", "M44 92 Q44 64 72 62 H98 V188 H44 Z", 71, 128], ["앞휀더", "M296 92 Q296 64 268 62 H242 V188 H296 Z", 269, 128],
+  ["앞도어", "M44 196 H98 V306 H44 Z", 71, 254], ["앞도어", "M242 196 H296 V306 H242 Z", 269, 254],
+  ["뒷도어", "M44 312 H98 V420 H44 Z", 71, 369], ["뒷도어", "M242 312 H296 V420 H242 Z", 269, 369],
+  ["루프", "M116 242 H224 Q232 242 232 250 V372 Q232 380 224 380 H116 Q108 380 108 372 V250 Q108 242 116 242 Z", 170, 314],
+  ["트렁크", "M104 428 H236 L234 522 Q234 530 226 530 H114 Q106 530 106 522 Z", 170, 482],
+  ["뒷휀더", "M44 428 H98 V530 H72 Q44 528 44 502 Z", 71, 482], ["뒷휀더", "M296 428 H242 V530 H268 Q296 528 296 502 Z", 269, 482],
+  ["", "M24 196 H38 V420 H24 Z", 0, 0], ["", "M302 196 H316 V420 H302 Z", 0, 0],
+  ["뒷범퍼", "M62 540 H278 Q278 574 218 580 H122 Q62 574 62 540 Z", 170, 562],
+];
+const GROUPS = [
+  ["엔진", ["시동·공회전", "엔진·미션 누유", "냉각수·배기 연기"]],
+  ["하체", ["브레이크", "하체 누유·부식", "타이어 마모"]],
+  ["실내", ["계기판 경고등", "에어컨·히터", "시트·내장·냄새", "전장 작동", "침수 흔적"]],
+  ["주행", ["변속", "소음·진동", "제동·조향"]],
+  ["서류", ["압류·저당", "보험 이력"]],
+];
+function box(c, x, y, w, h, label, unit) {
+  c.lineWidth = 1.6; c.strokeStyle = "#2a2a30"; c.strokeRect(x, y, w, h);
+  c.fillStyle = "#7a7a85"; c.font = `600 16px ${F}`; c.textAlign = "left"; c.fillText(label, x + 10, y + 21);
+  if (unit) { c.font = `600 18px ${F}`; c.textAlign = "right"; c.fillText(unit, x + w - 12, y + h - 14); c.textAlign = "left"; }
+}
+function check(c, x, y, s = 24) { c.lineWidth = 1.6; c.strokeStyle = "#2a2a30"; c.strokeRect(x, y, s, s); }
+function drawSheet(c) {
+  c.fillStyle = "#fff"; c.fillRect(0, 0, PW, PH);
+  c.textBaseline = "alphabetic"; c.textAlign = "left";
+  c.fillStyle = "#16161a"; c.font = `800 38px ${F}`; c.fillText("차량 검수지", 40, 80);
+  [[0, 90, 58], [62, 48, 100], [124, 0, 148]].forEach(([x, y, h], i) => { c.fillStyle = ["#4C03CA", "#5901D9", "#6502E8"][i]; c.fillRect(790 + x * 0.2, 46 + y * 0.2, 52 * 0.2, h * 0.2); });
+  c.fillStyle = "#16161a"; c.font = `800 28px ${F}`; c.fillText("TierONE", 832, 76);
+  c.fillRect(40, 98, 920, 3);
+  box(c, 40, 116, 300, 78, "차량번호"); box(c, 350, 116, 400, 78, "차명"); box(c, 760, 116, 200, 78, "검수일");
+  box(c, 40, 204, 300, 78, "연식"); box(c, 350, 204, 300, 78, "주행거리", "km"); box(c, 660, 204, 300, 78, "검수자");
+
+  // 외판 도면
+  c.fillStyle = "#16161a"; c.font = `800 21px ${F}`; c.fillText("외판·골격", 40, 330);
+  c.fillStyle = "#7a7a85"; c.font = `500 14px ${F}`; c.fillText("부위에 기호를 쓰세요", 150, 330);
+  c.save(); c.translate(52, 346); c.scale(1.1, 1.1);
+  c.fillStyle = "#3a3a42"; [[8, 96], [8, 452], [318, 96], [318, 452]].forEach(([x, y]) => c.fillRect(x, y, 14, 58));
+  c.fillStyle = "#e3e8ef"; c.fill(new Path2D("M106 196 H234 L226 236 H114 Z")); c.fill(new Path2D("M114 386 H226 L234 420 H106 Z"));
+  c.lineWidth = 1.4; c.strokeStyle = "#a3a3ad";
+  for (const [n, d, x, y] of PANELS) {
+    const p = new Path2D(d); c.fillStyle = "#fff"; c.fill(p); c.stroke(p);
+    if (n) { c.fillStyle = "#b0b0b8"; c.font = `500 11px ${F}`; c.textAlign = "center"; c.fillText(n, x, y + 4); }
+  }
+  c.restore(); c.textAlign = "left";
+  c.fillStyle = "#4a4a52"; c.font = `600 15px ${F}`;
+  c.fillText("X 교환   W 판금·용접   A 흠집", 52, 1020); c.fillText("U 요철   C 부식   T 손상", 52, 1044);
+  c.fillStyle = "#7a7a85"; c.font = `500 14px ${F}`; c.fillText("← 운전석", 52, 1000); c.textAlign = "right"; c.fillText("조수석 →", 422, 1000); c.textAlign = "left";
+
+  // 점검표
+  const X0 = 470, X1 = 960, cols = [790, 850, 910];
+  c.fillStyle = "#16161a"; c.font = `800 21px ${F}`; c.fillText("점검", X0, 330);
+  c.font = `700 16px ${F}`; c.textAlign = "center"; ["양호", "주의", "불량"].forEach((t, i) => { c.fillStyle = ["#15803d", "#b45309", "#dc2626"][i]; c.fillText(t, cols[i] + 12, 330); });
+  c.textAlign = "left";
+  let y = 346; const RH = 40;
+  c.lineWidth = 1.6; c.strokeStyle = "#2a2a30"; c.strokeRect(X0, y, X1 - X0, RH * 16);
+  for (const [g, items] of GROUPS) {
+    const gy = y;
+    for (let i = 0; i < items.length; i++) {
+      if (i) { c.lineWidth = 1; c.strokeStyle = "#dadae0"; c.beginPath(); c.moveTo(X0 + 60, y); c.lineTo(X1, y); c.stroke(); }
+      c.fillStyle = "#1d1d22"; c.font = `500 19px ${F}`; c.fillText(items[i], X0 + 74, y + 27);
+      cols.forEach(cx => check(c, cx, y + 8));
+      y += RH;
+    }
+    c.fillStyle = "#16161a"; c.font = `800 17px ${F}`; c.textAlign = "center"; c.fillText(g, X0 + 30, gy + (y - gy) / 2 + 6); c.textAlign = "left";
+    c.lineWidth = 1.6; c.strokeStyle = "#2a2a30"; c.beginPath(); c.moveTo(X0, y); c.lineTo(X1, y); c.stroke();
+  }
+  c.beginPath(); c.moveTo(X0 + 60, 346); c.lineTo(X0 + 60, y); c.stroke();
+
+  // 타이어
+  c.fillStyle = "#16161a"; c.font = `800 19px ${F}`; c.fillText("타이어 (mm)", 470, 1036);
+  c.font = `600 15px ${F}`; c.fillStyle = "#7a7a85"; c.fillText("트레드 깊이", 470, 1058);
+  [["앞 좌", 590], ["앞 우", 683], ["뒤 좌", 776], ["뒤 우", 869]].forEach(([t, x]) => box(c, x, 1006, 88, 66, t));
+
+  // 종합
+  c.fillStyle = "#16161a"; c.font = `800 21px ${F}`; c.fillText("종합", 40, 1110);
+  c.font = `600 18px ${F}`; c.fillText("사고 판단", 120, 1110);
+  [["무사고", 240], ["단순교환", 370], ["사고", 520]].forEach(([t, x]) => { check(c, x, 1091); c.fillStyle = "#1d1d22"; c.fillText(t, x + 34, 1110); });
+  box(c, 40, 1126, 450, 78, "예상 상품화 비용", "원"); box(c, 510, 1126, 450, 78, "제시 매입가", "원");
+  box(c, 40, 1214, 920, 150, "메모");
+  c.lineWidth = 1; c.strokeStyle = "#e5e5ea"; [1262, 1300, 1338].forEach(ly => { c.beginPath(); c.moveTo(56, ly); c.lineTo(944, ly); c.stroke(); });
+  c.fillStyle = "#9a9aa3"; c.font = `500 14px ${F}`; c.fillText("TierONE (티어원) · 051-711-7818 · 부산광역시 기장군 장안읍 반룡산단3로 95 (경동오토필드)", 40, 1394);
+}
+
+/* ───────── 2쪽 검수지 (1 외판·골격 / 2 기능 점검) ───────── */
+const INK = "#16161a", SUB = "#7a7a85", PART = "#8c8c96", LBL = "#a3a3ad";
+function head(c, sub) {
+  c.textBaseline = "alphabetic"; c.textAlign = "left";
+  c.fillStyle = "#fff"; c.fillRect(0, 0, PW, PH);
+  c.fillStyle = INK; c.font = `800 36px ${F}`; c.fillText("차량 검수지", 40, 78);
+  c.fillStyle = "#5901D9"; c.font = `700 22px ${F}`; c.fillText(sub, 248, 77);
+  [[0, 90, 58], [62, 48, 100], [124, 0, 148]].forEach(([x, y, h], i) => { c.fillStyle = ["#4C03CA", "#5901D9", "#6502E8"][i]; c.fillRect(790 + x * 0.2, 46 + y * 0.2, 52 * 0.2, h * 0.2); });
+  c.fillStyle = INK; c.font = `800 28px ${F}`; c.fillText("TierONE", 832, 76);
+  c.fillRect(40, 98, 920, 3);
+}
+function foot(c, n) {
+  c.fillStyle = "#9a9aa3"; c.font = `500 14px ${F}`; c.textAlign = "left";
+  c.fillText("TierONE (티어원) · 051-711-7818 · 부산광역시 기장군 장안읍 반룡산단3로 95 (경동오토필드)", 40, 1402);
+  c.textAlign = "right"; c.fillText(`${n} / 2`, 960, 1402); c.textAlign = "left";
+}
+const tag = (c, t, x, y, size = 12) => { c.fillStyle = LBL; c.font = `500 ${size}px ${F}`; c.textAlign = "center"; c.fillText(t, x, y); c.textAlign = "left"; };
+const title = (c, t, x, y, size = 19) => { c.fillStyle = INK; c.font = `800 ${size}px ${F}`; c.textAlign = "left"; c.fillText(t, x, y); };
+function shapes(c, list, fill, stroke = PART, lw = 1.6) {
+  for (const d of list) { const p = new Path2D(d); if (fill) { c.fillStyle = fill; c.fill(p); } if (stroke) { c.lineWidth = lw; c.strokeStyle = stroke; c.stroke(p); } }
+}
+function wheel(c, x, y) {
+  c.fillStyle = "#3a3a42"; c.beginPath(); c.arc(x, y, 46, 0, 7); c.fill();
+  c.fillStyle = "#e4e4e8"; c.beginPath(); c.arc(x, y, 27, 0, 7); c.fill();
+  c.fillStyle = "#3a3a42"; c.beginPath(); c.arc(x, y, 6, 0, 7); c.fill();
+}
+
+// 옆모습 (앞이 왼쪽, 880×240, 세단 비율). 오른쪽 옆은 좌우를 뒤집어 그리고 글자만 바로 쓴다
+const SIDE = {
+  body: "M28 140 Q20 165 32 186 L112 192 A60 60 0 0 1 232 192 L640 192 A60 60 0 0 1 760 192 L846 190 Q866 172 860 136 L852 108 Q842 98 820 96 L716 90 Q668 20 596 12 L408 12 Q348 16 296 92 L120 102 Q60 108 40 120 Z",
+  glass: ["M318 92 L388 26 Q394 20 404 20 L462 20 L462 92 Z", "M478 20 L588 18 Q634 22 664 88 L478 92 Z"],
+  lines: ["M80 116 L84 184", "M296 98 Q291 145 296 190", "M470 16 L470 190", "M616 22 Q650 100 632 190", "M820 100 L824 188", "M236 172 L636 172", "M120 102 L846 104"],
+  lamps: ["M34 126 L72 118 L76 130 L38 136 Z", "M834 104 L856 110 L858 124 L832 120 Z"],
+  handles: ["M432 114 h22 v5 h-22 Z", "M592 114 h22 v5 h-22 Z"],
+  labels: [["앞범퍼", 52, 160], ["앞휀더", 196, 142], ["앞도어", 386, 150], ["뒷도어", 548, 150], ["뒷휀더", 728, 140], ["뒷범퍼", 842, 166],
+    ["사이드실", 436, 186], ["A필러", 336, 60], ["B필러", 470, 6], ["C필러", 646, 50], ["루프", 536, 6]],
+};
+function sideView(c, x0, y0, k, mirror) {
+  c.save(); c.translate(mirror ? x0 + 880 * k : x0, y0); c.scale(mirror ? -k : k, k);
+  shapes(c, [SIDE.body], "#fff"); shapes(c, SIDE.glass, "#e3e8ef"); shapes(c, SIDE.lines, null, PART, 1.4);
+  shapes(c, SIDE.lamps, "#f1f1f4", PART, 1.2); shapes(c, SIDE.handles, PART, null);
+  wheel(c, 172, 192); wheel(c, 700, 192);
+  c.restore();
+  for (const [t, x, y] of SIDE.labels) tag(c, t, mirror ? x0 + (880 - x) * k : x0 + x * k, y0 + y * k, 12);
+}
+// 앞·뒤 모습 (300×210)
+const FRONT_BODY = "M28 182 L28 128 Q30 104 54 98 L78 58 Q88 40 112 38 L188 38 Q212 40 222 58 L246 98 Q270 104 272 128 L272 182 Z";
+function frontView(c, x0, y0, k, rear) {
+  c.save(); c.translate(x0, y0); c.scale(k, k);
+  c.fillStyle = "#3a3a42"; c.fillRect(40, 176, 40, 28); c.fillRect(220, 176, 40, 28);
+  shapes(c, [FRONT_BODY], "#fff");
+  shapes(c, ["M28 92 L12 88 L12 100 L28 102 Z", "M272 92 L288 88 L288 100 L272 102 Z"], "#fff", PART, 1.2);
+  shapes(c, [rear ? "M92 94 L108 54 Q112 48 120 48 L180 48 Q188 48 192 54 L208 94 Z" : "M86 94 L104 52 Q108 46 116 46 L184 46 Q192 46 196 52 L214 94 Z"], "#e3e8ef");
+  shapes(c, ["M54 98 L246 98", "M30 146 L270 146"], null, PART, 1.4);
+  if (rear) {
+    shapes(c, ["M30 106 L92 104 L88 124 L32 126 Z", "M270 106 L208 104 L212 124 L268 126 Z"], "#f1f1f4", PART, 1.2);
+    shapes(c, ["M118 122 h64 v20 h-64 Z"], "#f6f6f8", PART, 1.2);
+  } else {
+    shapes(c, ["M38 116 L96 114 L92 132 L40 134 Z", "M262 116 L204 114 L208 132 L260 134 Z"], "#f1f1f4", PART, 1.2);
+    shapes(c, ["M112 118 h76 v24 h-76 Z", "M96 156 h108 v14 h-108 Z"], "#f6f6f8", PART, 1.2);
+  }
+  c.restore();
+  const L = rear ? [["뒷유리", 150, 78], ["트렁크", 150, 115], ["뒷범퍼", 150, 172]] : [["앞유리", 150, 76], ["후드", 150, 111], ["앞범퍼", 150, 186]];
+  for (const [t, x, y] of L) tag(c, t, x0 + x * k, y0 + y * k, 11);
+}
+// 위에서 본 모습 (앞이 왼쪽) — 1쪽 아래 지붕·후드·트렁크용, 예전 도면을 눕혀 쓴다
+function topView(c, x0, y0, k) {
+  c.save(); c.translate(x0, y0 + 340 * k); c.scale(k, k); c.rotate(-Math.PI / 2);
+  c.fillStyle = "#3a3a42"; [[8, 96], [8, 452], [318, 96], [318, 452]].forEach(([x, y]) => c.fillRect(x, y, 14, 58));
+  shapes(c, ["M106 196 H234 L226 236 H114 Z", "M114 386 H226 L234 420 H106 Z"], "#e3e8ef", null);
+  shapes(c, PANELS.map(p => p[1]), "#fff", PART, 1.6);
+  c.restore();
+  for (const [t, px, py] of [["후드", 170, 128], ["루프", 170, 314], ["트렁크", 170, 482]]) tag(c, t, x0 + py * k, y0 + (340 - px) * k + 4, 11);
+}
+
+function legend(c, x, y) {
+  c.fillStyle = SUB; c.font = `600 15px ${F}`; c.fillText("부위 옆에 기호를 쓰세요", x, y + 18);
+  let cx = x + 190;
+  for (const [s, t, col] of [["X", "교환", "#dc2626"], ["W", "판금·용접", "#c2410c"], ["A", "흠집", "#1d4ed8"], ["U", "요철", "#1d4ed8"], ["C", "부식", "#1d4ed8"], ["T", "손상", "#1d4ed8"]]) {
+    c.fillStyle = col; c.font = `800 19px ${F}`; c.fillText(s, cx, y + 19);
+    c.fillStyle = INK; c.font = `500 15px ${F}`; c.fillText(t, cx + 22, y + 18);
+    cx += 22 + c.measureText(t).width + 28;
+  }
+}
+/** 양호·주의·불량 점검표 한 칸 (그룹 이름 + 항목) */
+function checklist(c, x0, y0, w, groups, RH, itemSize = 17) {
+  const cols = [x0 + w - 138, x0 + w - 92, x0 + w - 46], n = groups.reduce((s, g) => s + g[1].length, 0);
+  c.font = `700 14px ${F}`; c.textAlign = "center";
+  ["양호", "주의", "불량"].forEach((t, i) => { c.fillStyle = ["#15803d", "#b45309", "#dc2626"][i]; c.fillText(t, cols[i] + 23, y0 - 8); });
+  c.textAlign = "left";
+  c.lineWidth = 1.6; c.strokeStyle = "#2a2a30"; c.strokeRect(x0, y0, w, RH * n);
+  let y = y0;
+  for (const [g, items] of groups) {
+    const gy = y;
+    items.forEach((t, i) => {
+      if (i) { c.lineWidth = 1; c.strokeStyle = "#dadae0"; c.beginPath(); c.moveTo(x0 + 58, y); c.lineTo(x0 + w, y); c.stroke(); }
+      c.fillStyle = "#1d1d22"; c.font = `500 ${itemSize}px ${F}`; c.fillText(t, x0 + 70, y + RH / 2 + itemSize * 0.36);
+      cols.forEach(cx => check(c, cx + 12, y + (RH - 22) / 2, 22));
+      y += RH;
+    });
+    c.fillStyle = INK; c.font = `800 15px ${F}`; c.textAlign = "center"; c.fillText(g, x0 + 29, gy + (y - gy) / 2 + 5); c.textAlign = "left";
+    c.lineWidth = 1.6; c.strokeStyle = "#2a2a30"; c.beginPath(); c.moveTo(x0, y); c.lineTo(x0 + w, y); c.stroke();
+  }
+  c.beginPath(); c.moveTo(x0 + 58, y0); c.lineTo(x0 + 58, y); c.stroke();
+  return y;
+}
+
+function drawP1(c) {
+  head(c, "① 외판·골격");
+  box(c, 40, 112, 290, 74, "차량번호"); box(c, 340, 112, 410, 74, "차명"); box(c, 760, 112, 200, 74, "검수일");
+  box(c, 40, 194, 220, 74, "연식"); box(c, 270, 194, 250, 74, "주행거리", "km"); box(c, 530, 194, 200, 74, "색상"); box(c, 740, 194, 220, 74, "검수자");
+  legend(c, 40, 284);
+  title(c, "좌측 (운전석)", 40, 344, 17); sideView(c, 95, 356, 0.92, false);
+  title(c, "우측 (조수석)", 40, 600, 17); sideView(c, 95, 612, 0.92, true);
+  title(c, "앞", 40, 860, 17); frontView(c, 40, 868, 0.85, false);
+  title(c, "위 (지붕·후드·트렁크)", 360, 860, 17); topView(c, 372, 884, 0.44); tag(c, "◀ 앞", 400, 1046, 13);
+  title(c, "뒤", 690, 860, 17); frontView(c, 705, 868, 0.85, true);
+  c.fillStyle = "#2a2a30"; c.fillRect(40, 1058, 920, 2);
+
+  // 주요골격 — 칸에 기호와 좌·우를 쓴다 (예: 좌W)
+  title(c, "주요골격", 40, 1088); c.fillStyle = SUB; c.font = `500 13px ${F}`; c.fillText("칸에 기호와 좌·우 (예: 좌W) · 교환·판금·용접이면 사고", 130, 1088);
+  const FR = [["라디에이터 서포트", "외판"], ["프론트 패널", "A"], ["크로스 멤버", "A"], ["인사이드 패널", "A"], ["사이드 멤버", "B"], ["휠하우스", "B"],
+    ["필러 (A·B·C)", "B"], ["대쉬·플로어 패널", "C"], ["패키지 트레이", "B"], ["트렁크 플로어·리어 패널", "A"]];
+  let y = 1100; const RH = 28.6;
+  c.lineWidth = 1.6; c.strokeStyle = "#2a2a30"; c.strokeRect(40, y, 440, RH * FR.length);
+  FR.forEach(([n, r], i) => {
+    if (i) { c.lineWidth = 1; c.strokeStyle = "#dadae0"; c.beginPath(); c.moveTo(40, y); c.lineTo(480, y); c.stroke(); }
+    c.fillStyle = "#1d1d22"; c.font = `500 15px ${F}`; c.fillText(n, 52, y + 20);
+    c.fillStyle = SUB; c.font = `600 12px ${F}`; c.fillText(r, 262, y + 19);
+    c.lineWidth = 1.2; c.strokeStyle = "#2a2a30"; c.strokeRect(300, y + 4, 172, RH - 8);
+    y += RH;
+  });
+
+  // 판별 단서 + 사고 판단
+  title(c, "판별 단서", 510, 1088);
+  const yy = checklist(c, 510, 1100, 450, [["단서", ["볼트 공구 자국", "실러 재작업", "단차·도장 색 차이", "유리 생산연도", "램프류 (헤드·테일)", "휠 긁힘·변형"]]], 28.6, 15);
+  title(c, "사고 판단", 510, yy + 34, 17);
+  [["무사고", 610], ["단순교환", 720], ["사고", 850]].forEach(([t, x]) => { check(c, x, yy + 15, 24); c.fillStyle = "#1d1d22"; c.font = `600 16px ${F}`; c.fillText(t, x + 32, yy + 34); });
+  box(c, 510, yy + 50, 450, 1386 - (yy + 50), "외판 메모");
+  foot(c, 1);
+}
+
+function drawP2(c) {
+  head(c, "② 기능 점검");
+  box(c, 660, 110, 300, 62, "차량번호");
+  c.fillStyle = SUB; c.font = `500 15px ${F}`; c.fillText("해당 칸에 체크하고, 주의·불량은 아래 메모에 적으세요.", 40, 146);
+  const L = [["엔진룸", ["시동", "공회전·떨림", "엔진오일 양·오염", "엔진 누유", "냉각수·누수", "벨트·풀리 소음", "배기 연기", "미션 누유", "배터리", "엔진 마운트"]],
+    ["하체", ["브레이크 패드·디스크", "쇼크업소버 누유", "등속 부트", "하체 부식", "조향 장치·유격"]],
+    ["서류", ["차대번호 일치", "압류·저당", "보험 이력", "정비 이력"]]];
+  const R = [["실내", ["계기판 경고등", "에어컨·히터", "시트 오염·손상", "열선·통풍", "디스플레이·오디오", "카메라·센서", "창문·미러", "선루프", "냄새 (흡연·곰팡이)", "침수 흔적", "천장·내장재", "트렁크 내부"]],
+    ["시운전", ["변속 충격·지연", "가속·출력", "직진성 (쏠림)", "제동", "핸들 떨림", "하체 소음", "주행 보조 (ADAS)"]]];
+  const yL = checklist(c, 40, 206, 450, L, 33.5), yR = checklist(c, 510, 206, 450, R, 33.5);
+  let y = Math.max(yL, yR) + 22;
+
+  title(c, "타이어", 40, y + 30); c.fillStyle = SUB; c.font = `500 13px ${F}`; c.fillText("트레드 mm", 40, y + 50); c.fillText("생산 주차 DOT", 40, y + 70);
+  [["앞 좌", 150], ["앞 우", 355], ["뒤 좌", 560], ["뒤 우", 765]].forEach(([t, x]) => {
+    box(c, x, y, 195, 86, t);
+    c.lineWidth = 1; c.strokeStyle = "#dadae0"; c.beginPath(); c.moveTo(x + 8, y + 50); c.lineTo(x + 187, y + 50); c.stroke();
+    c.fillStyle = SUB; c.font = `600 13px ${F}`; c.textAlign = "right"; c.fillText("mm", x + 187, y + 44); c.fillText("DOT", x + 187, y + 80); c.textAlign = "left";
+  });
+  y += 104;
+  c.fillStyle = INK; c.font = `800 17px ${F}`; c.fillText("연료", 40, y + 22);
+  c.font = `500 16px ${F}`;
+  [["가솔린", 100], ["디젤", 205], ["LPG", 290], ["하이브리드", 370], ["전기", 500]].forEach(([t, x]) => { check(c, x, y + 4, 22); c.fillStyle = "#1d1d22"; c.fillText(t, x + 30, y + 22); });
+  c.fillStyle = INK; c.font = `800 17px ${F}`; c.fillText("스마트키", 600, y + 22);
+  c.lineWidth = 1.6; c.strokeStyle = "#2a2a30"; c.strokeRect(690, y - 2, 70, 34); c.fillStyle = "#1d1d22"; c.font = `500 16px ${F}`; c.fillText("개", 768, y + 22);
+  c.fillStyle = INK; c.font = `800 17px ${F}`; c.fillText("키 번호", 810, y + 22); c.strokeRect(880, y - 2, 80, 34);
+  y += 52;
+  c.fillStyle = "#2a2a30"; c.fillRect(40, y, 920, 2); y += 14;
+
+  title(c, "판정", 40, y + 24, 21);
+  [["매입", 130], ["조건부 매입", 250], ["보류", 410], ["매입 안 함", 520]].forEach(([t, x]) => { check(c, x, y + 4, 24); c.fillStyle = "#1d1d22"; c.font = `600 17px ${F}`; c.fillText(t, x + 32, y + 24); });
+  y += 44;
+  box(c, 40, y, 450, 74, "예상 상품화 비용", "원"); box(c, 510, y, 450, 74, "제시 매입가", "원");
+  y += 86;
+  box(c, 40, y, 920, 1384 - y, "메모 (주의·불량 내용, 고객 요청, 협의)");
+  c.lineWidth = 1; c.strokeStyle = "#e5e5ea";
+  for (let ly = y + 64; ly < 1376; ly += 40) { c.beginPath(); c.moveTo(56, ly); c.lineTo(944, ly); c.stroke(); }
+  foot(c, 2);
+}
+
+/* ───────── 그림 데이터 ─────────
+   sheet = { id, created, updated, thumb, pages: [{ kind: "p1" | "p2" | "photo" | "sheet"(예전 한 장짜리), photo?, w, h, strokes: [{ c, p: [x, y, 힘, …] }] }] } */
+let sheet = null, pi = 0, tool = "pen", color = "#1b1b1f", finger = false;
+let penW = (() => { try { return +localStorage.getItem("tierone-pen-w") || PEN_W; } catch { return PEN_W; } })();
+const undos = new Map();                         // 쪽마다 되돌리기 (선 목록 통째로 보관)
+const page = () => sheet.pages[pi];
+const pushUndo = () => { const k = pi; if (!undos.has(k)) undos.set(k, []); const u = undos.get(k); u.push(page().strokes.slice()); if (u.length > 80) u.shift(); };
+
+const photoCache = new Map();
+async function photoImg(id) {
+  if (photoCache.has(id)) return photoCache.get(id);
+  const rec = await get("photos", id); if (!rec) return null;
+  const im = new Image(); im.src = URL.createObjectURL(rec.blob); await im.decode().catch(() => {});
+  photoCache.set(id, im); return im;
+}
+async function drawBg(c, pg) {
+  if (pg.kind === "p1") return drawP1(c);
+  if (pg.kind === "p2") return drawP2(c);
+  if (pg.kind === "sheet") return drawSheet(c);
+  c.fillStyle = "#fff"; c.fillRect(0, 0, pg.w, pg.h);
+  const im = await photoImg(pg.photo); if (im) c.drawImage(im, 0, 0, pg.w, pg.h);
+}
+function drawStroke(c, s, from = 0) {
+  const p = s.p, W = s.w || PEN_W; c.strokeStyle = c.fillStyle = s.c; c.lineCap = "round"; c.lineJoin = "round";
+  if (p.length === 3) { c.beginPath(); c.arc(p[0], p[1], W * (0.4 + 0.85 * p[2]) / 2, 0, 7); c.fill(); return; }
+  for (let i = Math.max(3, from); i < p.length; i += 3) {
+    c.lineWidth = W * (0.4 + 0.85 * p[i + 2]);
+    c.beginPath(); c.moveTo(p[i - 3], p[i - 2]); c.lineTo(p[i], p[i + 1]); c.stroke();
+  }
+}
+
+/* ───────── 화면 ───────── */
+const cv = $("cv"), ctx = cv.getContext("2d"), stage = $("stage");
+let S = 1, offX = 0, offY = 0, dpr = 1, bg = null, bgTok = 0;
+async function layout() {
+  if (!sheet) return;
+  const r = stage.getBoundingClientRect(); dpr = Math.min(window.devicePixelRatio || 1, 3);
+  cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
+  const pg = page(), pad = 6;
+  S = Math.min((r.width - pad * 2) / pg.w, (r.height - pad * 2) / pg.h);
+  offX = (r.width - pg.w * S) / 2; offY = (r.height - pg.h * S) / 2;
+  const tok = ++bgTok, c = document.createElement("canvas");
+  c.width = Math.round(pg.w * S * dpr); c.height = Math.round(pg.h * S * dpr);
+  const x = c.getContext("2d"); x.scale(S * dpr, S * dpr);
+  bg = null; redraw();
+  await drawBg(x, pg);
+  if (tok === bgTok) { bg = c; redraw(); }
+}
+function setView(c) { c.setTransform(S * dpr, 0, 0, S * dpr, offX * dpr, offY * dpr); }
+function redraw() {
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height);
+  if (bg) ctx.drawImage(bg, Math.round(offX * dpr), Math.round(offY * dpr));
+  else { setView(ctx); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, page().w, page().h); }
+  setView(ctx); ctx.save(); ctx.beginPath(); ctx.rect(0, 0, page().w, page().h); ctx.clip();
+  for (const s of page().strokes) drawStroke(ctx, s);
+  ctx.restore();
+}
+new ResizeObserver(() => layout()).observe(stage);
+
+/* ───────── 펜 ─────────
+   펜(애플펜슬·S펜)만 그린다. 손가락·손바닥은 검수지 위에서 아무 일도 안 한다 (스크롤·확대도 막음).
+   펜이 없는 기기에서만 '손가락 쓰기'를 켜고, 켜 둔 채 펜을 쓰면 자동으로 꺼진다. S펜 버튼을 누른 채 쓰면 지우개. */
+let cur = null;
+const unit = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left - offX) / S, (e.clientY - r.top - offY) / S]; };
+const force = e => e.pointerType === "pen" && e.pressure > 0 ? Math.round(e.pressure * 100) / 100 : 0.5;
+const r1 = v => Math.round(v * 10) / 10;
+function eraseAt(x, y) {
+  const st = page().strokes, R = 14; let hit = false;
+  for (let i = st.length - 1; i >= 0; i--) {
+    const p = st[i].p;
+    for (let j = 0; j < p.length; j += 3) if (Math.abs(p[j] - x) < R && Math.abs(p[j + 1] - y) < R) { st.splice(i, 1); hit = true; break; }
+  }
+  if (hit) redraw();
+  return hit;
+}
+cv.addEventListener("pointerdown", e => {
+  const pen = e.pointerType === "pen";
+  if (pen && finger) setFinger(false);
+  if (!pen && e.pointerType !== "mouse" && !finger) return;      // 손바닥·손가락
+  if (cur) return;                                               // 한 번에 한 줄만
+  e.preventDefault(); $("shareMenu").hidden = true;
+  try { cv.setPointerCapture(e.pointerId); } catch {}
+  const [x, y] = unit(e);
+  if (x < 0 || y < 0 || x > page().w || y > page().h) { cur = null; return; }
+  const erase = tool === "eraser" || (e.buttons & 32) || (pen && (e.buttons & 2));
+  pushUndo();
+  cur = { id: e.pointerId, erase, s: erase ? null : { c: color, w: penW, p: [r1(x), r1(y), force(e)] }, hit: false };
+  if (erase) cur.hit = eraseAt(x, y); else { setView(ctx); drawStroke(ctx, cur.s); }
+});
+cv.addEventListener("pointermove", e => {
+  if (!cur || e.pointerId !== cur.id) return;
+  e.preventDefault();
+  const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
+  for (const ev of evs.length ? evs : [e]) {
+    const [x, y] = unit(ev);
+    if (cur.erase) { cur.hit = eraseAt(x, y) || cur.hit; continue; }
+    const p = cur.s.p, n = p.length;
+    if (Math.hypot(x - p[n - 3], y - p[n - 2]) < 1.2) continue;
+    p.push(r1(x), r1(y), force(ev));
+    setView(ctx); ctx.save(); ctx.beginPath(); ctx.rect(0, 0, page().w, page().h); ctx.clip(); drawStroke(ctx, cur.s, p.length - 3); ctx.restore();
+  }
+});
+function endStroke(e) {
+  if (!cur || e.pointerId !== cur.id) return;
+  const c = cur; cur = null;
+  if (c.erase) { if (!c.hit) undos.get(pi).pop(); }
+  else page().strokes.push(c.s);
+  save();
+}
+cv.addEventListener("pointerup", endStroke);
+cv.addEventListener("pointercancel", endStroke);
+// 손바닥으로 화면이 밀리거나 확대되지 않게 (iOS 사파리)
+stage.addEventListener("touchstart", e => { if (!e.target.closest(".menu")) e.preventDefault(); }, { passive: false });
+stage.addEventListener("touchmove", e => e.preventDefault(), { passive: false });
+document.addEventListener("gesturestart", e => e.preventDefault());
+for (const id of ["bar", "pages"]) $(id).addEventListener("touchmove", e => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
+
+/* ───────── 도구 ───────── */
+function setTool(t) { tool = t; $("eraserBtn").classList.toggle("on", t === "eraser"); document.querySelectorAll(".sw").forEach(b => b.classList.toggle("on", t === "pen" && b.dataset.color === color)); }
+document.querySelectorAll(".sw").forEach(b => b.onclick = () => { color = b.dataset.color; setTool("pen"); });
+function setW(w) {
+  penW = w; try { localStorage.setItem("tierone-pen-w", w); } catch {}
+  document.querySelectorAll(".wb").forEach(b => b.classList.toggle("on", +b.dataset.w === w));
+  if (tool === "eraser") setTool("pen");
+}
+document.querySelectorAll(".wb").forEach(b => b.onclick = () => setW(+b.dataset.w));
+setW(penW);
+$("eraserBtn").onclick = () => setTool(tool === "eraser" ? "pen" : "eraser");
+$("undoBtn").onclick = () => { const u = undos.get(pi); if (!u || !u.length) return toast("되돌릴 것이 없습니다"); page().strokes = u.pop(); redraw(); save(); };
+function setFinger(on) {
+  finger = on; $("fingerBtn").setAttribute("aria-pressed", on); $("fingerBtn").classList.toggle("on", on);
+  toast(on ? "손가락으로도 써집니다 · 펜을 쓰면 자동으로 꺼집니다" : "펜으로만 써집니다");
+}
+$("fingerBtn").onclick = () => setFinger(!finger);
+
+/* ───────── 쪽 (검수지 + 사진) ───────── */
+function renderPages() {
+  let n = 0;
+  const 이름 = { p1: "① 외판·골격", p2: "② 기능 점검", sheet: "검수지" };
+  $("pages").innerHTML = sheet.pages.map((p, i) => `<button class="pg${i === pi ? " on" : ""}" data-i="${i}">${이름[p.kind] || "사진 " + (++n)}${p.kind === "photo" && i === pi ? '<span class="x" data-x="' + i + '">✕</span>' : ""}</button>`).join("")
+    + `<button class="pg" id="addPhoto">+ 사진</button>`;
+}
+$("pages").onclick = async e => {
+  if (e.target.closest("#addPhoto")) return $("fileIn").click();
+  const x = e.target.closest("[data-x]");
+  if (x) {
+    if (!confirm("이 사진을 지울까요? (표시한 것도 같이 지워집니다)")) return;
+    const p = sheet.pages.splice(+x.dataset.x, 1)[0]; del("photos", p.photo); undos.clear();
+    pi = Math.max(0, pi - 1); renderPages(); layout(); save(); return;
+  }
+  const b = e.target.closest("[data-i]"); if (!b) return;
+  pi = +b.dataset.i; renderPages(); layout();
+};
+$("fileIn").onchange = async () => {
+  const files = [...$("fileIn").files]; $("fileIn").value = "";
+  for (const f of files) {
+    try {
+      const im = new Image(), url = URL.createObjectURL(f); im.src = url; await im.decode();
+      const k = Math.min(1, 1600 / Math.max(im.naturalWidth, im.naturalHeight)), c = document.createElement("canvas");
+      c.width = Math.round(im.naturalWidth * k); c.height = Math.round(im.naturalHeight * k);
+      c.getContext("2d").drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+      const blob = await new Promise(r => c.toBlob(r, "image/jpeg", 0.85));
+      const id = uuid(); await put("photos", { id, blob });
+      sheet.pages.push({ kind: "photo", photo: id, w: 1000, h: Math.round(1000 * c.height / c.width), strokes: [] });
+    } catch { toast("이 사진은 넣을 수 없습니다"); }
+  }
+  pi = sheet.pages.length - 1; renderPages(); layout(); save();
+  toast("사진 위에도 펜으로 표시할 수 있습니다");
+};
+
+/* ───────── 저장·목록 ───────── */
+let saveT;
+function save() { clearTimeout(saveT); saveT = setTimeout(() => { sheet.updated = Date.now(); put("sheets", sheet).catch(() => toast("기기에 저장하지 못했습니다")); }, 400); }
+async function renderPage(pg, width) {
+  const k = width / pg.w, c = document.createElement("canvas");
+  c.width = width; c.height = Math.round(pg.h * k);
+  const x = c.getContext("2d"); x.scale(k, k);
+  await drawBg(x, pg); for (const s of pg.strokes) drawStroke(x, s);
+  return c;
+}
+async function makeThumb() {
+  const full = await renderPage(sheet.pages[0], 600), c = document.createElement("canvas");
+  c.width = 600; c.height = 180; c.getContext("2d").drawImage(full, 0, 0);
+  sheet.thumb = c.toDataURL("image/jpeg", 0.8);
+}
+const fmt = t => { const d = new Date(t); return `${d.getMonth() + 1}월 ${d.getDate()}일 ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; };
+async function showHome() {
+  $("editor").hidden = true; $("home").hidden = false; releaseWake();
+  const list = (await all("sheets")).sort((a, b) => b.updated - a.updated);
+  $("list").innerHTML = list.length ? `<div class="grid">${list.map(s => `<div class="card" data-open="${s.id}" role="button" tabindex="0">
+      <img src="${s.thumb || ""}" alt="">
+      <div class="meta"><b>${fmt(s.updated)}</b><span>${s.pages.some(p => p.kind === "photo") ? "사진 " + s.pages.filter(p => p.kind === "photo").length + "장" : ""}</span></div>
+      <button class="del" data-del="${s.id}">삭제</button></div>`).join("")}</div>`
+    : `<div class="empty">아직 검수지가 없습니다.<br>‘+ 새 검수지’를 누르고 펜으로 바로 쓰세요.</div>`;
+}
+$("list").onclick = async e => {
+  const d = e.target.closest("[data-del]");
+  if (d) {
+    e.stopPropagation();
+    if (!confirm("이 검수지를 지울까요? 되돌릴 수 없습니다.")) return;
+    const s = await get("sheets", d.dataset.del);
+    for (const p of (s?.pages || [])) if (p.photo) await del("photos", p.photo);
+    await del("sheets", d.dataset.del); return showHome();
+  }
+  const o = e.target.closest("[data-open]"); if (o) openSheet(await get("sheets", o.dataset.open));
+};
+async function openSheet(s) {
+  sheet = s; pi = 0; undos.clear(); setTool("pen");
+  $("home").hidden = true; $("editor").hidden = false; $("shareMenu").hidden = true;
+  renderPages(); await layout(); keepWake();
+}
+$("newBtn").onclick = async () => {
+  const s = { id: uuid(), created: Date.now(), updated: Date.now(), thumb: "", pages: [{ kind: "p1", w: PW, h: PH, strokes: [] }, { kind: "p2", w: PW, h: PH, strokes: [] }] };
+  await put("sheets", s); openSheet(s);
+};
+$("backBtn").onclick = async () => { clearTimeout(saveT); await makeThumb(); sheet.updated = Date.now(); await put("sheets", sheet); sheet = null; showHome(); };
+
+/* ───────── 보내기 (PDF / JPG) ───────── */
+$("shareBtn").onclick = () => { $("shareMenu").hidden = !$("shareMenu").hidden; };
+const stamp = () => { const d = new Date(); return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}_${String(d.getHours()).padStart(2, "0")}${String(d.getMinutes()).padStart(2, "0")}`; };
+async function jpgs() {
+  const out = [];
+  for (const pg of sheet.pages) {
+    const c = await renderPage(pg, 1240);
+    out.push({ c, blob: await new Promise(r => c.toBlob(r, "image/jpeg", 0.88)) });
+  }
+  return out;
+}
+async function sendFiles(files, title) {
+  if (navigator.canShare && navigator.canShare({ files })) { try { await navigator.share({ files, title }); } catch {} return; }
+  for (const f of files) { const a = document.createElement("a"); a.href = URL.createObjectURL(f); a.download = f.name; document.body.appendChild(a); a.click(); a.remove(); }
+  toast("파일로 저장했습니다");
+}
+$("sharePdf").onclick = async () => {
+  $("shareMenu").hidden = true; toast("PDF 만드는 중…");
+  await makeThumb(); save();
+  const ps = await jpgs();
+  const pdf = await makePdf(await Promise.all(ps.map(async ({ c, blob }) => ({ jpg: new Uint8Array(await blob.arrayBuffer()), iw: c.width, ih: c.height }))));
+  sendFiles([new File([pdf], `검수지_${stamp()}.pdf`, { type: "application/pdf" })], "차량 검수지");
+};
+$("shareJpg").onclick = async () => {
+  $("shareMenu").hidden = true; toast("사진 만드는 중…");
+  const ps = await jpgs(), t = stamp();
+  sendFiles(ps.map((p, i) => new File([p.blob], `검수지_${t}${ps.length > 1 ? "_" + (i + 1) : ""}.jpg`, { type: "image/jpeg" })), "차량 검수지");
+};
+/** JPG 쪽들로 PDF 한 파일 (A4 너비, 쪽 높이는 그림 비율대로) */
+async function makePdf(pages) {
+  const enc = new TextEncoder(), parts = [], offs = [];
+  let len = 0;
+  const w = x => { const b = typeof x === "string" ? enc.encode(x) : x; parts.push(b); len += b.length; };
+  const obj = (n, body, stream) => {
+    offs[n] = len; w(`${n} 0 obj\n${body}\n`);
+    if (stream) { w("stream\n"); w(stream); w("\nendstream\n"); }
+    w("endobj\n");
+  };
+  w("%PDF-1.4\n%ÿ\n");
+  const n = pages.length, kid = i => 3 + i * 3;
+  obj(1, "<< /Type /Catalog /Pages 2 0 R >>");
+  obj(2, `<< /Type /Pages /Kids [${pages.map((_, i) => kid(i) + " 0 R").join(" ")}] /Count ${n} >>`);
+  pages.forEach((p, i) => {
+    const pw = 595.28, ph = +(pw * p.ih / p.iw).toFixed(2);
+    const cs = enc.encode(`q ${pw} 0 0 ${ph} 0 0 cm /Im${i} Do Q`);
+    obj(kid(i), `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pw} ${ph}] /Resources << /XObject << /Im${i} ${kid(i) + 2} 0 R >> >> /Contents ${kid(i) + 1} 0 R >>`);
+    obj(kid(i) + 1, `<< /Length ${cs.length} >>`, cs);
+    obj(kid(i) + 2, `<< /Type /XObject /Subtype /Image /Width ${p.iw} /Height ${p.ih} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${p.jpg.length} >>`, p.jpg);
+  });
+  const xref = len, total = 3 + n * 3;
+  let x = `xref\n0 ${total}\n0000000000 65535 f \n`;
+  for (let i = 1; i < total; i++) x += String(offs[i]).padStart(10, "0") + " 00000 n \n";
+  w(x + `trailer\n<< /Size ${total} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`);
+  return new Blob(parts, { type: "application/pdf" });
+}
+
+// 노트 앱(굿노트·삼성노트)용 빈 양식 — A4 300dpi 두 장
+$("blankPdf").onclick = async () => {
+  toast("PDF 만드는 중…");
+  const ps = [];
+  for (const kind of ["p1", "p2"]) {
+    const c = await renderPage({ kind, w: PW, h: PH, strokes: [] }, 2480);
+    const blob = await new Promise(r => c.toBlob(r, "image/jpeg", 0.92));
+    ps.push({ jpg: new Uint8Array(await blob.arrayBuffer()), iw: c.width, ih: c.height });
+  }
+  const pdf = await makePdf(ps);
+  sendFiles([new File([pdf], "TierONE_검수지_양식.pdf", { type: "application/pdf" })], "TierONE 검수지 양식");
+};
+
+/* ───────── 화면 꺼짐 방지 · 오프라인 ───────── */
+let wake = null;
+async function keepWake() { try { if (navigator.wakeLock && document.visibilityState === "visible") wake = await navigator.wakeLock.request("screen"); } catch {} }
+function releaseWake() { try { wake && wake.release(); } catch {} wake = null; }
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && sheet) keepWake(); });
+if ("serviceWorker" in navigator && window.isSecureContext) navigator.serviceWorker.register("sw.js").catch(() => {});
+
+showHome();
+</script>
+</body>
+</html>
