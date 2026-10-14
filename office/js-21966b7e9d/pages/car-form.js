@@ -48,7 +48,11 @@ export function CarForm({ app, id }) {
   useEffect(() => { run(async () => {
     if (!id) {
       const dealer_id = app.profile.dealer_id || null;
-      return setF({ ...EMPTY, dealer_id, purchase_fee: app.dealers.find(d => d.id === dealer_id)?.partner ? 0 : dealer_id ? app.settings.purchase_fee : 0 });
+      // 차량 검수에서 '제시차량으로 등록'으로 왔으면 번호·차명·제시 매입가를 채운다 (저장하면 DB 가 번호판으로 검수를 이 차에 잇는다)
+      const checkId = new URLSearchParams(location.hash.split("?")[1] || "").get("check");
+      const ck = checkId ? await q(app.db.from("car_checks").select("plate,car_name,data").eq("id", checkId).maybeSingle()).catch(() => null) : null;
+      const fromCheck = ck ? { plate: ck.plate || "", car_name: ck.car_name || "", ...(Number(ck.data?.price) ? { purchase_amount: Number(ck.data.price), acq_tax: 예상취득세(Number(ck.data.price), "승용") } : {}) } : {};
+      return setF({ ...EMPTY, ...fromCheck, dealer_id, purchase_fee: app.dealers.find(d => d.id === dealer_id)?.partner ? 0 : dealer_id ? app.settings.purchase_fee : 0 });
     }
     setF(await q(app.db.from("cars").select("*").eq("id", id).single())); setTaxEdited(true);
   }); }, [id]);
