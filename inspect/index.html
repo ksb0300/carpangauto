@@ -344,7 +344,7 @@ function checklist(c, x0, y0, w, groups, RH, itemSize = 17) {
 function drawP1(c) {
   head(c, "① 외판·골격");
   box(c, 40, 112, 290, 74, "차량번호"); box(c, 340, 112, 410, 74, "차명"); box(c, 760, 112, 200, 74, "검수일");
-  box(c, 40, 194, 220, 74, "연식"); box(c, 270, 194, 250, 74, "주행거리", "km"); box(c, 530, 194, 200, 74, "색상"); box(c, 740, 194, 220, 74, "검수자");
+  box(c, 40, 194, 450, 74, "주행거리", "km"); box(c, 500, 194, 460, 74, "검수자");
   legend(c, 40, 284);
   title(c, "좌측 (운전석)", 40, 344, 17); sideView(c, 95, 356, 0.92, false);
   title(c, "우측 (조수석)", 40, 600, 17); sideView(c, 95, 612, 0.92, true);
@@ -448,7 +448,7 @@ function drawStroke(c, s, from = 0) {
 
 /* ───────── 글자로 넣는 칸 (차량번호·주행거리·검수일) ─────────
    펜으로 칸에 쓰면 아이패드 손글씨 입력(Scribble)이 글자로 바꾸고, 손가락으로 누르면 키보드. 값은 sheet.fields 에. */
-const FIELDS = { plate: [50, 134, 272, 48, 30], km: [280, 216, 196, 48, 30], date: [768, 134, 186, 48, 21] };   // x, y, w, h, 글자 크기 (단위)
+const FIELDS = { plate: [50, 134, 272, 48, 30], km: [50, 216, 380, 48, 30], date: [768, 134, 186, 48, 21] };   // x, y, w, h, 글자 크기 (단위)
 const kmText = v => { const n = parseInt(String(v || "").replace(/\D/g, ""), 10); return isNaN(n) ? "" : n.toLocaleString("ko-KR"); };
 const dateText = v => /^\d{4}-\d{2}-\d{2}$/.test(v || "") ? `${v.slice(0, 4)}. ${+v.slice(5, 7)}. ${+v.slice(8, 10)}.` : "";
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
@@ -458,7 +458,7 @@ function drawFields(c, pg, f) {
   c.fillStyle = "#111"; c.textAlign = "left"; c.textBaseline = "alphabetic";
   if (pg.kind === "p1") {
     c.font = `700 30px ${F}`; c.fillText(f.plate || "", 56, 172);
-    c.font = `700 30px ${F}`; c.fillText(kmText(f.km), 286, 254);
+    c.font = `700 30px ${F}`; c.fillText(kmText(f.km), 56, 254);
     c.font = `700 24px ${F}`; c.fillText(dateText(f.date), 776, 168);
   } else if (pg.kind === "p2") { c.font = `700 26px ${F}`; c.fillText(f.plate || "", 672, 160); }
 }
