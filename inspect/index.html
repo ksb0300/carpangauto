@@ -70,6 +70,20 @@ button, .bar, .pages { -webkit-user-select: none; user-select: none; -webkit-tou
 .menu { position: absolute; right: 10px; top: 8px; z-index: 5; background: var(--bar); border-radius: 14px; padding: 10px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 10px 30px rgba(0,0,0,.5); min-width: 230px; }
 .menu .tb { width: 100%; text-align: left; }
 .menu small { color: var(--sub); padding: 0 4px; }
+/* 연속 촬영 */
+#cam { position: fixed; inset: 0; z-index: 30; background: #000; display: flex; flex-direction: column; }
+#cam video { flex: 1; min-height: 0; width: 100%; object-fit: contain; background: #000; }
+.cam-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px calc(env(safe-area-inset-bottom, 0px) + 18px); background: #000; }
+.cam-top { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 12px); left: 12px; right: 12px; display: flex; justify-content: space-between; align-items: center; pointer-events: none; }
+.cam-top > * { pointer-events: auto; }
+.cam-count { background: rgba(0,0,0,.6); color: #fff; padding: 8px 14px; border-radius: 999px; font-weight: 700; }
+.shutter { width: 84px; height: 84px; border-radius: 50%; border: 6px solid #fff; background: #fff; box-shadow: inset 0 0 0 4px #000; flex: none; }
+.shutter:active { transform: scale(.94); }
+.cam-thumbs { display: flex; gap: 6px; overflow-x: auto; flex: 1; min-width: 0; scrollbar-width: none; }
+.cam-thumbs img { height: 64px; width: 86px; object-fit: cover; border-radius: 8px; flex: none; }
+.cam-done { min-width: 120px; }
+.flash { position: fixed; inset: 0; background: #fff; z-index: 31; opacity: 0; pointer-events: none; transition: opacity .25s; }
+.flash.on { opacity: .8; transition: none; }
 .toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 80px); transform: translateX(-50%); background: #fff; color: #111; padding: 12px 18px; border-radius: 12px; font-weight: 600; z-index: 20; max-width: calc(100% - 32px); }
 </style>
 </head>
@@ -115,10 +129,25 @@ button, .bar, .pages { -webkit-user-select: none; user-select: none; -webkit-tou
       <button class="tb" id="sharePdf">PDF 한 파일로</button>
       <button class="tb" id="shareJpg">사진(JPG)으로</button>
     </div>
+    <div class="menu" id="photoMenu" hidden style="top:auto;bottom:8px;left:10px;right:auto">
+      <small>검수지 뒤에 사진 쪽으로 붙습니다</small>
+      <button class="tb" id="camBtn">연속 촬영</button>
+      <button class="tb" id="albumBtn">앨범에서 여러 장 고르기</button>
+    </div>
   </div>
   <div class="pages" id="pages"></div>
 </section>
 <input type="file" id="fileIn" accept="image/*" multiple hidden>
+<section id="cam" hidden>
+  <video id="camVideo" playsinline muted autoplay></video>
+  <div class="cam-top"><button class="tb" id="camCancel">취소</button><span class="cam-count" id="camCount">0장</span></div>
+  <div class="cam-bar">
+    <div class="cam-thumbs" id="camThumbs"></div>
+    <button class="shutter" id="shutter" aria-label="찍기"></button>
+    <div class="cam-thumbs" style="justify-content:flex-end"><button class="tb pri cam-done" id="camDone">완료</button></div>
+  </div>
+</section>
+<div class="flash" id="flash"></div>
 <div class="toast" id="toast" hidden></div>
 
 <script>
@@ -600,7 +629,7 @@ function renderPages() {
     + `<button class="pg" id="addPhoto">+ 사진</button>`;
 }
 $("pages").onclick = async e => {
-  if (e.target.closest("#addPhoto")) return $("fileIn").click();
+  if (e.target.closest("#addPhoto")) { $("shareMenu").hidden = true; $("photoMenu").hidden = !$("photoMenu").hidden; return; }
   const x = e.target.closest("[data-x]");
   if (x) {
     if (!confirm("이 사진을 지울까요? (표시한 것도 같이 지워집니다)")) return;
@@ -610,22 +639,67 @@ $("pages").onclick = async e => {
   const b = e.target.closest("[data-i]"); if (!b) return;
   pi = +b.dataset.i; renderPages(); layout();
 };
+/** 그림(이미지·캔버스·비디오 프레임)을 긴 변 1600px JPEG 로 줄여 사진 쪽으로 붙인다 */
+async function addPhoto(src, sw, sh) {
+  const k = Math.min(1, 1600 / Math.max(sw, sh)), c = document.createElement("canvas");
+  c.width = Math.round(sw * k); c.height = Math.round(sh * k);
+  c.getContext("2d").drawImage(src, 0, 0, c.width, c.height);
+  const blob = await new Promise(r => c.toBlob(r, "image/jpeg", 0.85));
+  const id = uuid(); await put("photos", { id, blob });
+  sheet.pages.push({ kind: "photo", photo: id, w: 1000, h: Math.round(1000 * c.height / c.width), strokes: [] });
+}
+function afterPhotos(n) {
+  if (!n) return;
+  pi = sheet.pages.length - 1; renderPages(); layout(); save();
+  toast(`사진 ${n}장을 붙였습니다 · 사진 위에도 펜으로 표시할 수 있습니다`);
+}
+$("albumBtn").onclick = () => { $("photoMenu").hidden = true; $("fileIn").click(); };
 $("fileIn").onchange = async () => {
   const files = [...$("fileIn").files]; $("fileIn").value = "";
+  let n = 0;
   for (const f of files) {
     try {
       const im = new Image(), url = URL.createObjectURL(f); im.src = url; await im.decode();
-      const k = Math.min(1, 1600 / Math.max(im.naturalWidth, im.naturalHeight)), c = document.createElement("canvas");
-      c.width = Math.round(im.naturalWidth * k); c.height = Math.round(im.naturalHeight * k);
-      c.getContext("2d").drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
-      const blob = await new Promise(r => c.toBlob(r, "image/jpeg", 0.85));
-      const id = uuid(); await put("photos", { id, blob });
-      sheet.pages.push({ kind: "photo", photo: id, w: 1000, h: Math.round(1000 * c.height / c.width), strokes: [] });
-    } catch { toast("이 사진은 넣을 수 없습니다"); }
+      await addPhoto(im, im.naturalWidth, im.naturalHeight); URL.revokeObjectURL(url); n++;
+    } catch { toast("넣을 수 없는 사진이 있습니다"); }
   }
-  pi = sheet.pages.length - 1; renderPages(); layout(); save();
-  toast("사진 위에도 펜으로 표시할 수 있습니다");
+  afterPhotos(n);
 };
+
+/* ───────── 연속 촬영 ─────────
+   앱 안에서 뒤 카메라를 켜 두고 셔터만 계속 누른다. 찍을 때마다 바로 기기에 저장, '완료'면 검수지로 돌아간다. */
+let camStream = null, camShots = 0;
+$("camBtn").onclick = async () => {
+  $("photoMenu").hidden = true;
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { toast("이 기기에선 앱 안 카메라를 쓸 수 없습니다 · 앨범에서 고르기를 쓰세요"); return; }
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({ audio: false,
+      video: { facingMode: { ideal: "environment" }, width: { ideal: 4032 }, height: { ideal: 3024 } } });
+  } catch (e) {
+    toast(e && e.name === "NotAllowedError" ? "카메라 권한을 허용해 주세요 (설정 → 사파리 → 카메라)" : "카메라를 켤 수 없습니다");
+    return;
+  }
+  camShots = 0; $("camThumbs").innerHTML = ""; $("camCount").textContent = "0장";
+  $("camVideo").srcObject = camStream; $("cam").hidden = false;
+  await $("camVideo").play().catch(() => {});
+};
+function camClose() {
+  if (camStream) camStream.getTracks().forEach(t => t.stop());
+  camStream = null; $("camVideo").srcObject = null; $("cam").hidden = true;
+}
+$("shutter").onclick = async () => {
+  const v = $("camVideo"); if (!v.videoWidth) return;
+  const fl = $("flash"); fl.classList.add("on"); requestAnimationFrame(() => requestAnimationFrame(() => fl.classList.remove("on")));
+  const c = document.createElement("canvas"); c.width = v.videoWidth; c.height = v.videoHeight;
+  c.getContext("2d").drawImage(v, 0, 0);
+  await addPhoto(c, c.width, c.height); camShots++;
+  const t = document.createElement("img"); t.src = c.toDataURL("image/jpeg", 0.4);
+  $("camThumbs").prepend(t); $("camCount").textContent = camShots + "장";
+  save();
+};
+$("camDone").onclick = () => { const n = camShots; camClose(); afterPhotos(n); };
+$("camCancel").onclick = () => { const n = camShots; camClose(); if (n) afterPhotos(n); };
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden" && camStream) $("camDone").click(); });
 
 /* ───────── 저장·목록 ───────── */
 let saveT;
@@ -676,7 +750,7 @@ $("newBtn").onclick = async () => {
 $("backBtn").onclick = async () => { document.activeElement && document.activeElement.blur(); clearTimeout(saveT); await makeThumb(); sheet.updated = Date.now(); await put("sheets", sheet); sheet = null; showHome(); };
 
 /* ───────── 보내기 (PDF / JPG) ───────── */
-$("shareBtn").onclick = () => { $("shareMenu").hidden = !$("shareMenu").hidden; };
+$("shareBtn").onclick = () => { $("photoMenu").hidden = true; $("shareMenu").hidden = !$("shareMenu").hidden; };
 const stamp = () => { const d = new Date(); return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}_${String(d.getHours()).padStart(2, "0")}${String(d.getMinutes()).padStart(2, "0")}`; };
 async function jpgs() {
   const out = [];
