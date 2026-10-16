@@ -4,7 +4,8 @@
 import { html, useState, useEffect, Loading, Badge, Seg, Field, run, toast, today } from "../ui.js";
 import { q } from "../db.js";
 
-const CENTERS = [["부산경동오토필드", "경동오토필드 1"], ["부산경동오토필드2", "경동오토필드 2"]];
+// '1·2 둘 다' = 두 곳을 번갈아 보다 먼저 열린 곳을 잡는다 (엔카 한 계정에 임시 예약은 하나뿐이라 잡으면 끝)
+const CENTERS = [["부산경동오토필드", "경동오토필드 1"], ["부산경동오토필드2", "경동오토필드 2"], ["부산경동오토필드 1·2", "1·2 둘 다"]];
 const TIMES = ["09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30"];
 const TONE = { 대기: "gray", 감시중: "blue", 확보: "green", 완료: "green", 실패: "red", 정지: "gray" };
 const load = k => { try { return localStorage.getItem("reserve-" + k) || ""; } catch { return ""; } };
@@ -15,7 +16,7 @@ const 주말 = d => [0, 6].includes(new Date(d + "T00:00:00").getDay());
 export function ReservePage({ app }) {
   const [jobs, setJobs] = useState(null);
   const [worker, setWorker] = useState(undefined);
-  const [f, setF] = useState(() => ({ center: load("center") || CENTERS[0][0], date: "", times: [], interval: 7, finish: "앱" }));
+  const [f, setF] = useState(() => ({ center: load("center") || CENTERS[0][0], date: "", times: [], interval: 3, finish: "앱" }));
   const set = (k, v) => setF(x => ({ ...x, [k]: v }));
   const [끊김, set끊김] = useState(0);      // 자동 새로고침이 연달아 실패한 횟수 (폰 LTE 가 잠깐 끊기는 일은 흔하다)
   // 자동 새로고침은 오류 알림을 띄우지 않는다 — 실패하면 조용히 다음 번에 다시 (화면 위에 '연결 다시 시도 중'만)
@@ -43,7 +44,7 @@ export function ReservePage({ app }) {
     if (!f.times.length) throw new Error("노리는 시간대를 하나 이상 고르세요");
     keep("center", f.center);
     await q(app.db.from("encar_reserve_jobs").insert({ center: f.center, res_date: f.date, times: f.times,
-      interval_s: Math.max(3, Number(f.interval) || 7), finish: f.finish }));
+      interval_s: Math.max(3, Number(f.interval) || 3), finish: f.finish }));
     set("times", []); refresh();
   }, "감시를 요청했습니다 — 사무실 PC 가 곧 시작합니다");
   const stop = j => run(async () => { await q(app.db.from("encar_reserve_jobs").update({ stop: true }).eq("id", j.id)); refresh(); }, "정지를 요청했습니다");
@@ -69,13 +70,13 @@ export function ReservePage({ app }) {
       <div class="fgrid" style="margin-top:12px">
         <${Field} label="마무리" hint=${f.finish === "자동" ? "준비 중 — 엔카 예약 3단계(차량·정보 입력) 화면을 평일에 조사한 뒤 켭니다. 지금 고르면 확보까지만 하고 알립니다." : "잡으면 알림 → 15분 안에 엔카 앱에서 차량·정보 입력하고 확정"}>
           <${Seg} value=${f.finish} onChange=${v => set("finish", v)} options=${[["앱", "엔카 앱에서 마무리"], ["자동", "자동 확정 (준비 중)"]]} /><//>
-        <${Field} label="확인 간격 (초)" hint="3초 이상 · 기본 7초"><input inputmode="numeric" value=${f.interval} onInput=${e => set("interval", e.target.value.replace(/[^\d]/g, ""))} /><//>
+        <${Field} label="확인 간격 (초)" hint="3초 이상 · 기본 3초"><input inputmode="numeric" value=${f.interval} onInput=${e => set("interval", e.target.value.replace(/[^\d]/g, ""))} /><//>
       </div>
       <div class="bar"><span class="grow"></span><button class="btn primary" onClick=${start}>▶ 감시 시작</button></div>
     </div>
 
     ${!jobs ? html`<${Loading} />` : !jobs.length ? html`<p class="muted">아직 요청이 없습니다.</p>` : jobs.map(j => html`<div class="card reserve-job" key=${j.id}>
-      <div class="bar"><b>${CENTERS.find(c => c[0] === j.center)?.[1] || j.center} · ${j.res_date}(${요일(j.res_date)})</b>
+      <div class="bar"><b>${j.center === CENTERS[2][0] ? "경동오토필드 1·2" : CENTERS.find(c => c[0] === j.center)?.[1] || j.center} ·${j.res_date}(${요일(j.res_date)})</b>
         <${Badge} tone=${TONE[j.status]}>${j.status}${j.stop && ["대기", "감시중"].includes(j.status) ? " (정지 요청)" : ""}<//>
         ${j.finish === "자동" && html`<${Badge}>자동 확정<//>`}<span class="grow"></span>
         ${["대기", "감시중"].includes(j.status) && !j.stop ? html`<button class="btn sm danger" onClick=${() => stop(j)}>■ 정지</button>`
