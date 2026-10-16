@@ -1,6 +1,6 @@
 {
- "updated": "2026-10-15 17:53",
- "count": 43,
+ "updated": "2026-10-16 17:51",
+ "count": 44,
  "cars": [
   {
    "id": "42351261",
@@ -151,10 +151,10 @@
     "https://ci.encar.com/carpicture08/pic4218/42184774_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture08/pic4218/42184774_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture08/pic4218/42184774_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4218/42184774_015.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4218/42184774_041.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4218/42184774_045.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4218/42184774_005.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture08/pic4218/42184774_022.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4218/42184774_006.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4218/42184774_009.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4218/42184774_017.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42184774"
   },
@@ -255,10 +255,10 @@
     "https://ci.encar.com/carpicture08/pic4258/42584618_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture08/pic4258/42584618_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture08/pic4258/42584618_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4258/42584618_016.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4258/42584618_005.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture08/pic4258/42584618_018.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4258/42584618_049.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4258/42584618_044.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture08/pic4258/42584618_040.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4258/42584618_017.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42584618"
   },
@@ -333,10 +333,10 @@
     "https://ci.encar.com/carpicture07/pic4287/42873077_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture07/pic4287/42873077_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture07/pic4287/42873077_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4287/42873077_050.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4287/42873077_043.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4287/42873077_015.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4287/42873077_034.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture07/pic4287/42873077_007.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4287/42873077_034.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4287/42873077_044.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4287/42873077_043.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42873077"
   },
@@ -757,32 +757,6 @@
    "link": "https://fem.encar.com/cars/detail/42830983"
   },
   {
-   "id": "42790315",
-   "plate": "326오4610",
-   "maker": "KG모빌리티(쌍용)",
-   "model": "코란도",
-   "grade": "디젤 1.6 4WD C7",
-   "year": "20년 08월",
-   "yearRaw": "202008",
-   "mileage": 63181,
-   "fuel": "디젤",
-   "transmission": "오토",
-   "color": "검정색",
-   "price": 2500,
-   "diagnosis": true,
-   "photos": [
-    "https://ci.encar.com/carpicture09/pic4279/42790315_001.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4279/42790315_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4279/42790315_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4279/42790315_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4279/42790315_020.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4279/42790315_036.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4279/42790315_041.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4279/42790315_035.jpg?impolicy=widthRate&wid=800"
-   ],
-   "link": "https://fem.encar.com/cars/detail/42790315"
-  },
-  {
    "id": "42843284",
    "plate": "48서6546",
    "maker": "미니",
@@ -911,6 +885,32 @@
     "https://ci.encar.com/carpicture09/pic4219/42193712_043.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42193712"
+  },
+  {
+   "id": "42937234",
+   "plate": "303주9012",
+   "maker": "KG모빌리티(쌍용)",
+   "model": "토레스",
+   "grade": "가솔린 1.5 2WD",
+   "year": "24년 06월",
+   "yearRaw": "202406",
+   "mileage": 32722,
+   "fuel": "가솔린",
+   "transmission": "오토",
+   "color": "은회색",
+   "price": 2390,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture03/pic4293/42937234_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4293/42937234_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4293/42937234_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4293/42937234_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4293/42937234_006.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4293/42937234_018.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4293/42937234_009.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4293/42937234_036.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42937234"
   },
   {
    "id": "42844172",
@@ -1093,6 +1093,32 @@
     "https://ci.encar.com/carpicture10/pic4250/42509871_020.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42509871"
+  },
+  {
+   "id": "42935053",
+   "plate": "24어0256",
+   "maker": "현대",
+   "model": "아슬란",
+   "grade": "G300 익스클루시브",
+   "year": "16년 01월",
+   "yearRaw": "201601",
+   "mileage": 163025,
+   "fuel": "가솔린",
+   "transmission": "오토",
+   "color": "갈색",
+   "price": 630,
+   "diagnosis": false,
+   "photos": [
+    "https://ci.encar.com/carpicture03/pic4293/42935053_001.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4293/42935053_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4293/42935053_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4293/42935053_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4293/42935053_015.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4293/42935053_036.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4293/42935053_043.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4293/42935053_022.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42935053"
   },
   {
    "id": "42922293",
