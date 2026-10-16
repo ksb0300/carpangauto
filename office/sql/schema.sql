@@ -1570,3 +1570,96 @@ create table bank_rules (
 );
 alter table bank_rules enable row level security;
 create policy office_all on bank_rules for all to authenticated using (is_office()) with check (is_office());
+
+
+-- 20261016000002_ktx_reserve.sql
+-- KTX 취소표 감시: 폰(업무관리 기타 → KTX 예매)에서 요청 → 사무실 PC 의 감시 프로그램(ktx_worker.py)이
+-- 각자의 코레일 계정으로 매진 열차를 감시하다 빈자리가 나오면 예약(결제 전 홀드)까지 잡는다. 결제는 코레일+ 앱에서 본인이.
+-- 대표 3명·사무장이 각자 자기 코레일 계정으로 쓰고, 자기 요청만 본다 (사용자 2026-10-16).
+
+-- ───────── 코레일 계정 (사람마다 하나, 비밀번호는 주민번호와 같은 키로 암호화) ─────────
+-- 암호문 표는 API 로 닿지 않는다(RLS 켜고 정책 없음) — 아래 함수로만 쓰고, 원문은 감시 프로그램(service role)만 꺼낸다.
+create table ktx_accounts (
+  user_id    uuid primary key references auth.users(id) on delete cascade,
+  login_id   text not null,                       -- 회원번호·전화번호(하이픈 없이)·이메일
+  enc        bytea not null,                      -- 비밀번호 (pgp_sym_encrypt, _ssn_key)
+  updated_at timestamptz not null default now()
+);
+alter table ktx_accounts enable row level security;
+revoke all on ktx_accounts from anon, authenticated;
+
+create or replace function _mask_login(p text) returns text language sql immutable as $$
+  select case when p is null or p = '' then null
+              when position('@' in p) > 0 then left(p, 2) || '***' || substr(p, position('@' in p))
+              when length(p) > 7 then left(p, 3) || repeat('*', length(p) - 7) || right(p, 4)
+              else left(p, 2) || '***' end
+$$;
+
+-- 내 코레일 계정 저장 (아이디를 비우면 삭제). 돌려주는 값은 가린 아이디.
+create or replace function set_ktx_account(p_login text, p_pw text) returns text
+language plpgsql security definer set search_path = public, extensions as $$
+declare l text := regexp_replace(coalesce(p_login, ''), '[\s-]', '', 'g');
+begin
+  if not is_office() then raise exception '권한이 없습니다'; end if;
+  if l = '' then
+    delete from ktx_accounts where user_id = auth.uid();
+    return null;
+  end if;
+  if coalesce(p_pw, '') = '' then raise exception '코레일 비밀번호를 입력하세요'; end if;
+  insert into ktx_accounts as x (user_id, login_id, enc) values (auth.uid(), l, pgp_sym_encrypt(p_pw, _ssn_key()))
+  on conflict (user_id) do update set login_id = excluded.login_id, enc = excluded.enc, updated_at = now();
+  return _mask_login(l);
+end $$;
+
+-- 내 코레일 계정이 저장돼 있으면 가린 아이디 (비밀번호는 안 돌려준다)
+create or replace function my_ktx_account() returns text
+language sql stable security definer set search_path = public as
+$$ select _mask_login(login_id) from ktx_accounts where user_id = auth.uid() and is_office() $$;
+
+-- 감시 프로그램 전용: 요청한 사람의 아이디·비밀번호 원문
+create or replace function ktx_account_for_worker(p_user uuid) returns table (login_id text, pw text)
+language sql stable security definer set search_path = public, extensions as
+$$ select login_id, pgp_sym_decrypt(enc, _ssn_key()) from ktx_accounts where user_id = p_user $$;
+revoke execute on function ktx_account_for_worker(uuid) from public, anon, authenticated;
+do $$ begin   -- 데모(PGlite)·테스트엔 service_role 이 없다
+  if exists (select 1 from pg_roles where rolname = 'service_role') then
+    grant execute on function ktx_account_for_worker(uuid) to service_role;
+  end if;
+end $$;
+
+-- ───────── 감시 요청 ─────────
+create table ktx_jobs (
+  id          uuid primary key default gen_random_uuid(),
+  dep         text not null,                       -- 출발역 이름 (서울, 부산 …)
+  arr         text not null,
+  dep_date    date not null,
+  time_from   text not null,                       -- 'HH:MM' 이 시각부터 출발하는 열차
+  time_to     text not null,                       -- 'HH:MM' 이 시각까지 출발하는 열차
+  adults      int not null default 1 check (adults between 1 and 9),
+  seat        text not null default '일반실' check (seat in ('일반실', '특실', '아무거나')),
+  standby     boolean not null default false,      -- 빈자리 없으면 예약대기 신청 (좌석 확보는 아님)
+  ktx_only    boolean not null default true,       -- KTX 계열만 (무궁화·ITX 빼고)
+  interval_s  numeric not null default 5,
+  status      text not null default '대기' check (status in ('대기', '감시중', '확보', '대기접수', '실패', '정지')),
+  stop        boolean not null default false,      -- 폰에서 [정지] → 감시 프로그램이 보고 멈춤
+  result      text,                                -- 잡은 열차·결제 기한 / 실패 이유
+  pnr         text,                                -- 코레일 예약번호
+  log         jsonb not null default '[]',         -- 최근 기록 ["HH:MM:SS 메시지", …]
+  created_by  uuid not null references auth.users(id) default auth.uid(),
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+create index ktx_jobs_created on ktx_jobs (created_by, created_at desc);
+alter table ktx_jobs enable row level security;
+-- 각자 자기 요청만 (코레일 계정이 사람마다 다르다)
+create policy own_jobs on ktx_jobs for all to authenticated
+  using (is_office() and created_by = auth.uid()) with check (is_office() and created_by = auth.uid());
+
+-- 감시 프로그램이 살아 있는지 (몇 초마다 찍는다)
+create table ktx_worker (
+  id        int primary key default 1 check (id = 1),
+  host      text,
+  seen_at   timestamptz
+);
+alter table ktx_worker enable row level security;
+create policy office_read on ktx_worker for select to authenticated using (is_office());
