@@ -8,6 +8,7 @@ import { SettleTab } from "./tab-settle.js";
 import { DocsTab } from "./tab-docs.js";
 import { FilesTab } from "./tab-files.js";
 import { InspectionCard } from "./tab-insp.js";
+import { CarChecks } from "./checks.js";
 
 export async function loadCar(db, id) {
   const [car, costs, loans, sale, buyers, settlement] = await Promise.all([
@@ -97,7 +98,8 @@ function InfoTab({ app, car, sale, office }) {
     </div>
     <div class="kvgrid">${rows.map(([k, v]) => html`<div><span>${k}</span><b>${v || html`<i class="muted">-</i>`}</b></div>`)}</div>
   </div>
-  <${InspectionCard} app=${app} car=${car} office=${office} />`;
+  <${InspectionCard} app=${app} car=${car} office=${office} />
+  ${office && html`<${CarChecks} app=${app} car=${car} />`}`;
 }
 
 /** 고객에게 보내기 — 손님이 "견적서·성능지 받을 수 있나요?" 할 때 폰에서 바로 (카톡·문자 공유창) */
@@ -105,7 +107,8 @@ function SendBox({ app, car, sale }) {
   const [pdf, setPdf] = useState(undefined);      // 성능점검기록부 파일 (미리 받아 둔다 — 공유창은 누른 직후에 열어야 해서)
   const [imgs, setImgs] = useState(null);         // 성능지 두 쪽을 사진(JPG)으로
   const [reg, setReg] = useState(undefined);
-  const [refund, setRefund] = useState(false);    // 3일 환불 약정서 만들기 칸      // 자동차등록증 (매입 때 받은 것) 사진
+  const [refund, setRefund] = useState(false);
+  const [regSale, setRegSale] = useState(null);   // 매도 등록증 (새 주인 명의, 웍스 '매도' 게시판에서)    // 3일 환불 약정서 만들기 칸      // 자동차등록증 (매입 때 받은 것) 사진
   const loadReg = () => run(async () => {
     const f = (await q(app.db.from("car_files").select("path,name,mime").eq("car_id", car.id).eq("kind", "등록증").order("created_at", { ascending: false }).limit(1)))[0];
     if (!f) return setReg(null);
@@ -117,6 +120,16 @@ function SendBox({ app, car, sale }) {
     setReg(file && /pdf/i.test(file.type + ext) ? (await pdf사진(file, car.plate).catch(() => null))?.map((x, i) => new File([x], `자동차등록증_${car.plate}${i ? "_" + (i + 1) : ""}.jpg`, { type: "image/jpeg" })) || [file] : file ? [file] : null);
   });
   useEffect(() => { loadReg(); }, [car.id]);
+  useEffect(() => { if (sale) run(async () => {
+    const fs = await q(app.db.from("car_files").select("path,name,mime").eq("car_id", car.id).eq("kind", "매도등록증").order("created_at", { ascending: false }));
+    const out = [];
+    for (const f of fs.slice(0, 4)) {
+      const { data } = await app.db.storage.from("car-files").createSignedUrl(f.path, 3600);
+      const blob = data?.signedUrl ? await (await fetch(data.signedUrl)).blob() : null;
+      if (blob) out.push(new File([blob], f.name.replace(/_웍스\d+_[^.]+/, ""), { type: f.mime || blob.type || "image/jpeg" }));
+    }
+    setRegSale(out.length ? out : null);
+  }); }, [car.id, !!sale]);
   // 등록증이 없으면 바로 찍어 올리기 (폰 카메라)
   const upReg = async file => {
     if (!file) return;
@@ -150,8 +163,9 @@ function SendBox({ app, car, sale }) {
   };
   return html`<div class="card sendbox no-print"><b>고객에게 보내기</b>
     <button class="btn" disabled=${!imgs} title="성능지 두 쪽을 사진 2장으로 — 카톡에서 바로 보입니다" onClick=${() => shareFiles(imgs, `${car.plate} 성능점검기록부`)}>${pdf === null ? "성능지 없음" : imgs ? `🖼 성능지 사진 보내기 (${imgs.length}장)` : "성능지 준비 중…"}</button>
-    ${reg ? html`<button class="btn" onClick=${() => shareFiles(reg, `${car.plate} 자동차등록증`)}>🪪 등록증 보내기</button>`
+    ${reg ? html`<button class="btn" onClick=${() => shareFiles(reg, `${car.plate} 자동차등록증`)}>🪪 ${sale ? "매입 " : ""}등록증 보내기</button>`
       : reg === null ? html`<label class="btn" title="매입 때 받은 자동차등록증 사진 — 한 번 올리면 다음부터 바로 보냅니다">🪪 등록증 올리기<input type="file" hidden accept="image/*,.pdf" onChange=${e => { upReg(e.target.files[0]); e.target.value = ""; }} /></label>` : ""}
+    ${regSale && html`<button class="btn" title="매도 때 자동차등록증 (새 주인 명의)" onClick=${() => shareFiles(regSale, `${car.plate} 매도 자동차등록증`)}>🪪 매도 등록증 보내기${regSale.length > 1 ? ` (${regSale.length})` : ""}</button>`}
     <a class="btn" href=${quoteUrl} target="_blank" rel="noopener" title=${price ? `${won(price)}원으로 견적서를 엽니다` : "가격 없이 엽니다"}>🧾 견적서 만들기</a>
     ${encarUrl && html`<button class="btn" onClick=${() => shareLink(encarUrl, `${car.car_name} ${car.plate}`)}>🔗 엔카 광고 링크</button>`}
     ${car.daangn_id && html`<button class="btn" onClick=${() => shareLink(`https://www.daangn.com/kr/cars/${car.daangn_id}/`, `${car.car_name} ${car.plate}`)}>🥕 당근 광고 링크</button>`}

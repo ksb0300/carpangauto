@@ -1,12 +1,29 @@
 // 통장 입출금: 계좌 등록, 거래내역 불러오기(팝빌 자동조회 또는 은행 엑셀), 입출금 ↔ 차량·딜러 매칭
-import { html, useState, useEffect, useMemo, Field, Select, Seg, Loading, Empty, run, won, toast, ask, Period, initPeriod, W, downloadCsv, CarSearch } from "../ui.js";
+import { html, useState, useEffect, useMemo, Field, Select, Seg, Loading, Empty, run, won, toast, ask, Period, initPeriod, W, downloadCsv, CarSearch, 간략차명 as 간략 } from "../ui.js";
 import { q } from "../db.js";
 import { popbill, PB_NOTE } from "../pb.js";
 import { loadAll } from "./report-data.js";
-import { 매칭후보, 자동확정, 거래내역정리, 거래키 } from "../report-calc.js";
+import { 거래내역정리, 거래키 } from "../report-calc.js";
 import { repayLoan } from "./lenders.js";
 
 const KINDS = ["차량매도대금", "차량매입대금", "재고금융", "재고금융이자", "상품화비", "자금이동", "운영비", "딜러정산지급", "알선", "상사매출", "기타"];
+// 한 번에 누르는 종류 버튼 (화면 이름) — 차가 필요한 종류는 누르면 차 고르는 칸이 열린다
+const QUICK = [["차량매도대금", "매도대금"], ["차량매입대금", "매입대금"], ["재고금융", "재고금융"], ["재고금융이자", "재고이자"], ["상품화비", "상품화비"],
+  ["운영비", "운영비"], ["자금이동", "자금이동"], ["기타", "기타"]];
+const 차필요 = new Set(["차량매도대금", "차량매입대금", "재고금융", "재고금융이자", "상품화비"]);
+const 이름 = k => (QUICK.find(x => x[0] === k) || [k, k])[1];
+const 반각 = s => String(s || "").replace(/[\uFF01-\uFF5E]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+/** 학습 키: 내용에서 숫자·괄호·기호·띄어쓰기를 뺀 앞 10글자 ('ＢＮＫ８５３２' → 'BNK', '김상혁(상주식회' → '김상혁상주식회') */
+export const 학습키 = t => 반각(t.counterparty || t.remark).replace(/\d{2,3}\s?[가-힣]\s?\d{4}/g, "").replace(/[0-9]/g, "").replace(/[\s()（）\[\]{}<>·.,_\-/*&㈜]/g, "").slice(0, 10);
+const 방향 = t => (Number(t.deposit) > 0 ? "입금" : "출금");
+/** 내용·메모에 우리 차 번호(전체 또는 뒤 4자리)가 있으면 그 차들 (재고 먼저, 최근 매입 순) */
+function 차힌트(t, cars) {
+  const txt = 반각(`${t.counterparty || t.remark || ""} ${t.memo || ""}`);
+  const full = (txt.match(/\d{2,3}[가-힣]\d{4}/g) || []).map(x => x.replace(/\s/g, ""));
+  const four = new Set(txt.match(/(?<!\d)\d{4}(?!\d)/g) || []);
+  const hit = cars.filter(c => !c.deleted_at && (full.includes(c.plate.replace(/\s/g, "")) || four.has(c.plate.replace(/\s/g, "").slice(-4))));
+  return hit.sort((a, b) => (a.status === "재고" ? -1 : 1) - (b.status === "재고" ? -1 : 1) || String(b.purchase_date).localeCompare(String(a.purchase_date))).slice(0, 4);
+}
 const XLSX_URL = "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm";
 
 /** 은행 엑셀(xls/xlsx) 또는 CSV(UTF-8·EUC-KR)를 행 배열로 */
@@ -29,7 +46,7 @@ export function BankPage({ app }) {
   const [txs, setTxs] = useState(null);
   const [data, setData] = useState(null);
   const [period, setPeriod] = useState(initPeriod("월"));
-  const [only, setOnly] = useState("전체");
+  const [only, setOnly] = useState("미매칭");
   const [adding, setAdding] = useState(false);
   const [busy, setBusy] = useState(false);
   const [pick, setPick] = useState(null);        // 수동 매칭 중인 거래 id
@@ -59,8 +76,42 @@ export function BankPage({ app }) {
   // 내 통장끼리 이체를 찾으려면 같은 기간 모든 통장 거래가 필요
   const [allTxs, setAllTxs] = useState([]);
   useEffect(() => { run(async () => setAllTxs(await q(app.db.from("bank_txs").select("id,account_id,tx_date,tx_time,deposit,withdraw").gte("tx_date", period.from).lte("tx_date", period.to)))); }, [period.from, period.to, txs]);
-  const cand = useMemo(() => data ? Object.fromEntries((txs || []).filter(t => !t.match_kind).map(t => [t.id, 매칭후보(t, data, { accounts, txs: allTxs })])) : {}, [txs, data, allTxs, accounts]);
+  // 학습: 사람이 연결한 기록 (통장·입출금·내용 → 종류별 횟수)
+  const [rules, setRules] = useState([]);
+  const loadRules = () => run(async () => setRules(await q(app.db.from("bank_rules").select("*"))));
+  useEffect(() => { loadRules(); }, []);
+  const 배운것 = t => {
+    const r = rules.find(x => x.account_id === t.account_id && x.direction === 방향(t) && x.key === 학습키(t));
+    if (!r) return null;
+    const [kind, n] = Object.entries(r.counts || {}).sort((a, b) => b[1] - a[1])[0] || [];
+    const 전체 = Object.values(r.counts || {}).reduce((a, b) => a + b, 0);
+    return kind ? { kind, n, 확실: n >= 2 && n === 전체 } : null;      // 2번 이상, 다른 종류로 연결한 적 없으면 '확실'
+  };
+  const 배우기 = (t, kind) => run(async () => {
+    const key = 학습키(t); if (!key || !kind) return;
+    const r = rules.find(x => x.account_id === t.account_id && x.direction === 방향(t) && x.key === key);
+    const counts = { ...(r?.counts || {}), [kind]: (Number(r?.counts?.[kind]) || 0) + 1 };
+    if (r) await q(app.db.from("bank_rules").update({ counts, last_kind: kind, updated_at: new Date().toISOString() }).eq("id", r.id));
+    else await q(app.db.from("bank_rules").insert({ account_id: t.account_id, direction: 방향(t), key, counts, last_kind: kind }));
+    loadRules();
+  });
+  // 차가 필요한 종류를 누르면 그 거래 아래에 차 고르는 칸 { id, kind }
+  const [carFor, setCarFor] = useState(null);
 
+  /** 종류 + 차 → 연결 내용 (재고금융: 그 차의 진행중 대출에 연결, 출금이면 상환완료 처리) */
+  const 연결값 = (t, kind, c) => {
+    if (!c) return { kind };
+    const m = { kind, car_id: c.id, dealer_id: c.dealer_id };
+    if (kind === "재고금융" || kind === "재고금융이자") {
+      const ls = (data?.loans || []).filter(l => l.car_id === c.id).sort((a, b) => (a.status === "진행중" ? -1 : 1) - (b.status === "진행중" ? -1 : 1) || String(b.start_date).localeCompare(String(a.start_date)));
+      if (ls[0]) { m.loan_id = ls[0].id; if (kind === "재고금융" && Number(t.withdraw) > 0 && ls[0].status === "진행중") m.repay = true; }
+    }
+    return m;
+  };
+  const 고르기 = (t, kind) => {
+    if (차필요.has(kind)) return setCarFor(carFor?.id === t.id && carFor.kind === kind ? null : { id: t.id, kind });
+    setMatch(t, { kind });
+  };
   const setMatch = (t, m, by = "수동") => run(async () => {
     // 재고금융 상환과 연결하면 그 대출을 이 거래 날짜로 상환완료 (상환 비용도 기록)
     if (m?.repay && m.loan_id) {
@@ -69,20 +120,30 @@ export function BankPage({ app }) {
     }
     await q(app.db.from("bank_txs").update({ match_kind: m?.kind || null, car_id: m?.car_id || null, dealer_id: m?.dealer_id || null,
       loan_id: m?.loan_id || null, matched_by: m ? by : null }).eq("id", t.id));
-    setPick(null); loadTx();
+    setPick(null); setCarFor(null); loadTx();
+    if (m && by === "수동") 배우기(t, m.kind);
     if (m?.repay) setData(await loadAll(app.db));
   });
   const editMemo = t => {
     const m = window.prompt("상세메모", t.memo || ""); if (m === null) return;
     run(async () => { await q(app.db.from("bank_txs").update({ memo: m.trim() || null }).eq("id", t.id)); loadTx(); }, "메모를 저장했습니다");
   };
+  // 배운 대로 한꺼번에: 같은 내용을 2번 이상 같은 종류로 연결했고, 차가 필요 없거나 내용의 차번호로 차가 한 대로 정해지는 것만
+  // (재고금융 상환처럼 대출 상태를 바꾸는 건 사람이 직접)
+  const 배운대로 = () => (txs || []).filter(t => !t.match_kind).map(t => {
+    const b = 배운것(t); if (!b?.확실) return null;
+    if (!차필요.has(b.kind)) return [t, { kind: b.kind }];
+    const h = 차힌트(t, data?.cars || []);
+    if (h.length !== 1) return null;
+    const m = 연결값(t, b.kind, h[0]);
+    return m.repay ? null : [t, m];
+  }).filter(Boolean);
   const autoAll = async () => {
-    // 자동은 장부 표시만 — 재고금융 상환처럼 대출 상태를 바꾸는 건 사람이 [연결]을 눌러야
-    const list = (txs || []).filter(t => !t.match_kind).map(t => [t, 자동확정(cand[t.id] || [])]).filter(([, m]) => m && !m.repay);
-    if (!list.length) return toast("확실하게 맞는 거래가 없습니다. 후보를 보고 직접 연결하세요.");
+    const list = 배운대로();
+    if (!list.length) return toast("아직 배운 게 부족합니다. 먼저 직접 연결해 주세요 — 같은 내용을 두 번 같은 종류로 연결하면 그다음부터 한꺼번에 됩니다.");
     setBusy(true);
     await run(async () => { for (const [t, m] of list) await q(app.db.from("bank_txs").update({ match_kind: m.kind, car_id: m.car_id || null, dealer_id: m.dealer_id || null, loan_id: m.loan_id || null, matched_by: "자동" }).eq("id", t.id)); },
-      `${list.length}건을 자동으로 연결했습니다`);
+      `${list.length}건을 배운 대로 연결했습니다`);
     setBusy(false); loadTx();
   };
 
@@ -144,7 +205,7 @@ export function BankPage({ app }) {
       <${Period} value=${period} onChange=${setPeriod} />
       <${Seg} value=${only} onChange=${setOnly} options=${["전체", "미매칭", "입금", "출금"]} />
       <span class="grow"></span>
-      <button class="btn primary" disabled=${busy || !data} onClick=${autoAll}>AI 매칭</button>
+      <button class="btn primary" disabled=${busy || !data} onClick=${autoAll} title="같은 내용을 2번 이상 같은 종류로 연결한 거래만">배운 대로 한꺼번에${data && txs ? ` (${배운대로().length})` : ""}</button>
       <button class="btn" disabled=${!shown.length} onClick=${() => downloadCsv("통장입출금", [["일자", "시간", "입금", "출금", "잔액", "적요", "매칭", "차량", "딜러", "메모"],
         ...shown.map(t => [t.tx_date, t.tx_time, t.deposit, t.withdraw, t.balance, t.remark, t.match_kind, car[t.car_id]?.plate, dealer[t.dealer_id]?.name, t.memo])])}>엑셀(CSV)</button>
     </div>
@@ -158,19 +219,25 @@ export function BankPage({ app }) {
       <colgroup><col style="width:150px" /><col style="width:56px" /><col style="width:130px" /><col style="width:140px" /><col /><col style="width:300px" /><col style="width:170px" /></colgroup>
       <thead><tr><th>일자</th><th>구분</th><th class="r">금액</th><th class="r">잔액</th><th>내용 (보낸 사람·받는 곳)</th><th>연결</th><th></th></tr></thead>
       <tbody>${shown.map(t => {
-        const c = cand[t.id] || [];
+        const b = !t.match_kind && 배운것(t), 힌트 = !t.match_kind ? 차힌트(t, data?.cars || []) : [];
         return html`<tr class=${t.match_kind ? "matched" : ""}>
           <td class="nowrap">${t.tx_date} <span class="muted small">${(t.tx_time || "").slice(0, 5)}</span></td>
           ${t.deposit > 0 ? html`<td class="red">입금</td><td class="r red"><b>+${won(t.deposit)}</b></td>` : html`<td class="blue">출금</td><td class="r blue"><b>-${won(t.withdraw)}</b></td>`}<td class="r muted">${t.balance != null ? won(t.balance) : ""}</td>
           <td class="ellipsis" title=${raw[t.id] || t.remark}>${t.remark}${t.source === "문자" ? html` <span class="muted small" title=${raw[t.id] || ""}>문자</span>` : ""}${t.memo ? html`<br /><span class="muted small">📝 ${t.memo}</span>` : ""}</td>
           <td>${t.match_kind ? html`<span class="badge blue">${t.match_kind}</span> ${t.car_id ? html`<a href=${`#/car/${t.car_id}`}>${car[t.car_id]?.plate || ""}</a>` : ""}
                  ${t.dealer_id && !t.car_id ? dealer[t.dealer_id]?.name : ""} <span class="muted small">${t.matched_by}</span>`
-            : c[0] ? html`<span class="small">후보: ${c[0].label} <span class="muted">(${c[0].score}점)</span></span>` : html`<span class="muted small">후보 없음</span>`}</td>
+            : html`<div class="quick">${b && html`<button class="btn sm primary" title=${`이 내용을 ${이름(b.kind)}(으)로 ${b.n}번 연결했습니다`} onClick=${() => 고르기(t, b.kind)}>지난번처럼 · ${이름(b.kind)}</button>`}
+                ${QUICK.filter(([k]) => k !== b?.kind).map(([k, l]) => html`<button class=${"chip" + (carFor?.id === t.id && carFor.kind === k ? " on" : "")} onClick=${() => 고르기(t, k)}>${l}</button>`)}</div>`}</td>
           <td class="nowrap"><button class="btn sm ghost" title="상세메모" onClick=${() => editMemo(t)}>메모</button>${t.match_kind ? html`<button class="btn sm ghost" onClick=${() => setMatch(t, null)}>해제</button>`
-            : html`${c[0] && html`<button class="btn sm primary" onClick=${() => setMatch(t, c[0])}>연결</button>`}
-                   <button class="btn sm" onClick=${() => setPick(pick === t.id ? null : t.id)}>직접</button>`}</td>
+            : html`<button class="btn sm ghost" title="딜러·알선 등 다른 종류" onClick=${() => setPick(pick === t.id ? null : t.id)}>그 밖</button>`}</td>
         </tr>
-        ${pick === t.id && html`<tr class="sub"><td colspan="7"><${ManualMatch} cands=${c} cars=${data?.cars || []} dealers=${app.dealers}
+        ${carFor?.id === t.id && html`<tr class="sub"><td colspan="7"><div class="row" style="flex-wrap:wrap;gap:6px">
+          <b class="small">${이름(carFor.kind)} — 어느 차?</b>
+          ${힌트.map(c => html`<button class="btn sm primary" onClick=${() => setMatch(t, 연결값(t, carFor.kind, c))}>${c.plate} ${간략(c.car_name)} <span class="small">${c.status}</span></button>`)}
+          <${CarSearch} cars=${data?.cars || []} value=${null} onPick=${c => setMatch(t, 연결값(t, carFor.kind, c))} />
+          <button class="btn sm ghost" onClick=${() => setMatch(t, { kind: carFor.kind })} title="차 없이 종류만">차 없이</button>
+          <button class="btn sm ghost" onClick=${() => setCarFor(null)}>닫기</button></div></td></tr>`}
+        ${pick === t.id && html`<tr class="sub"><td colspan="7"><${ManualMatch} cands=${[]} cars=${data?.cars || []} dealers=${app.dealers}
           onPick=${m => setMatch(t, m)} onCancel=${() => setPick(null)} /></td></tr>`}`;
       })}</tbody>
     </table></div>`}`}`;

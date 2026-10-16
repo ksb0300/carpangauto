@@ -15,14 +15,25 @@ const 주말 = d => [0, 6].includes(new Date(d + "T00:00:00").getDay());
 export function ReservePage({ app }) {
   const [jobs, setJobs] = useState(null);
   const [worker, setWorker] = useState(undefined);
-  const [f, setF] = useState(() => ({ center: load("center") || CENTERS[0][0], date: "", times: [], interval: 7, finish: "앱" }));
+  const [f, setF] = useState(() => ({ center: load("center") || CENTERS[0][0], date: "", times: [], interval: 3, finish: "앱" }));
   const set = (k, v) => setF(x => ({ ...x, [k]: v }));
-  const refresh = () => run(async () => {
-    setJobs(await q(app.db.from("encar_reserve_jobs").select("*").order("created_at", { ascending: false }).limit(20)));
-    setWorker((await q(app.db.from("encar_reserve_worker").select("*")))[0] || null);
-  });
-  // 감시 중엔 몇 초마다 새로 (폰에서 진행 상황을 본다)
-  useEffect(() => { refresh(); const t = setInterval(refresh, 5000); return () => clearInterval(t); }, []);
+  const [끊김, set끊김] = useState(0);      // 자동 새로고침이 연달아 실패한 횟수 (폰 LTE 가 잠깐 끊기는 일은 흔하다)
+  // 자동 새로고침은 오류 알림을 띄우지 않는다 — 실패하면 조용히 다음 번에 다시 (화면 위에 '연결 다시 시도 중'만)
+  const refresh = async () => {
+    try {
+      setJobs(await q(app.db.from("encar_reserve_jobs").select("*").order("created_at", { ascending: false }).limit(20)));
+      setWorker((await q(app.db.from("encar_reserve_worker").select("*")))[0] || null);
+      set끊김(0);
+    } catch { set끊김(x => x + 1); }
+  };
+  // 감시 중엔 몇 초마다 새로 (폰에서 진행 상황을 본다) — 화면이 꺼져 있거나 다른 앱을 보고 있으면 쉬고, 돌아오면 바로
+  useEffect(() => {
+    refresh();
+    const t = setInterval(() => { if (document.visibilityState === "visible") refresh(); }, 5000);
+    const back = () => { if (document.visibilityState === "visible") refresh(); };
+    document.addEventListener("visibilitychange", back);
+    return () => { clearInterval(t); document.removeEventListener("visibilitychange", back); };
+  }, []);
   const 연결초 = worker?.seen_at ? Math.round((Date.now() - Date.parse(worker.seen_at)) / 1000) : null;
   const 살아있음 = 연결초 !== null && 연결초 < 90;
   const toggle = t => set("times", f.times.includes(t) ? f.times.filter(x => x !== t) : [...f.times, t].sort());
@@ -32,7 +43,7 @@ export function ReservePage({ app }) {
     if (!f.times.length) throw new Error("노리는 시간대를 하나 이상 고르세요");
     keep("center", f.center);
     await q(app.db.from("encar_reserve_jobs").insert({ center: f.center, res_date: f.date, times: f.times,
-      interval_s: Math.max(3, Number(f.interval) || 7), finish: f.finish }));
+      interval_s: Math.max(3, Number(f.interval) || 3), finish: f.finish }));
     set("times", []); refresh();
   }, "감시를 요청했습니다 — 사무실 PC 가 곧 시작합니다");
   const stop = j => run(async () => { await q(app.db.from("encar_reserve_jobs").update({ stop: true }).eq("id", j.id)); refresh(); }, "정지를 요청했습니다");
@@ -41,7 +52,8 @@ export function ReservePage({ app }) {
   return html`<div class="bar"><h2>광고장 예약</h2>
       <span class="muted small">마감된 시간대에 취소분이 나오면 사무실 PC 가 바로 잡고(15분) 웍스 'TierONE 알림' 방으로 직원 모두에게 알립니다</span><span class="grow"></span>
       ${worker === undefined ? "" : 살아있음 ? html`<${Badge} tone="green">감시 PC 연결됨<//>`
-        : html`<${Badge} tone="red">감시 PC 꺼짐${연결초 !== null ? ` (${Math.round(연결초 / 60)}분 전)` : ""}<//>`}</div>
+        : html`<${Badge} tone="red">감시 PC 꺼짐${연결초 !== null ? ` (${Math.round(연결초 / 60)}분 전)` : ""}<//>`}
+      ${끊김 >= 2 && html`<${Badge} tone="amber" title="폰 인터넷이 잠깐 끊겼습니다. 감시는 사무실 PC 에서 계속됩니다.">새로고침 다시 시도 중<//>`}</div>
     ${worker !== undefined && !살아있음 && html`<p class="note bad">사무실 PC 의 감시 프로그램이 응답하지 않습니다. PC 가 켜져 있는지, 작업 스케줄러 '엔카 광고장 예약 감시'가 돌고 있는지 확인하세요. 요청은 그대로 두면 PC 가 켜질 때 시작합니다.</p>`}
 
     <div class="card reserve-new">
@@ -57,7 +69,7 @@ export function ReservePage({ app }) {
       <div class="fgrid" style="margin-top:12px">
         <${Field} label="마무리" hint=${f.finish === "자동" ? "준비 중 — 엔카 예약 3단계(차량·정보 입력) 화면을 평일에 조사한 뒤 켭니다. 지금 고르면 확보까지만 하고 알립니다." : "잡으면 알림 → 15분 안에 엔카 앱에서 차량·정보 입력하고 확정"}>
           <${Seg} value=${f.finish} onChange=${v => set("finish", v)} options=${[["앱", "엔카 앱에서 마무리"], ["자동", "자동 확정 (준비 중)"]]} /><//>
-        <${Field} label="확인 간격 (초)" hint="3초 이상 · 기본 7초"><input inputmode="numeric" value=${f.interval} onInput=${e => set("interval", e.target.value.replace(/[^\d]/g, ""))} /><//>
+        <${Field} label="확인 간격 (초)" hint="3초 이상 · 기본 3초"><input inputmode="numeric" value=${f.interval} onInput=${e => set("interval", e.target.value.replace(/[^\d]/g, ""))} /><//>
       </div>
       <div class="bar"><span class="grow"></span><button class="btn primary" onClick=${start}>▶ 감시 시작</button></div>
     </div>

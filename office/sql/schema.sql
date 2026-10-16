@@ -1552,3 +1552,21 @@ alter table car_files add constraint car_files_kind_check check (kind in ('제�
 -- 20261014000002_reserve_interval_3.sql
 -- 광고장 예약 확인 간격 기본값 3초 (사용자 2026-10-14)
 alter table encar_reserve_jobs alter column interval_s set default 3;
+
+
+-- 20261016000001_bank_rules.sql
+-- 자금관리 학습: 사람이 통장 거래를 연결할 때마다 '이 통장·입출금·내용(보낸 사람·받는 곳)이면 이 종류'를 센다.
+-- 다음에 같은 내용이 오면 '지난번처럼' 버튼으로 먼저 보여 주고, 충분히 쌓이면 한꺼번에 연결한다.
+-- key = 내용에서 숫자·괄호·띄어쓰기를 뺀 앞부분 (예: 'ＢＮＫ８５３２' → 'BNK', '김상혁(상주식회' → '김상혁상주식회')
+create table bank_rules (
+  id          uuid primary key default gen_random_uuid(),
+  account_id  uuid not null references bank_accounts(id) on delete cascade,
+  direction   text not null check (direction in ('입금', '출금')),
+  key         text not null,
+  counts      jsonb not null default '{}',      -- { 종류: 횟수 }
+  last_kind   text,
+  updated_at  timestamptz not null default now(),
+  unique (account_id, direction, key)
+);
+alter table bank_rules enable row level security;
+create policy office_all on bank_rules for all to authenticated using (is_office()) with check (is_office());
