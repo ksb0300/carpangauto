@@ -55,9 +55,6 @@ function 전화링크(번호) {
     "<br>© " + new Date().getFullYear() + " " + 매장.영문 + "</div>" +
     "</div></footer>");
 
-  /* 직원·딜러가 로그인해 있으면 내부 정보 (손님에게는 아무 일도 안 한다) */
-  var ms = document.createElement("script"); ms.src = "/assets/member.js?v=c9b1541c"; document.body.appendChild(ms);
-
   /* 스크롤하며 나타나는 요소 */
   if ("IntersectionObserver" in window) {
     var io = new IntersectionObserver(function (es) {
