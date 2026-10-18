@@ -1796,3 +1796,21 @@ alter table board_posts add constraint board_posts_category_check
   check (category in ('공지', '매입등록증', '매도등록증', '자료', '송금요청', '매도정보', '말소서류', '자유'));
 alter table board_posts add column src text unique;      -- 'works:<게시판>:<글>' — 웍스에서 옮겨 온 글
 alter table board_comments add column src text unique;   -- 'works:<댓글>'
+
+
+-- 20261019000001_board_owner_edit.sql
+-- 게시판 글·댓글: 보기·쓰기는 사무실 누구나, 고치기·지우기는 쓴 사람 본인 또는 공동대표만 (실수로 남의 글을 지우지 않게)
+-- 웍스에서 옮겨 온 글은 쓴 사람(created_by)이 비어 있어 공동대표만 고칠 수 있다. 첨부(board_files)는 글을 따라간다.
+drop policy office_all on board_posts;
+create policy office_read  on board_posts for select to authenticated using (is_office());
+create policy office_write on board_posts for insert to authenticated with check (is_office());
+create policy owner_edit   on board_posts for update to authenticated
+  using (is_office() and (created_by = auth.uid() or my_role() = 'admin')) with check (is_office());
+create policy owner_del    on board_posts for delete to authenticated
+  using (is_office() and (created_by = auth.uid() or my_role() = 'admin'));
+
+drop policy office_all on board_comments;
+create policy office_read  on board_comments for select to authenticated using (is_office());
+create policy office_write on board_comments for insert to authenticated with check (is_office());
+create policy owner_del    on board_comments for delete to authenticated
+  using (is_office() and (created_by = auth.uid() or my_role() = 'admin'));

@@ -2,15 +2,19 @@
 // 등록증 글은 차량번호로 차를 찾아, 올린 사진을 그 차의 첨부서류(등록증 / 매도 등록증)에도 붙인다
 // (예전 웍스 매입·매도 게시판 → works_reg_sync 가 하던 일).
 // 파일은 비공개 버킷 car-files 의 board/<글id>/ 아래. 작성자 이름은 글에 같이 저장 (직원은 남의 profiles 를 못 읽는다).
-import { html, useState, useEffect, Loading, Empty, Badge, Seg, Field, Select, run, toast, ask, go } from "../ui.js";
+import { html, useState, useEffect, Loading, Empty, Badge, Seg, Field, Select, run, toast, ask, go, 검색맞음 } from "../ui.js";
 import { q } from "../db.js";
+import { 보내기 as 알림 } from "../push.js";
 
-const CATS = [["공지", "공지"], ["매입등록증", "매입 등록증"], ["매도등록증", "매도 등록증"], ["자유", "자유"]];
+// 자료·송금요청·매도정보·말소서류는 웍스 게시판에서 옮겨 온 분류 (송금요청·매도정보는 나중에 업무관리 기능으로 만들 예정)
+const CATS = [["공지", "공지"], ["매입등록증", "매입 등록증"], ["매도등록증", "매도 등록증"], ["송금요청", "송금요청"], ["매도정보", "매도정보"],
+  ["말소서류", "말소서류"], ["자료", "자료"], ["자유", "자유"]];
 const 이름 = Object.fromEntries(CATS);
-const TONE = { 공지: "red", 매입등록증: "blue", 매도등록증: "green", 자유: "gray" };
+const TONE = { 공지: "red", 매입등록증: "blue", 매도등록증: "green", 송금요청: "amber", 매도정보: "green", 말소서류: "gray", 자료: "blue", 자유: "gray" };
 const CAR_KIND = { 매입등록증: "등록증", 매도등록증: "매도등록증" };      // car_files.kind 값
 const MAX = 20 * 1024 * 1024;
-const safe = s => s.replace(/[^\w.\-가-힣]/g, "_").slice(-80);
+// 저장소 경로는 영문·숫자만 된다 (한글 파일 이름이면 'Invalid key') — 원래 이름은 board_files.name 에 그대로
+const 저장이름 = name => `${Date.now()}_${Math.random().toString(36).slice(2, 8)}${((name.match(/\.[A-Za-z0-9]{1,5}$/) || [""])[0]).toLowerCase()}`;
 const 번호 = s => String(s || "").replace(/\s/g, "");
 const 때 = t => { const d = new Date(new Date(t).getTime() + 9 * 3600e3).toISOString(); return d.slice(5, 10).replace("-", "/") + " " + d.slice(11, 16); };
 const bucket = app => app.db.storage.from("car-files");
@@ -24,6 +28,15 @@ async function 차찾기(app, plate) {
   return rows.find(c => 번호(c.plate) === p || 번호(c.plate_before) === p) || null;
 }
 
+/** 서버가 한 번에 1000줄까지만 주므로 끝까지 나눠 받기 — qb 는 새 쿼리를 만드는 함수 */
+async function 전부(qb) {
+  const out = [];
+  for (let i = 0; ; i += 1000) { const r = await q(qb().range(i, i + 999)); out.push(...r); if (r.length < 1000) return out; }
+}
+const PAGE = 100;
+/** 수정·삭제는 쓴 사람 본인 또는 공동대표만 (웍스에서 옮겨 온 글은 공동대표만) */
+const 내것 = (app, x) => app.profile.role === "admin" || (!!x.created_by && x.created_by === app.user.id);
+
 export function BoardPage({ app, id }) {
   return id ? html`<${Post} app=${app} id=${id} />` : html`<${List} app=${app} />`;
 }
@@ -31,29 +44,38 @@ export function BoardPage({ app, id }) {
 function List({ app }) {
   const [posts, setPosts] = useState(null);
   const [cat, setCat] = useState("전체");
+  const [s, setS] = useState("");
+  const [more, setMore] = useState(1);
   const [writing, setWriting] = useState(false);
   const load = () => run(async () => {
     const [p, c] = await Promise.all([
-      q(app.db.from("board_posts").select("id, category, title, author_name, created_at, pinned, plate, car_id").order("pinned", { ascending: false }).order("created_at", { ascending: false }).limit(200)),
-      q(app.db.from("board_comments").select("post_id")),
+      전부(() => app.db.from("board_posts").select("id, category, title, body, author_name, created_at, pinned, plate, car_id").order("pinned", { ascending: false }).order("created_at", { ascending: false })),
+      전부(() => app.db.from("board_comments").select("post_id")),
     ]);
     const n = {}; c.forEach(x => { n[x.post_id] = (n[x.post_id] || 0) + 1; });
     setPosts(p.map(x => ({ ...x, 댓글: n[x.id] || 0 })));
   });
   useEffect(() => { load(); }, []);
-  const shown = (posts || []).filter(p => cat === "전체" || p.category === cat);
+  useEffect(() => { setMore(1); }, [cat, s]);
+  const shown = (posts || []).filter(p => (cat === "전체" || p.category === cat) && 검색맞음(s, p.title, p.plate, p.author_name, p.body));
+  const page = shown.slice(0, PAGE * more);
+  const n = c => (posts || []).filter(p => p.category === c).length;
 
   return html`<div class="bar"><h2>게시판</h2><span class="grow"></span>
       <button class="btn primary" onClick=${() => setWriting(!writing)}>${writing ? "닫기" : "✏️ 새 글"}</button></div>
     ${writing && html`<${NewPost} app=${app} onDone=${id => { setWriting(false); go("/board/" + id); }} />`}
-    <div class="bar" style="margin:6px 0 10px"><${Seg} value=${cat} onChange=${setCat} options=${[["전체", "전체"], ...CATS]} /></div>
-    ${!posts ? html`<${Loading} />` : !shown.length ? html`<${Empty}>글이 없습니다.<//>` : html`<div class="card" style="padding:0">
-      <table class="grid click"><tbody>${shown.map(p => html`<tr key=${p.id} onClick=${() => go("/board/" + p.id)}>
+    <div class="hscroll" style="margin:6px 0 8px"><${Seg} value=${cat} onChange=${setCat}
+      options=${[["전체", `전체 ${(posts || []).length || ""}`], ...CATS.filter(([c]) => n(c) || c === "공지" || c === "자유").map(([c, l]) => [c, n(c) ? `${l} ${n(c)}` : l])]} /></div>
+    <input class="search" style="width:100%;margin-bottom:10px" placeholder="차량번호·제목·작성자·내용 검색" value=${s} onInput=${e => setS(e.target.value)} />
+    ${!posts ? html`<${Loading} />` : !shown.length ? html`<${Empty}>${s ? "찾는 글이 없습니다." : "글이 없습니다."}<//>` : html`<div class="card" style="padding:0">
+      <table class="grid click"><tbody>${page.map(p => html`<tr key=${p.id} onClick=${() => go("/board/" + p.id)}>
         <td style="width:1%"><${Badge} tone=${TONE[p.category]}>${p.pinned ? "📌 " : ""}${이름[p.category]}<//></td>
         <td style="white-space:normal"><b>${p.title}</b>${p.댓글 ? html` <span class="muted small">[${p.댓글}]</span>` : ""}
           ${p.plate && html` <span class="muted small">· ${p.plate}${p.car_id ? " ✓" : ""}</span>`}</td>
         <td class="muted small" style="width:1%">${p.author_name}</td>
-        <td class="muted small r" style="width:1%">${때(p.created_at)}</td></tr>`)}</tbody></table></div>`}`;
+        <td class="muted small r" style="width:1%">${때(p.created_at)}</td></tr>`)}</tbody></table></div>
+      ${shown.length > page.length && html`<div class="bar" style="justify-content:center;margin-top:8px">
+        <button class="btn ghost" onClick=${() => setMore(more + 1)}>더 보기 (${shown.length - page.length}개 남음)</button></div>`}`}`;
 }
 
 function NewPost({ app, onDone }) {
@@ -74,12 +96,15 @@ function NewPost({ app, onDone }) {
         plate: 등록증 ? 번호(f.plate) : null, car_id: car?.id || null, pinned: f.category === "공지" && f.pinned,
         author_name: app.profile.name }).select("id"));
       for (const x of files) {
-        const path = `board/${p.id}/${Date.now()}_${safe(x.name)}`;
+        const path = `board/${p.id}/${저장이름(x.name)}`;
         const { error } = await bucket(app).upload(path, x, { contentType: x.type, upsert: false });
         if (error) throw new Error(error.message);
         await q(app.db.from("board_files").insert({ post_id: p.id, name: x.name, path, size: x.size, mime: x.type || null }));
         if (car) await q(app.db.from("car_files").insert({ car_id: car.id, kind: CAR_KIND[f.category], name: x.name, path, size: x.size, mime: x.type || null }));
       }
+      // 올린 사람 빼고 전원 폰으로 (실패해도 글은 올라감)
+      await 알림(app, { title: `[${이름[f.category]}] ${f.title.trim()}`, body: `${app.profile.name}${f.body ? " · " + f.body.trim().slice(0, 80) : ""}`,
+        url: "/office/#/board/" + p.id, tag: "board-" + p.id, exclude_self: true });
       if (등록증 && !car) toast(`${번호(f.plate)} 차를 업무관리에서 못 찾아, 게시판에만 올렸습니다.`, "err");
       else if (car && files.length) toast(`${car.plate} 차 첨부서류에도 붙였습니다.`);
       onDone(p.id);
@@ -143,8 +168,8 @@ function Post({ app, id }) {
   const imgs = files.filter(x => /^image\//.test(x.mime || "") && urls[x.id]), etc = files.filter(x => !imgs.includes(x));
 
   return html`<div class="bar"><a href="#/board">← 게시판</a><span class="grow"></span>
-      ${!edit && html`<button class="btn sm ghost" onClick=${() => setEdit({ title: p.title, body: p.body })}>수정</button>`}
-      <button class="btn sm danger" onClick=${del}>삭제</button></div>
+      ${내것(app, p) && !edit && html`<button class="btn sm ghost" onClick=${() => setEdit({ title: p.title, body: p.body })}>수정</button>`}
+      ${내것(app, p) && html`<button class="btn sm danger" onClick=${del}>삭제</button>`}</div>
     <div class="card">
       <div class="bar"><${Badge} tone=${TONE[p.category]}>${p.pinned ? "📌 " : ""}${이름[p.category]}<//>
         <span class="muted small">${p.author_name} · ${때(p.created_at)}${p.updated_at !== p.created_at ? " (수정됨)" : ""}</span></div>
@@ -160,7 +185,7 @@ function Post({ app, id }) {
     </div>
     <div class="card"><h3>댓글 ${cs.length || ""}</h3>
       ${cs.length > 0 && html`<ul class="todo">${cs.map(x => html`<li key=${x.id}><div class="grow" style="flex:1"><b class="small">${x.author_name}</b> <span class="muted small">${때(x.created_at)}</span>
-        <div style="white-space:pre-wrap">${x.body}</div></div><button class="btn sm ghost" onClick=${() => delC(x)}>✕</button></li>`)}</ul>`}
+        <div style="white-space:pre-wrap">${x.body}</div></div>${내것(app, x) && html`<button class="btn sm ghost" onClick=${() => delC(x)}>✕</button>`}</li>`)}</ul>`}
       <div class="row" style="margin-top:8px"><input value=${c} placeholder="댓글 쓰기" onInput=${e => setC(e.target.value)}
         onKeyDown=${e => { if (e.key === "Enter" && !e.isComposing) addC(); }} /><button class="btn" onClick=${addC}>등록</button></div>
     </div>`;

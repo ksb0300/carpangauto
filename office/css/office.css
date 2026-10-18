@@ -498,3 +498,7 @@ svg.drawing .pnl { pointer-events: none; }
 .st-pick .st-list button { display: block; width: 100%; text-align: left; background: none; border: 0; font: inherit; padding: 10px 12px; border-radius: 7px; cursor: pointer; }
 .st-pick .st-list button:hover, .st-pick .st-list button:first-child { background: var(--line2); }
 .st-pick .st-list > span { display: block; padding: 10px 12px; }
+
+/* 버튼 탭이 많아 폰 폭을 넘으면 가로로 밀어서 (게시판 분류 등) */
+.hscroll { overflow-x: auto; max-width: 100%; scrollbar-width: none; -webkit-overflow-scrolling: touch; } .hscroll::-webkit-scrollbar { display: none; }
+.hscroll .seg button { white-space: nowrap; }
