@@ -4,9 +4,43 @@
 import { html, useState, useEffect, Loading, Badge, Seg, Field, run, today } from "../ui.js";
 import { q } from "../db.js";
 
-const STATIONS = ["서울", "용산", "수서", "영등포", "수원", "광명", "동탄", "평택지제", "천안아산", "오송", "대전", "김천구미", "동대구",
-  "서대구", "경주", "울산(통도사)", "부산", "포항", "구포", "밀양", "마산", "창원중앙", "진주", "익산", "전주", "광주송정", "목포",
-  "순천", "여수EXPO", "청량리", "강릉", "행신"];
+// 자주 타는 역이 후보 맨 위로
+const MAJOR = ["서울", "용산", "수서", "광명", "수원", "동탄", "평택지제", "천안아산", "오송", "대전", "김천구미", "동대구", "서대구", "경주",
+  "울산(통도사)", "부산", "포항", "구포", "마산", "창원중앙", "진주", "익산", "전주", "광주송정", "목포", "순천", "여수EXPO", "청량리", "강릉"];
+// 코레일 전체 역 (korail-mobile-api 역 목록, 2026-10-17 기준 281개)
+const ALL = ["가남", "가평", "각계", "감곡장호원", "강경", "강구", "강릉", "강진", "강촌", "개포", "경산", "경주", "계룡", "고래불", "고한", "곡성", "공주", "광명", "광양", "광주", "광주송정", "광천", "구례구", "구미", "구포", "군북", "군산", "군위", "극락강", "근덕", "기성", "기장", "김제", "김천", "김천구미", "나전", "나주", "남성현", "남원", "남창", "남춘천", "논산", "능주", "다시", "단양", "대곡", "대구", "대야", "대전", "대천", "덕소", "도계", "도고온천", "도라산", "동대구", "동백산", "동탄", "동해", "둔내", "득량", "마산", "마석", "만종", "매곡", "매화", "명봉", "목포", "몽탄", "무안", "묵호", "문경", "문산", "물금", "민둥산", "밀양", "반성", "백양리", "백양사", "벌교", "별어곡", "보성", "봉양", "봉화", "부강", "부발", "부산", "부전", "북영천", "북울산", "북천", "분천", "비동", "사릉", "사북", "사상", "살미", "삼랑진", "삼례", "삼산", "삼척", "삼척해변", "삼탄", "삽교", "상동", "상봉", "상주", "서경주", "서광주", "서대구", "서대전", "서울", "서원주", "서정리", "서천", "서화성", "석불", "석포", "선평", "성환", "센텀", "송추", "수서", "수안보온천", "수원", "순천", "승부", "신기", "신동", "신례원", "신보성", "신창", "신탄진", "신태인", "신해운대", "심천", "쌍룡", "아산", "아우라지", "아화", "안강", "안동", "안양", "안중", "앙성온천", "약목", "양동", "양원", "양평", "여수EXPO", "여천", "연산", "연풍", "영덕", "영동", "영등포", "영암", "영월", "영주", "영천", "영해", "예당", "예미", "예산", "예천", "오근장", "오산", "오송", "오수", "옥산", "옥수", "옥원", "옥천", "온양온천", "완사", "왕십리", "왜관", "용궁", "용문", "용산", "운천", "울산(통도사)", "울진", "웅천", "원동", "원릉", "원주", "월포", "음성", "의성", "의정부", "이양", "이원", "익산", "인주", "인천공항T1", "인천공항T2", "일로", "일신", "일영", "임기", "임성리", "임실", "임원", "임진강", "장동", "장사", "장성", "장항", "장흥", "전남장흥", "전의", "전주", "점촌", "정동진", "정선", "정읍", "제천", "조성", "조치원", "주덕", "죽변", "중리", "증평", "지탄", "지평", "진례", "진부(오대산)", "진상", "진영", "진주", "창원", "창원중앙", "천안", "천안아산", "철암", "청도", "청량리", "청리", "청소", "청주", "청주공항", "청평", "추암", "추풍령", "춘양", "춘천", "충주", "태백", "태화강", "퇴계원", "판교(경기)", "판교(충남)", "평내호평", "평창", "평택", "평택지제", "평해", "포항", "풍기", "하동", "하양", "한림정", "함안", "함열", "함창", "함평", "합덕", "해남", "행신", "향남", "현동", "홍성", "화명", "화성시청", "화순", "황간", "횡성", "횡천", "효천", "후포", "흥부"];
+const norm = v => v.replace(/\s/g, "").toUpperCase().replace("엑스포", "EXPO").replace(/역$/, "");
+const base = v => norm(v).split("(")[0];
+// 친 글자로 역 후보 — 이름 앞부분이 맞는 역 먼저, 그다음 중간에 들어간 역. 자주 타는 역이 위로.
+function 역후보(v) {
+  const w = norm(v === "신경주" ? "경주" : v);
+  if (!w) return MAJOR.slice(0, 8);
+  const rank = n => (base(n) === w ? 0 : norm(n).startsWith(w) ? 1 : 2) * 1000 + (MAJOR.includes(n) ? MAJOR.indexOf(n) : 500);
+  return ALL.filter(n => norm(n).includes(w)).sort((a, b) => rank(a) - rank(b)).slice(0, 8);
+}
+// 정확한 역 이름이면 그대로, 줄여 쓴 이름이 한 역으로 정해지면 그 역 (울산 → 울산(통도사)), 아니면 null
+function 역맞춤(v) {
+  const w = norm(v);
+  if (ALL.includes(v.trim())) return v.trim();
+  const same = ALL.filter(n => base(n) === w || norm(n) === w);
+  if (same.length === 1) return same[0];
+  const c = 역후보(v);
+  return c.length === 1 ? c[0] : null;
+}
+
+function StationInput({ value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const [typed, setTyped] = useState(false);      // 칸을 막 눌렀을 땐 자주 타는 역부터, 치기 시작하면 친 글자로
+  const list = !open ? [] : typed ? 역후보(value) : MAJOR.slice(0, 12);
+  const pick = n => { onChange(n); setOpen(false); };
+  return html`<div class="st-pick">
+    <input value=${value} placeholder="역 이름" autocomplete="off" onFocus=${e => { e.target.select(); setTyped(false); setOpen(true); }}
+      onInput=${e => { onChange(e.target.value); setTyped(true); setOpen(true); }} onBlur=${() => setTimeout(() => setOpen(false), 150)}
+      onKeyDown=${e => { if (e.key === "Enter" && list.length) { e.preventDefault(); pick(list[0]); e.target.blur(); } }} />
+    ${list.length > 0 && html`<div class="st-list">${list.map(n => html`<button type="button" onPointerDown=${e => { e.preventDefault(); pick(n); }}>${n}</button>`)}</div>`}
+    ${open && typed && value.trim() && !list.length && html`<div class="st-list"><span class="muted small">'${value}' 역이 없습니다</span></div>`}
+  </div>`;
+}
 const TONE = { 대기: "gray", 감시중: "blue", 확보: "green", 대기접수: "amber", 실패: "red", 정지: "gray" };
 const load = k => { try { return localStorage.getItem("ktx-" + k) || ""; } catch { return ""; } };
 const keep = (k, v) => { try { localStorage.setItem("ktx-" + k, v); } catch {} };
@@ -66,13 +100,16 @@ export function KtxPage({ app }) {
   const 살아있음 = 연결초 !== null && 연결초 < 90;
   const start = () => run(async () => {
     if (!masked) throw new Error("먼저 내 코레일 계정을 등록하세요");
-    if (!f.dep.trim() || !f.arr.trim()) throw new Error("출발역·도착역을 넣으세요");
-    if (f.dep.trim() === f.arr.trim()) throw new Error("출발역과 도착역이 같습니다");
+    const dep = 역맞춤(f.dep), arr = 역맞춤(f.arr);
+    if (!dep) throw new Error(`출발역 '${f.dep}' — 목록에서 역을 골라 주세요`);
+    if (!arr) throw new Error(`도착역 '${f.arr}' — 목록에서 역을 골라 주세요`);
+    if (dep === arr) throw new Error("출발역과 도착역이 같습니다");
+    setF(x => ({ ...x, dep, arr }));
     if (!f.date) throw new Error("날짜를 고르세요");
     if (!f.from || !f.to || f.from > f.to) throw new Error("출발 시간대를 확인하세요 (앞 시각이 뒤 시각보다 늦습니다)");
     if (f.date === today() && f.to <= 지금시각()) throw new Error("이미 지난 시간대입니다");
-    keep("dep", f.dep.trim()); keep("arr", f.arr.trim()); keep("adults", String(f.adults)); keep("seat", f.seat);
-    await q(app.db.from("ktx_jobs").insert({ dep: f.dep.trim(), arr: f.arr.trim(), dep_date: f.date, time_from: f.from, time_to: f.to,
+    keep("dep", dep); keep("arr", arr); keep("adults", String(f.adults)); keep("seat", f.seat);
+    await q(app.db.from("ktx_jobs").insert({ dep, arr, dep_date: f.date, time_from: f.from, time_to: f.to,
       adults: Number(f.adults), seat: f.seat, standby: f.standby, ktx_only: f.ktxOnly, interval_s: Math.max(3, Number(f.interval) || 5) }));
     refresh();
   }, "감시를 요청했습니다 — 사무실 PC 가 곧 시작합니다");
@@ -92,10 +129,9 @@ export function KtxPage({ app }) {
 
     <div class="card reserve-new">
       <h3>새 감시</h3>
-      <datalist id="ktx-stations">${STATIONS.map(s => html`<option value=${s} />`)}</datalist>
       <div class="fgrid">
-        <${Field} label="출발역"><input list="ktx-stations" value=${f.dep} onInput=${e => set("dep", e.target.value)} /><//>
-        <${Field} label="도착역"><input list="ktx-stations" value=${f.arr} onInput=${e => set("arr", e.target.value)} />
+        <${Field} label="출발역"><${StationInput} value=${f.dep} onChange=${v => set("dep", v)} /><//>
+        <${Field} label="도착역"><${StationInput} value=${f.arr} onChange=${v => set("arr", v)} />
           <button type="button" class="btn sm ghost" style="margin-top:4px" onClick=${() => setF(x => ({ ...x, dep: x.arr, arr: x.dep }))}>⇄ 바꾸기</button><//>
         <${Field} label="날짜" hint=${f.date ? `${요일(f.date)}요일` : ""}><input type="date" min=${today()} value=${f.date} onInput=${e => set("date", e.target.value)} /><//>
         <${Field} label="출발 시간대" hint="이 사이에 출발하는 열차를 모두 봅니다">

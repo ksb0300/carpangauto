@@ -1787,3 +1787,12 @@ alter table push_subs enable row level security;
 -- 각자 자기 기기만 등록·조회·해제 (사무실만)
 create policy own on push_subs for all to authenticated
   using (user_id = auth.uid() and is_office()) with check (user_id = auth.uid() and is_office());
+
+
+-- 20261018000004_board_works_import.sql
+-- 웍스 게시판 옮겨 오기: 분류 추가(자료·송금요청·매도정보·말소서류) + 원본 번호(src)로 중복 없이 다시 돌릴 수 있게
+alter table board_posts drop constraint board_posts_category_check;
+alter table board_posts add constraint board_posts_category_check
+  check (category in ('공지', '매입등록증', '매도등록증', '자료', '송금요청', '매도정보', '말소서류', '자유'));
+alter table board_posts add column src text unique;      -- 'works:<게시판>:<글>' — 웍스에서 옮겨 온 글
+alter table board_comments add column src text unique;   -- 'works:<댓글>'
