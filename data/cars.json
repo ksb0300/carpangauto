@@ -1,5 +1,5 @@
 {
- "updated": "2026-10-17 17:48",
+ "updated": "2026-10-18 17:47",
  "count": 44,
  "cars": [
   {
@@ -29,32 +29,6 @@
    "link": "https://fem.encar.com/cars/detail/42351261"
   },
   {
-   "id": "42861646",
-   "plate": "331더9360",
-   "maker": "아우디",
-   "model": "A6",
-   "grade": "45 TFSI 콰트로 S Line",
-   "year": "26년 05월",
-   "yearRaw": "202605",
-   "mileage": 1932,
-   "fuel": "가솔린",
-   "transmission": "오토",
-   "color": "쥐색",
-   "price": 7700,
-   "diagnosis": true,
-   "photos": [
-    "https://ci.encar.com/carpicture06/pic4286/42861646_027.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture06/pic4286/42861646_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture06/pic4286/42861646_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture06/pic4286/42861646_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture06/pic4286/42861646_016.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture06/pic4286/42861646_018.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture06/pic4286/42861646_045.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture06/pic4286/42861646_042.jpg?impolicy=widthRate&wid=800"
-   ],
-   "link": "https://fem.encar.com/cars/detail/42861646"
-  },
-  {
    "id": "42585926",
    "plate": "151러5449",
    "maker": "BMW",
@@ -79,6 +53,32 @@
     "https://ci.encar.com/carpicture08/pic4258/42585926_019.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42585926"
+  },
+  {
+   "id": "42861646",
+   "plate": "331더9360",
+   "maker": "아우디",
+   "model": "A6",
+   "grade": "45 TFSI 콰트로 S Line",
+   "year": "26년 05월",
+   "yearRaw": "202605",
+   "mileage": 1932,
+   "fuel": "가솔린",
+   "transmission": "오토",
+   "color": "쥐색",
+   "price": 7600,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture06/pic4286/42861646_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4286/42861646_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4286/42861646_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4286/42861646_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4286/42861646_017.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4286/42861646_019.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4286/42861646_016.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4286/42861646_020.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42861646"
   },
   {
    "id": "42852650",
@@ -118,17 +118,17 @@
    "fuel": "가솔린",
    "transmission": "오토",
    "color": "흰색",
-   "price": 7300,
+   "price": 7200,
    "diagnosis": true,
    "photos": [
     "https://ci.encar.com/carpicture07/pic4257/42577207_027.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture07/pic4257/42577207_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture07/pic4257/42577207_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture07/pic4257/42577207_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4257/42577207_020.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4257/42577207_017.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4257/42577207_018.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4257/42577207_010.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture07/pic4257/42577207_015.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4257/42577207_046.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4257/42577207_047.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4257/42577207_023.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42577207"
   },
