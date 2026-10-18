@@ -1,4 +1,5 @@
-import { html, render, useState, useEffect, AppCtx, Toasts, Loading, run, toast } from "./ui.js";
+import { html, render, useState, useEffect, AppCtx, Toasts, Loading, run, toast, ask } from "./ui.js";
+import { 상태 as 알림상태, 켜기 as 알림켜기, 끄기 as 알림끄기 } from "./push.js";
 import { getDb, q } from "./db.js";
 import { DEMO } from "./config.js";
 import { CarList } from "./pages/cars.js";
@@ -17,7 +18,12 @@ import { LenderEdit } from "./pages/lenders.js";
 import { StatsPage } from "./pages/stats.js";
 import { SignsPage } from "./pages/signs.js";
 import { ReservePage } from "./pages/reserve.js";
+import { KtxPage } from "./pages/ktx.js";
 import { ChecksPage, CheckEdit } from "./pages/checks.js";
+import { BoardPage } from "./pages/board.js";
+import { ContactsPage } from "./pages/contacts.js";
+import { TodosPage } from "./pages/todos.js";
+import { CalendarPage } from "./pages/calendar.js";
 import { startSync } from "./check-store.js";
 
 function useHash() {
@@ -77,30 +83,52 @@ export function ChangePassword({ db, forced, onDone }) {
     </form></div>`;
 }
 
+/** 🔔 이 기기 폰 알림 켜기·끄기 (갤럭시: 허용만 / 아이폰: 홈 화면에 추가한 앱에서) */
+function Bell({ app }) {
+  const [st, setSt] = useState(null);
+  useEffect(() => { 알림상태().then(setSt).catch(() => setSt("안됨")); }, []);
+  if (!st || st === "안됨") return null;
+  const click = () => run(async () => {
+    if (st === "설치필요") return toast("아이폰은 사파리 공유 버튼 → '홈 화면에 추가'로 설치한 뒤, 설치된 업무관리 앱에서 🔔를 눌러 주세요.", "err");
+    if (st === "차단") return toast("이 브라우저에서 알림이 막혀 있습니다. 주소창 왼쪽 자물쇠 → 권한 → 알림 → 허용으로 바꾼 뒤 다시 눌러 주세요.", "err");
+    if (st === "켜짐") { if (ask("이 기기의 알림을 끌까요?")) { await 알림끄기(app); setSt("꺼짐"); toast("이 기기 알림을 껐습니다"); } return; }
+    await 알림켜기(app); setSt("켜짐"); toast("알림을 켰습니다 — 곧 시험 알림이 옵니다");
+  });
+  return html`<button type="button" class=${"btn sm " + (st === "켜짐" ? "ghost" : "primary")} title="이 기기로 업무관리 알림 받기" onClick=${click}>${st === "켜짐" ? "🔔 알림 켜짐" : "🔕 알림 켜기"}</button>`;
+}
+
 function Shell({ app, children, path }) {
   const { profile, db } = app;
   const office = profile.role !== "dealer";
   const nav = office
-    ? [["/purchases", "리스트"], ["/sales", "매도차량"], ["/checks", "차량검수"], ["/loans", "재고금융"],
+    ? [["/purchases", "리스트"], ["/sales", "매도차량"], ["/loans", "재고금융"],
        ["/bank", "자금관리"], ["/reports", "종합업무현황"], ["/stats", "통계"], ["/settings", "환경설정"]]
     : [["/purchases", "내 제시차량"], ["/sales", "매도차량"], ["/settlements", "정산내역"], ["/brokerage", "알선"], ["/reports", "내 실적"]];
-  // 지금 잘 안 쓰는 메뉴는 '기타'로 (사용자 2026-10-05) — 화면은 그대로 있다
-  const etc = office ? [["/settlements", "정산내역"], ["/issue", "매출관리"], ["/signs", "서류"], ["/brokerage", "타상사알선"], ["/reserve", "광고장 예약"]] : [];
-  const [etcAt, setEtcAt] = useState(null);       // 펼친 '기타' 메뉴 위치 (메뉴줄이 가로 스크롤이라 밖에 띄운다)
-  useEffect(() => { setEtcAt(null); }, [path]);
-  useEffect(() => { if (!etcAt) return; const close = () => setEtcAt(null); addEventListener("click", close); addEventListener("scroll", close, true);
-    return () => { removeEventListener("click", close); removeEventListener("scroll", close, true); }; }, [etcAt]);
+  // 펼침 메뉴 (화면은 그대로 있고 메뉴줄에서만 묶는다)
+  //   테스트: 새로 만들어 시험 중인 것 (사용자 2026-10-18) / 기타: 지금 잘 안 쓰는 것 (사용자 2026-10-05)
+  const groups = office ? [
+    ["테스트", [["/board", "게시판"], ["/checks", "차량검수"], ["/todos", "할 일"], ["/calendar", "일정"], ["/contacts", "연락처"]]],
+    ["기타", [["/settlements", "정산내역"], ["/issue", "매출관리"], ["/signs", "서류"], ["/brokerage", "타상사알선"], ["/reserve", "광고장 예약"], ["/ktx", "KTX 예매"]]],
+  ] : [];
+  const 켜짐 = p => path.startsWith(p) || (p === "/checks" && path.startsWith("/check/"));
+  const [menu, setMenu] = useState(null);         // 펼친 메뉴 { name, left, top } (메뉴줄이 가로 스크롤이라 밖에 띄운다)
+  useEffect(() => { setMenu(null); }, [path]);
+  useEffect(() => { if (!menu) return; const close = () => setMenu(null); addEventListener("click", close); addEventListener("scroll", close, true);
+    return () => { removeEventListener("click", close); removeEventListener("scroll", close, true); }; }, [menu]);
+  const 펼친 = menu && groups.find(([n]) => n === menu.name);
   return html`<div class="shell">
     <header class="top">
       <a class="brand" href="#/">TierONE <span>업무관리</span></a>
-      <nav>${nav.map(([p, l]) => html`<a href=${"#" + p} class=${path.startsWith(p) || (p === "/purchases" && (path.startsWith("/car/") || path.startsWith("/cars"))) || (p === "/dashboard" && path === "/") || (p === "/checks" && path.startsWith("/check/")) ? "on" : ""}>${l}</a>`)}
-        ${etc.length > 0 && html`<a href="#" class=${etc.some(([p]) => path.startsWith(p)) ? "on" : ""} onClick=${e => { e.preventDefault(); e.stopPropagation();
-          const r = e.currentTarget.getBoundingClientRect(); setEtcAt(etcAt ? null : { left: r.left, top: r.bottom + 4 }); }}>기타 ▾</a>`}</nav>
-      ${etcAt && html`<div class="etc-menu" style=${`left:${Math.min(etcAt.left, innerWidth - 170)}px;top:${etcAt.top}px`}>
-        ${etc.map(([p, l]) => html`<a href=${"#" + p} class=${path.startsWith(p) ? "on" : ""}>${l}</a>`)}</div>`}
+      <nav>${nav.map(([p, l]) => html`<a href=${"#" + p} class=${path.startsWith(p) || (p === "/purchases" && (path.startsWith("/car/") || path.startsWith("/cars"))) || (p === "/dashboard" && path === "/") ? "on" : ""}>${l}</a>`)}
+        ${groups.map(([name, items]) => html`<a href="#" class=${items.some(([p]) => 켜짐(p)) ? "on" : ""} onClick=${e => { e.preventDefault(); e.stopPropagation();
+          const r = e.currentTarget.getBoundingClientRect(); setMenu(menu?.name === name ? null : { name, left: r.left, top: r.bottom + 4 }); }}>${name} ▾</a>`)}</nav>
+      ${펼친 && html`<div class="etc-menu" style=${`left:${Math.min(menu.left, innerWidth - 170)}px;top:${menu.top}px`}>
+        ${펼친[1].map(([p, l]) => html`<a href=${"#" + p} class=${켜짐(p) ? "on" : ""}>${l}</a>`)}</div>`}
       <div class="me">
         ${DEMO && html`<span class="badge amber">데모</span>`}
         <a class="me-name" href="/" title="홈페이지(매물)로">홈페이지</a>
+        ${office && html`<a class="me-name" href="https://mail.google.com/mail/u/?authuser=tierone@tieronekorea.com" target="_blank" rel="noopener" title="tierone@tieronekorea.com 메일 (Gmail)">✉️ 메일</a>`}
+        ${office && !DEMO && html`<${Bell} app=${app} />`}
         <a class="me-name" href="#/password" title="비밀번호 변경">${profile.name} · ${{ admin: "공동대표", staff: "사무장", dealer: "권한 없음" }[profile.role]}</a>
         <button class="btn ghost sm" onClick=${async () => { await db.auth.signOut(); location.reload(); }}>로그아웃</button>
       </div>
@@ -113,7 +141,7 @@ function Router({ app }) {
   const path = useHash();
   const [, a, b, c] = path.split("?")[0].split("/");
   const office = app.profile.role !== "dealer";
-  const officeOnly = ["settings", "dashboard", "issue", "bank", "ledger", "signs", "reserve"];
+  const officeOnly = ["settings", "dashboard", "issue", "bank", "ledger", "signs", "reserve", "ktx", "board", "contacts", "todos", "calendar"];
   let page;
   if (!office && (officeOnly.includes(a) || (a === "cars" && b === "new") || c === "edit")) page = html`<div class="card empty">딜러 계정은 볼 수 없는 화면입니다. <a href="#/cars">차량 목록으로</a></div>`;
   else if (a === "cars" && b === "new") page = html`<${CarForm} app=${app} />`;
@@ -125,6 +153,11 @@ function Router({ app }) {
   else if (a === "checks") page = html`<${ChecksPage} app=${app} />`;
   else if (a === "check") page = html`<${CheckEdit} app=${app} id=${b} />`;
   else if (a === "reserve") page = html`<${ReservePage} app=${app} />`;
+  else if (a === "ktx") page = html`<${KtxPage} app=${app} />`;
+  else if (a === "board") page = html`<${BoardPage} app=${app} id=${b} />`;
+  else if (a === "contacts") page = html`<${ContactsPage} app=${app} />`;
+  else if (a === "todos") page = html`<${TodosPage} app=${app} />`;
+  else if (a === "calendar") page = html`<${CalendarPage} app=${app} />`;
   else if (a === "stats") page = html`<${StatsPage} app=${app} />`;
   else if (a === "loans" && b === "lender") page = html`<${LenderEdit} app=${app} id=${c} />`;
   else if (a === "loans") page = html`<${LoansPage} app=${app} tab=${b || "lenders"} />`;

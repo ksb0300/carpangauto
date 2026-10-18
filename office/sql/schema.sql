@@ -1769,3 +1769,21 @@ create policy office_all on calendar_events for all to authenticated using (is_o
 -- 20261018000002_todo_assignee.sql
 -- 할 일: 누가 맡았는지 (이름 그대로, 비워 두면 '아무나')
 alter table todos add column assignee text;
+
+
+-- 20261018000003_push_subs.sql
+-- 웹푸시(폰 알림) 구독 — 업무관리에서 '🔔 알림 받기'를 누른 기기마다 한 줄.
+-- 알림 보내기는 Edge Function 'push' 가 관리자 키로 이 표를 읽어서 한다 (VAPID 비밀키는 Supabase secrets 에만).
+create table push_subs (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null references auth.users(id) on delete cascade default auth.uid(),
+  endpoint    text not null unique,
+  p256dh      text not null,
+  auth        text not null,
+  ua          text,
+  created_at  timestamptz not null default now()
+);
+alter table push_subs enable row level security;
+-- 각자 자기 기기만 등록·조회·해제 (사무실만)
+create policy own on push_subs for all to authenticated
+  using (user_id = auth.uid() and is_office()) with check (user_id = auth.uid() and is_office());
