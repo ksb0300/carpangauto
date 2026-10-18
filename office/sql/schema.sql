@@ -1663,3 +1663,109 @@ create table ktx_worker (
 );
 alter table ktx_worker enable row level security;
 create policy office_read on ktx_worker for select to authenticated using (is_office());
+
+
+-- 20261018000001_office_hub.sql
+-- 업무관리 협업 기능(웍스 대체): 게시판 · 거래처 연락처 · 할 일 · 공용 일정.
+-- 전부 사무실(대표·직원)만. 딜러 제외. 작성자 이름은 글 쓸 때 같이 저장한다
+-- (직원은 다른 사람 profiles 를 못 읽어서, 이름을 join 으로 못 가져온다).
+
+-- 게시판 글: 공지 / 매입등록증 / 매도등록증 / 자유
+create table board_posts (
+  id          uuid primary key default gen_random_uuid(),
+  category    text not null default '자유' check (category in ('공지', '매입등록증', '매도등록증', '자유')),
+  title       text not null,
+  body        text not null default '',
+  plate       text,                                    -- 등록증이면 차량번호 (차와 연결용)
+  car_id      uuid references cars(id) on delete set null,
+  pinned      boolean not null default false,          -- 공지 상단 고정
+  created_by  uuid references auth.users(id) default auth.uid(),
+  author_name text not null default '',
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+create index board_posts_at on board_posts (pinned desc, created_at desc);
+
+create table board_comments (
+  id          uuid primary key default gen_random_uuid(),
+  post_id     uuid not null references board_posts(id) on delete cascade,
+  body        text not null,
+  created_by  uuid references auth.users(id) default auth.uid(),
+  author_name text not null default '',
+  created_at  timestamptz not null default now()
+);
+create index board_comments_post on board_comments (post_id, created_at);
+
+-- 첨부(사진·파일): 비공개 버킷 car-files 의 board/ 아래에 둔다
+create table board_files (
+  id          uuid primary key default gen_random_uuid(),
+  post_id     uuid not null references board_posts(id) on delete cascade,
+  name        text not null,
+  path        text not null,
+  size        bigint,
+  mime        text,
+  created_at  timestamptz not null default now()
+);
+create index board_files_post on board_files (post_id);
+
+-- 거래처 연락처(나무위키식 공용 주소록): 누구나 추가·수정
+create table contacts (
+  id          uuid primary key default gen_random_uuid(),
+  category    text not null default '기타' check (category in ('탁송', '정비', '공업사', '캐피탈', '수출', '매입', '관공서', '기타')),
+  name        text not null,
+  phone       text,
+  phone2      text,
+  memo        text,
+  created_by  uuid references auth.users(id) default auth.uid(),
+  author_name text not null default '',
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+create index contacts_cat on contacts (category, name);
+
+-- 할 일 체크리스트(공용): 누구나 추가·체크
+create table todos (
+  id          uuid primary key default gen_random_uuid(),
+  title       text not null,
+  done        boolean not null default false,
+  done_by     text,
+  done_at     timestamptz,
+  car_id      uuid references cars(id) on delete set null,
+  sort        numeric not null default 0,
+  created_by  uuid references auth.users(id) default auth.uid(),
+  author_name text not null default '',
+  created_at  timestamptz not null default now()
+);
+create index todos_open on todos (done, sort, created_at desc);
+
+-- 공용 일정(달력): 수동 일정. 만기·성능 같은 자동 날짜는 화면에서 함께 겹쳐 보여 준다
+create table calendar_events (
+  id          uuid primary key default gen_random_uuid(),
+  d           date not null,
+  title       text not null,
+  memo        text,
+  color       text not null default 'blue',
+  created_by  uuid references auth.users(id) default auth.uid(),
+  author_name text not null default '',
+  created_at  timestamptz not null default now()
+);
+create index calendar_events_d on calendar_events (d);
+
+alter table board_posts      enable row level security;
+alter table board_comments   enable row level security;
+alter table board_files      enable row level security;
+alter table contacts         enable row level security;
+alter table todos            enable row level security;
+alter table calendar_events  enable row level security;
+
+create policy office_all on board_posts     for all to authenticated using (is_office()) with check (is_office());
+create policy office_all on board_comments  for all to authenticated using (is_office()) with check (is_office());
+create policy office_all on board_files     for all to authenticated using (is_office()) with check (is_office());
+create policy office_all on contacts        for all to authenticated using (is_office()) with check (is_office());
+create policy office_all on todos           for all to authenticated using (is_office()) with check (is_office());
+create policy office_all on calendar_events for all to authenticated using (is_office()) with check (is_office());
+
+
+-- 20261018000002_todo_assignee.sql
+-- 할 일: 누가 맡았는지 (이름 그대로, 비워 두면 '아무나')
+alter table todos add column assignee text;

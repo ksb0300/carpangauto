@@ -491,3 +491,10 @@ svg.drawing .pnl { pointer-events: none; }
 .ck-pen-area svg { width: 100%; height: 100%; display: block; }
 .ck-pen .btn.ghost { color: #e5e7eb; border-color: #4b5563; }
 .banktx .quick { display: flex; flex-wrap: wrap; gap: 4px; } .banktx .quick .chip { padding: 4px 9px; font-size: 12.5px; }
+/* KTX 예매 — 역 이름 고르기 (친 글자로 후보) */
+.st-pick { position: relative; }
+.st-pick .st-list { position: absolute; z-index: 20; left: 0; right: 0; top: calc(100% + 4px); background: var(--card); border: 1px solid var(--line);
+  border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.12); padding: 4px; max-height: 320px; overflow-y: auto; }
+.st-pick .st-list button { display: block; width: 100%; text-align: left; background: none; border: 0; font: inherit; padding: 10px 12px; border-radius: 7px; cursor: pointer; }
+.st-pick .st-list button:hover, .st-pick .st-list button:first-child { background: var(--line2); }
+.st-pick .st-list > span { display: block; padding: 10px 12px; }

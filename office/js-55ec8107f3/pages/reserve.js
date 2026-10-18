@@ -4,7 +4,8 @@
 import { html, useState, useEffect, Loading, Badge, Seg, Field, run, toast, today } from "../ui.js";
 import { q } from "../db.js";
 
-const CENTERS = [["부산경동오토필드", "경동오토필드 1"], ["부산경동오토필드2", "경동오토필드 2"]];
+// '1·2 둘 다' = 두 곳을 번갈아 보다 먼저 열린 곳을 잡는다 (엔카 한 계정에 임시 예약은 하나뿐이라 잡으면 끝)
+const CENTERS = [["부산경동오토필드", "경동오토필드 1"], ["부산경동오토필드2", "경동오토필드 2"], ["부산경동오토필드 1·2", "1·2 둘 다"]];
 const TIMES = ["09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30"];
 const TONE = { 대기: "gray", 감시중: "blue", 확보: "green", 완료: "green", 실패: "red", 정지: "gray" };
 const load = k => { try { return localStorage.getItem("reserve-" + k) || ""; } catch { return ""; } };
@@ -75,7 +76,7 @@ export function ReservePage({ app }) {
     </div>
 
     ${!jobs ? html`<${Loading} />` : !jobs.length ? html`<p class="muted">아직 요청이 없습니다.</p>` : jobs.map(j => html`<div class="card reserve-job" key=${j.id}>
-      <div class="bar"><b>${CENTERS.find(c => c[0] === j.center)?.[1] || j.center} · ${j.res_date}(${요일(j.res_date)})</b>
+      <div class="bar"><b>${j.center === CENTERS[2][0] ? "경동오토필드 1·2" : CENTERS.find(c => c[0] === j.center)?.[1] || j.center} ·${j.res_date}(${요일(j.res_date)})</b>
         <${Badge} tone=${TONE[j.status]}>${j.status}${j.stop && ["대기", "감시중"].includes(j.status) ? " (정지 요청)" : ""}<//>
         ${j.finish === "자동" && html`<${Badge}>자동 확정<//>`}<span class="grow"></span>
         ${["대기", "감시중"].includes(j.status) && !j.stop ? html`<button class="btn sm danger" onClick=${() => stop(j)}>■ 정지</button>`

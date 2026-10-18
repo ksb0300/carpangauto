@@ -191,7 +191,7 @@ export function BankPage({ app }) {
         <tbody>${accounts.map(a => html`<tr>
           <td><input type="radio" name="acc" checked=${acc === a.id} onChange=${() => setAcc(a.id)} /></td>
           <td>${a.bank_name}</td><td>${a.account_no}</td><td>${a.alias || "-"}</td>
-          <td>${a.popbill ? html`<span class="badge green">팝빌 자동조회</span>` : a.sms_keyword ? html`<span class="badge green" title="사무실 폰 문자 → 몇 초 안에 자동으로 들어옴">문자 자동</span>${a.purpose ? html` <span class="badge">${a.purpose}</span>` : ""}` : html`<span class="badge">엑셀</span>`}</td>
+          <td>${a.popbill ? html`<span class="badge green">팝빌 자동조회</span>` : a.sms_keyword ? html`<span class="badge green" title="사무실 폰 → 몇 초 안에 자동으로 들어옴">자동</span>${a.purpose ? html` <span class="badge">${a.purpose}</span>` : ""}` : html`<span class="badge">엑셀</span>`}</td>
           <td class="small">${a.last_synced_at ? a.last_synced_at.slice(0, 16).replace("T", " ") : "-"}</td>
           <td class="nowrap">${a.popbill && html`<button class="btn sm primary" disabled=${busy} onClick=${() => sync(a)}>거래내역 불러오기</button>`}
             <label class="btn sm">엑셀 올리기<input type="file" hidden accept=".xls,.xlsx,.csv,.txt" onChange=${e => { upload(a, e.target.files[0]); e.target.value = ""; }} /></label></td>
@@ -199,7 +199,7 @@ export function BankPage({ app }) {
         <tr><td><input type="radio" name="acc" checked=${!acc} onChange=${() => setAcc(null)} /></td><td colspan="6" class="muted">전체 계좌</td></tr></tbody>
       </table></div>
       <p class="note">팝빌 자동조회는 기간을 정해 '거래내역 불러오기'를 누르면 은행에서 직접 가져옵니다. 이미 있는 거래는 다시 넣지 않습니다.
-        엑셀은 인터넷뱅킹 '거래내역 조회 → 엑셀 저장' 파일을 그대로 올리면 됩니다(국민·신한·우리·하나·농협 등 머리글 자동 인식). 문자로 못 받은 거래를 채울 때 쓰세요.</p>
+        엑셀은 인터넷뱅킹 '거래내역 조회 → 엑셀 저장' 파일을 그대로 올리면 됩니다(국민·신한·우리·하나·농협 등 머리글 자동 인식). 자동으로 못 받은 거래를 채울 때 쓰세요.</p>
     </div>`}
     <div class="bar">
       <${Period} value=${period} onChange=${setPeriod} />
@@ -223,7 +223,7 @@ export function BankPage({ app }) {
         return html`<tr class=${t.match_kind ? "matched" : ""}>
           <td class="nowrap">${t.tx_date} <span class="muted small">${(t.tx_time || "").slice(0, 5)}</span></td>
           ${t.deposit > 0 ? html`<td class="red">입금</td><td class="r red"><b>+${won(t.deposit)}</b></td>` : html`<td class="blue">출금</td><td class="r blue"><b>-${won(t.withdraw)}</b></td>`}<td class="r muted">${t.balance != null ? won(t.balance) : ""}</td>
-          <td class="ellipsis" title=${raw[t.id] || t.remark}>${t.remark}${t.source === "문자" ? html` <span class="muted small" title=${raw[t.id] || ""}>문자</span>` : ""}${t.memo ? html`<br /><span class="muted small">📝 ${t.memo}</span>` : ""}</td>
+          <td class="ellipsis" title=${raw[t.id] || t.remark}>${t.remark}${t.memo ? html`<br /><span class="muted small">📝 ${t.memo}</span>` : ""}</td>
           <td>${t.match_kind ? html`<span class="badge blue">${t.match_kind}</span> ${t.car_id ? html`<a href=${`#/car/${t.car_id}`}>${car[t.car_id]?.plate || ""}</a>` : ""}
                  ${t.dealer_id && !t.car_id ? dealer[t.dealer_id]?.name : ""} <span class="muted small">${t.matched_by}</span>`
             : html`<div class="quick">${b && html`<button class="btn sm primary" title=${`이 내용을 ${이름(b.kind)}(으)로 ${b.n}번 연결했습니다`} onClick=${() => 고르기(t, b.kind)}>지난번처럼 · ${이름(b.kind)}</button>`}
