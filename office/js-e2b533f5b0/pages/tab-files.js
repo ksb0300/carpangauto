@@ -1,6 +1,7 @@
 // 차량 상세 → 첨부서류: 관인계약서·이전서류·영수증 사진 등. 저장소는 비공개 버킷 'car-files' (사무실만 접근).
 import { html, useState, useEffect, Select, run, toast, ask } from "../ui.js";
 import { q } from "../db.js";
+import { 모두줄이기 } from "../img.js";
 
 const KINDS = [["제시", "매입"], ["등록증", "매입 등록증"], ["매도", "매도"], ["매도등록증", "매도 등록증"], ["정산", "정산"], ["성능", "성능"], ["기타", "기타"]];   // 값은 그대로(DB), 화면엔 매입
 const MAX = 20 * 1024 * 1024;
@@ -29,9 +30,9 @@ export function FilesTab({ app, car, office }) {
 
   const upload = async list => {
     if (!office) return;
-    const arr = [...list];
-    if (arr.some(f => f.size > MAX)) return toast("20MB 넘는 파일은 올릴 수 없습니다.", "err");
     setBusy(true);
+    const arr = await 모두줄이기(list);       // 폰 사진은 긴 변 2000px 로 (3~5MB → 수백 KB), PDF 등은 그대로
+    if (arr.some(f => f.size > MAX)) { setBusy(false); return toast("20MB 넘는 파일은 올릴 수 없습니다.", "err"); }
     await run(async () => {
       for (const f of arr) {
         const path = `${car.id}/${저장이름(f.name)}`;
