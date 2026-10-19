@@ -128,6 +128,7 @@ export function 매도읽기(text, { title = "" } = {}) {
   const 폰 = (구매자.match(/0\d{1,2}[- ]?\d{3,4}[- ]?\d{4}/) || [])[0] || null;
   const f = {
     type: /수출/.test(형태) ? "수출" : /믿고/.test(형태) ? "엔카믿고" : 형태 ? "내수" : null,
+    sale_date: (g("판매일자").match(/\d{4}-\d{2}-\d{2}/) || [])[0] || null,
     plate: 번호판(차량) || 번호판(title),
     car_name: 차량.replace(PLATE, "").trim() || null,
     buyer: 구매자.replace(폰 || "", "").replace(/[(),]/g, " ").replace(/\s+/g, " ").trim() || null,
@@ -146,6 +147,7 @@ export function 매도글(f, memo = "") {
   const 금 = f.amount ? `${f.fee_included === true ? "매도비 포함 " : f.fee_included === false ? "매도비 별도 " : ""}${원(f.amount)}` : "-";
   return [
     `매도형태: ${f.type || "-"}`,
+    f.sale_date && `판매일자: ${f.sale_date}`,
     `차량: ${[f.plate, f.car_name].filter(Boolean).join(" ") || "-"}`,
     `구매자: ${[f.buyer, f.phone].filter(Boolean).join(" ") || "-"}`,
     `매도 금액: ${금}`,

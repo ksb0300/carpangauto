@@ -146,11 +146,14 @@ function 송금칸({ f, set }) {
     ${f.kind === "매입대금" && html`<${Field} label="고객 성함·주민번호"><input value=${f.customer || ""} onInput=${e => set("customer", e.target.value)} /><//>`}
   </div>`;
 }
+const 오늘 = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+const 판매일글 = d => { if (!d) return "-"; const x = new Date(d + "T00:00:00"); return `${x.getFullYear()}. ${x.getMonth() + 1}. ${x.getDate()}.(${"일월화수목금토"[x.getDay()]})`; };
 function 매도칸({ f, set }) {
   const a = 금액(f.amountText ?? "") ?? (Number(String(f.amountText || "").replace(/[^\d]/g, "")) || null);
   const dp = 금액(f.depositText ?? "");
   return html`<div class="fgrid">
     <${Field} label="매도형태"><${Seg} value=${f.type || ""} onChange=${v => set("type", v)} options=${매도형태들} /><//>
+    <${Field} label="판매일자"><input type="date" value=${f.sale_date === undefined ? 오늘() : f.sale_date} onInput=${e => set("sale_date", e.target.value)} /><//>
     <${Field} label="차량번호" req><input value=${f.plate || ""} placeholder="예: 102조9178" onInput=${e => set("plate", e.target.value)} /><//>
     <${Field} label="차명"><input value=${f.car_name || ""} onInput=${e => set("car_name", e.target.value)} /><//>
     <${Field} label="구매자 이름" hint="계약금·잔금 입금을 통장에서 찾는 데 씁니다"><input value=${f.buyer || ""} onInput=${e => set("buyer", e.target.value)} /><//>
@@ -171,13 +174,13 @@ function 양식정리(cat, f) {
   if (cat === "매도정보") {
     const amount = 금액(f.amountText ?? "") ?? (Number(String(f.amountText || "").replace(/[^\d]/g, "")) || null);
     const dt = (f.depositText ?? "").trim();
-    return { type: f.type || null, plate: 번호판(f.plate) || 번호(f.plate) || null, car_name: f.car_name || null, buyer: f.buyer || null, phone: f.phone || null,
+    return { type: f.type || null, sale_date: f.sale_date === undefined ? 오늘() : f.sale_date || null, plate: 번호판(f.plate) || 번호(f.plate) || null, car_name: f.car_name || null, buyer: f.buyer || null, phone: f.phone || null,
       amount, fee_included: f.fee_included ?? null, deposit: !dt ? null : /없음/.test(dt) ? 0 : 금액(dt), deposit_when: f.deposit_when || null, memo: f.memo || null };
   }
   return null;
 }
 /** 저장된 form → 화면용 칸 값 */
-const 칸으로 = form => form ? { ...form, amountText: form.amount ? (form.amount % 10000 === 0 ? form.amount / 10000 + "만" : String(form.amount)) : "",
+const 칸으로 = form => form ? { ...form, sale_date: form.sale_date || "", amountText: form.amount ? (form.amount % 10000 === 0 ? form.amount / 10000 + "만" : String(form.amount)) : "",
   depositText: form.deposit === 0 ? "없음" : form.deposit ? (form.deposit % 10000 === 0 ? form.deposit / 10000 + "만" : String(form.deposit)) : "" } : {};
 
 /* ───────── 글쓰기 ───────── */
@@ -298,6 +301,7 @@ function 송금카드({ f, p }) {
 function 매도카드({ f, p }) {
   return html`<div class="tpl"><div class="tg">📄 매도정보</div>
     <div class="f"><b>매도형태</b><div>${f.type || "-"}</div></div>
+    ${f.sale_date && html`<div class="f"><b>판매일자</b><div>${판매일글(f.sale_date)}</div></div>`}
     <div class="f"><b>차량</b><div>${[f.plate, f.car_name].filter(Boolean).join(" ") || "-"} ${p.car_id && html`<a href=${"#/car/" + p.car_id}>차 보기 →</a>`}</div></div>
     <div class="f"><b>구매자</b><div>${f.buyer || "-"} ${f.phone && html`<a href=${"tel:" + f.phone.replace(/[^\d]/g, "")}>📞 ${f.phone}</a>`}</div></div>
     <div class="f"><b>매도 금액</b><div><span class="big">${f.amount ? 원(f.amount) : "-"}</span>${f.fee_included != null && html`<span class="muted">매도비 ${f.fee_included ? "포함" : "별도"}</span>`}</div></div>

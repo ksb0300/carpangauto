@@ -2,11 +2,11 @@
 //   구성원 주간(사람마다 한 줄, 웍스에서 실제로 쓰던 보기) · 월간 · 목록. 왼쪽 작은 달력으로 날짜 이동.
 //   맨 위 '자동' 줄: 재고금융 만기(대출상태()와 같은 계산) · 광고장 예약 확보일.
 //   빈 칸을 누르면 그 사람·그날 일정 쓰기, 일정을 누르면 고치기. 남에게 일정을 넣으면 그 사람 폰·PC 로 알림('calendar').
-import { html, useState, useEffect, Loading, Seg, run, ask, today } from "../ui.js";
+import { html, useState, useEffect, Loading, Seg, run, ask, today, toast } from "../ui.js";
 import { q } from "../db.js";
 import { 대출상태 } from "../calc.js";
 import { 보내기 as 알림 } from "../push.js";
-import { 구성원, 이름표, Avatar } from "../people.js";
+import { 구성원, 이름표, Avatar, 언제 } from "../people.js";
 
 const 요일 = ["일", "월", "화", "수", "목", "금", "토"];
 const COLORS = [["blue", "#2563eb"], ["green", "#16a34a"], ["amber", "#d97706"], ["red", "#dc2626"], ["purple", "#7c3aed"]];
@@ -31,24 +31,42 @@ export function CalendarPage({ app }) {
   const [auto, setAuto] = useState([]);
   const [members, setMembers] = useState([]);
   const [form, setForm] = useState(null);       // 쓰기·고치기 중인 일정
+  const [동기, set동기] = useState(null);         // 광고장 예약 내역 마지막으로 가져온 때 (사무실 PC)
+  const [가져오는중, set가져오는중] = useState(false);
   const 범위 = view === "주간" ? [주시작(at), 더하기(주시작(at), 6)] : view === "월간" ? [주시작(월시작(at)), 더하기(주시작(월끝(at)), 6)] : [at, 더하기(at, 30)];
 
   const load = () => run(async () => {
     const [from, to] = 범위;
-    const [e, loans, res, m] = await Promise.all([
+    const [e, loans, res, m, w] = await Promise.all([
       q(app.db.from("calendar_events").select("*").lte("d", to).or(`d_end.gte.${from},and(d_end.is.null,d.gte.${from})`).order("d").order("start_time", { nullsFirst: true })),
       q(app.db.from("car_loans").select("*, cars(plate, car_name)").eq("status", "진행중")),
-      q(app.db.from("encar_reserve_jobs").select("center, res_date, result").eq("status", "확보").gte("res_date", from).lte("res_date", to)),
+      // 엔카 광고장 예약 내역 (직접 한 예약 포함 — 사무실 PC 가 엔카 '예약조회'를 10분마다 읽어 넣는다)
+      q(app.db.from("encar_reservations").select("*").is("gone_at", null).gte("res_date", from).lte("res_date", to).order("res_time")),
       구성원(app),
+      q(app.db.from("encar_reserve_worker").select("sync_at, sync_msg, seen_at")),
     ]);
-    setEv(e); setMembers(m);
+    setEv(e); setMembers(m); set동기(w[0] || null);
     const a = [];
     for (const l of loans) {
       const 만기 = 대출상태(l, today()).만기;
       if (만기 >= from && 만기 <= to) a.push({ d: 만기, title: `만기 ${l.cars?.plate || ""}`, color: "red", auto: "재고금융", href: "#/car/" + l.car_id + "/loans" });
     }
-    for (const r of res) a.push({ d: r.res_date, title: `광고장 ${String(r.result || "").split(" 확보")[0]}`, color: "green", auto: "광고장 예약", href: "#/reserve" });
+    for (const r of res) a.push({ d: r.res_date, start_time: r.res_time, title: `${r.plate || ""} ${(r.car_name || "").split(" ").slice(-2).join(" ")}`.trim(),
+      color: "green", auto: "광고장 예약", href: r.car_id ? "#/car/" + r.car_id : "#/reserve" });
     setAuto(a);
+  });
+  // [광고장 가져오기]: 사무실 PC 에 요청 → PC 가 엔카를 읽고 끝나면(마지막 가져온 때가 바뀌면) 다시 그린다
+  const 가져오기 = () => run(async () => {
+    const 전 = 동기?.sync_at || "";
+    await q(app.db.rpc("encar_reserve_sync_request"));
+    set가져오는중(true);
+    for (let i = 0; i < 20; i++) {
+      await new Promise(r => setTimeout(r, 3000));
+      const [w] = await q(app.db.from("encar_reserve_worker").select("sync_at, sync_msg, seen_at"));
+      if (w?.sync_at && w.sync_at !== 전) { set가져오는중(false); toast(`광고장 예약 ${w.sync_msg || ""} 가져왔습니다`); return load(); }
+    }
+    set가져오는중(false);
+    throw new Error("사무실 PC 가 응답하지 않습니다 (감시 프로그램이 켜져 있는지 확인)");
   });
   useEffect(() => { load(); }, [view, 범위[0], 범위[1]]);
 
@@ -64,7 +82,12 @@ export function CalendarPage({ app }) {
     <aside class="bd-side">
       <button class="btn primary bd-write" onClick=${() => 새일정(at)}>📅 일정쓰기</button>
       <${작은달력} at=${at} setAt=${setAt} 모두=${모두} />
-      <p class="note small"><span class="badge red">🏦 만기</span> <span class="badge green">📣 광고장</span>은 자동으로 보입니다. 빈 칸을 누르면 그 사람·그날 일정을 씁니다.</p>
+      <div class="card" style="padding:10px 12px;margin:12px 0">
+        <div class="small"><b>📣 엔카 광고장 예약</b></div>
+        <div class="muted small" style="margin:2px 0 8px">${동기?.sync_at ? `${언제(동기.sync_at)} 가져옴 · ${동기.sync_msg || ""}` : "아직 안 가져옴"} · 10분마다 자동</div>
+        <button class="btn sm" style="width:100%" disabled=${가져오는중} onClick=${가져오기}>${가져오는중 ? "사무실 PC 가 가져오는 중…" : "🔄 지금 가져오기"}</button>
+      </div>
+      <p class="note small"><span class="badge red">🏦 만기</span> <span class="badge green">📣 광고장</span>은 자동으로 보입니다(엔카에서 직접 한 예약 포함). 빈 칸을 누르면 그 사람·그날 일정을 씁니다.</p>
     </aside>
     <section>
       <div class="bd-head">
