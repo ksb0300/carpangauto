@@ -157,11 +157,11 @@ function 매도칸({ f, set }) {
   return html`<div class="fgrid">
     <${Field} label="매도형태"><${Seg} value=${f.type || ""} onChange=${v => set("type", v)} options=${매도형태들} /><//>
     <${Field} label="차량번호" req><input value=${f.plate || ""} placeholder="예: 102조9178" onInput=${e => set("plate", e.target.value)} /><//>
-    <${Field} label="차명"><input value=${f.car_name || ""} onInput=${e => set("car_name", e.target.value)} /><//>
+    <${Field} label="차명" req hint="대충이라도 (예: 미니쿠퍼)"><input value=${f.car_name || ""} onInput=${e => set("car_name", e.target.value)} /><//>
     <${Field} label="구매자 이름" hint="계약금·잔금 입금을 통장에서 찾는 데 씁니다"><input value=${f.buyer || ""} onInput=${e => set("buyer", e.target.value)} /><//>
     <${Field} label="구매자 전화"><input inputmode="tel" value=${f.phone || ""} onInput=${e => set("phone", e.target.value)} /><//>
     <${Field} label="매도 금액" req hint=${a ? "= " + 원(a) : ""}><input value=${f.amountText ?? ""} placeholder="3050만" onInput=${e => set("amountText", e.target.value)} /><//>
-    <${Field} label="매도비"><${Seg} value=${f.fee_included === true ? "포함" : f.fee_included === false ? "별도" : ""} onChange=${v => set("fee_included", v === "포함")} options=${["별도", "포함"]} /><//>
+    <${Field} label="매도비" req><${Seg} value=${f.fee_included === true ? "포함" : f.fee_included === false ? "별도" : ""} onChange=${v => set("fee_included", v === "포함")} options=${["별도", "포함"]} /><//>
     <${Field} label="계약금" hint=${dp ? "= " + 원(dp) + " (받고 올리면 '잔금 대기')" : "한 번에 결제면 비워 두세요 ('입금 대기')"}><input value=${f.depositText ?? ""} placeholder="100만" onInput=${e => set("depositText", e.target.value)} /><//>
     <${Field} label="계약금 받은 날짜·시간"><input value=${f.deposit_when || ""} placeholder="10/13 14:00" onInput=${e => set("deposit_when", e.target.value)} /><//>
   </div>`;
@@ -225,6 +225,9 @@ function Write({ app }) {
     if (cat === "송금요청" && !form.amount) return toast("송금할 금액을 입력하세요", "err");
     if (cat === "송금요청" && !form.payee) { if (!ask("예금주가 비어 있으면 통장에서 자동으로 찾지 못합니다. 그래도 올릴까요?")) return; }
     if (cat === "매도정보" && !form.plate) return toast("차량번호를 입력하세요", "err");
+    if (cat === "매도정보" && !form.car_name) return toast("차명을 입력하세요 (대충이라도)", "err");
+    if (cat === "매도정보" && !form.amount) return toast("매도 금액을 입력하세요", "err");
+    if (cat === "매도정보" && form.fee_included == null) return toast("매도비 별도·포함을 고르세요", "err");
     const plate = 양식 ? form.plate : 번호(t.plate);
     if (등록증 && !plate) return toast("등록증은 차량번호를 입력하세요", "err");
     const title = cat === "매도정보" ? 매도제목(form) : t.title.trim() || (cat === "송금요청" ? `${form.plate || ""} ${form.kind}${form.route ? `(${form.route})` : ""} ${form.amount % 10000 === 0 ? form.amount / 10000 + "만원" : 원(form.amount)}`.trim()
@@ -270,7 +273,7 @@ function Write({ app }) {
       ${복원 && html`<p class="note">임시저장된 글을 불러왔습니다. <button class="linkbtn" onClick=${버리기}>버리고 새로 쓰기</button></p>`}
       <div class="fgrid">
         <${Field} label="게시판"><${Select} value=${cat} onChange=${setCat} options=${BOARDS.map(b => [b[0], `${b[2]} ${b[1]}`])} /><//>
-        <${Field} label="필독(위에 고정)"><input type="checkbox" style="width:auto" checked=${t.pinned} onChange=${e => setx("pinned", e.target.checked)} /><//>
+        <${Field} label="필독"><span class=${"toggle" + (t.pinned ? " on" : "")} style="min-height:38px" onClick=${e => { e.preventDefault(); setx("pinned", !t.pinned); }}><i></i>목록 맨 위에 고정</span><//>
       </div>
       ${cat !== "매도정보" && html`<${Field} label="제목" wide hint=${양식 || 등록증 ? "비워 두면 자동으로 지어집니다" : ""}><input value=${t.title} onInput=${e => setx("title", e.target.value)} /><//>`}
       ${cat === "송금요청" && html`<div class="tpl" style="max-width:none">
@@ -408,6 +411,7 @@ function Post({ app, id }) {
   const saveEdit = () => run(async () => {
     const 양식 = 송금 || p.category === "매도정보";
     const form = 양식 ? 양식정리(p.category, { ...edit.f, memo: edit.f.memo || null }) : p.form;
+    if (매도 && (!form.plate || !form.car_name || !form.amount || form.fee_included == null)) throw new Error("차량번호·차명·매도 금액·매도비(별도/포함)는 꼭 넣어 주세요");
     const body = 송금 ? (form.paste || 송금글(form, form.memo || "")) : p.category === "매도정보" ? 매도글(form, form.memo || "") : edit.body;
     await q(app.db.from("board_posts").update({ title: p.category === "매도정보" ? 매도제목(form) : edit.title.trim() || p.title, body, form, plate: 양식 ? form.plate : p.plate, updated_at: new Date().toISOString() }).eq("id", id));
     setEdit(null); load();
