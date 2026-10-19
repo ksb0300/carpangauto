@@ -2015,3 +2015,35 @@ select p.id, m.user_id, p.created_at, true
   from board_posts p cross join profiles m
  where m.role in ('admin', 'staff')
 on conflict do nothing;
+
+
+-- 20261019000007_encar_reservations.sql
+-- 엔카 광고장(진단) 예약 내역 — 사무실 PC 감시 프로그램이 엔카 '예약조회'를 10분마다(또는 업무관리에서 [가져오기] 누르면 바로) 읽어 넣는다.
+-- 직접 엔카 앱·웹에서 한 예약도 여기로 들어와 일정(캘린더)의 '자동' 줄에 보인다. 엔카 목록에서 사라지면 gone_at.
+create table encar_reservations (
+  res_no     text primary key,                 -- 엔카 예약번호 (diagnosisReservationId)
+  res_date   date not null,
+  res_time   time,
+  center     text,
+  plate      text,
+  car_name   text,
+  ad_price   bigint,                           -- 광고가
+  status     text,                             -- 엔카 화면 표시 그대로 (예약확정 등)
+  car_id     uuid references cars(id) on delete set null,
+  seen_at    timestamptz not null default now(),
+  gone_at    timestamptz                       -- 다음 읽을 때 목록에 없으면(취소 등)
+);
+create index encar_reservations_date on encar_reservations (res_date);
+alter table encar_reservations enable row level security;
+create policy office_read on encar_reservations for select to authenticated using (is_office());
+
+-- 감시 프로그램 상태 줄: 마지막으로 읽은 때·결과, 업무관리에서 '지금 가져오기' 요청
+alter table encar_reserve_worker add column sync_at timestamptz;
+alter table encar_reserve_worker add column sync_msg text;
+alter table encar_reserve_worker add column sync_req timestamptz;
+-- 사무실은 '가져오기 요청'만 할 수 있다 (나머지 칸은 감시 프로그램이 관리자 키로)
+create function encar_reserve_sync_request() returns void language sql security definer set search_path = public as $$
+  update encar_reserve_worker set sync_req = now() where id = 1 and is_office();
+$$;
+revoke execute on function encar_reserve_sync_request() from public, anon;
+grant execute on function encar_reserve_sync_request() to authenticated;
