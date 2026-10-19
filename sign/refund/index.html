@@ -151,8 +151,9 @@ function 성능지보기() {
 function won(n) { return Number(n || 0).toLocaleString() + "원"; }
 /* 인도 때 안내 사항 표 (고객 화면·사본 공통) */
 function 고지html(p) {
-  var rows = [["판매금액", won(p.price)], ["성능·상태점검기록부", "교부함"], ["압류·저당", p.lien || "없음"],
-    ["성능보험", Number(p.insurance) > 0 ? "가입 (보험료 " + won(p.insurance) + ")" : "미가입"], ["차량 키", (p.keys || 0) + "개"]];
+  var rows = p.depart ? [["차량 출발일", 출발글(p.depart)]] : [];
+  rows = rows.concat([["판매금액", won(p.price)], ["성능·상태점검기록부", "교부함"], ["압류·저당", p.lien || "없음"],
+    ["성능보험", Number(p.insurance) > 0 ? "가입 (보험료 " + won(p.insurance) + ")" : "미가입"], ["차량 키", (p.keys || 0) + "개"]]);
   if (p.dest || p.move_km) rows.push(["인도 장소까지", [p.dest, p.move_km ? Number(p.move_km).toLocaleString() + "km (TMAP 기준)" : ""].filter(Boolean).join(" · ")]);
   if (p.note) rows.push(["특약", p.note]);
   var costs = (p.costs || []).filter(function (c) { return Number(c[1]) > 0; });
@@ -162,6 +163,8 @@ function 고지html(p) {
       costs.map(function (c) { return "<tr><th>" + esc(c[0]) + "</th><td>" + won(c[1]) + "</td></tr>"; }).join("") +
       "<tr><th><b>합계</b></th><td><b>" + won(sum) + "</b></td></tr></table>" : "");
 }
+/* "2026-10-20" → "2026년 10월 20일 (화)" */
+function 출발글(d) { var a = d.split("-").map(Number); return a[0] + "년 " + a[1] + "월 " + a[2] + "일 (" + 요일[new Date(Date.UTC(a[0], a[1] - 1, a[2])).getUTCDay()] + ")"; }
 function 비용합계(p) { return (p.costs || []).reduce(function (a, c) { return a + (Number(c[1]) || 0); }, 0); }
 var pad = SignPad($("pad"), function (ink) { $("padHint").textContent = ink ? "서명됨" : "서명 전"; });
 $("clear").onclick = function () { pad.clear(); };

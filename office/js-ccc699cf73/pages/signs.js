@@ -119,11 +119,16 @@ function SignView({ app, id }) {
     <p class="note no-print">인쇄 창에서 'PDF로 저장'을 고르면 파일로 보관됩니다.${환불(r) ? " 약관은 고객이 서명할 때 본 원문 그대로입니다." : " 주민번호 원문은 대표만 넣을 수 있고, 넣을 때마다 열람 기록이 남습니다."}</p>`;
 }
 
+const 출발글 = d => { const [y, m, n] = d.split("-").map(Number); return `${y}년 ${m}월 ${n}일 (${요일[new Date(Date.UTC(y, m - 1, n)).getUTCDay()]})`; };
+/** 출발일(YYYY-MM-DD)을 1일째로 3일째 18시 — sign 함수 환불기한()과 같은 계산 (미리보기용) */
+const 출발기한 = d => { const [y, m, n] = d.split("-").map(Number); return new Date(Date.UTC(y, m - 1, n + 2, 18 - 9)).toISOString(); };
+const 오늘 = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+
 /** 인도 때 안내 사항 표 — 고객 페이지(/sign/refund 의 고지html)와 같은 내용 */
 function 고지표({ p }) {
   const costs = (p.costs || []).filter(c => Number(c[1]) > 0), sum = costs.reduce((a, c) => a + Number(c[1]), 0);
   const TR = (k, v) => html`<tr><th>${k}</th><td>${v}</td></tr>`;
-  return html`<table>${TR("판매금액", won(p.price) + "원")}${TR("성능·상태점검기록부", "교부함")}${TR("압류·저당", p.lien || "없음")}
+  return html`<table>${p.depart && TR("차량 출발일", 출발글(p.depart))}${TR("판매금액", won(p.price) + "원")}${TR("성능·상태점검기록부", "교부함")}${TR("압류·저당", p.lien || "없음")}
       ${TR("성능보험", Number(p.insurance) > 0 ? `가입 (보험료 ${won(p.insurance)}원)` : "미가입")}${TR("차량 키", `${p.keys || 0}개`)}${(p.dest || p.move_km) && TR("인도 장소까지", [p.dest, p.move_km ? `${Number(p.move_km).toLocaleString()}km (TMAP 기준)` : ""].filter(Boolean).join(" · "))}${p.note && TR("특약", p.note)}</table>
     ${costs.length > 0 && html`<div class="sec">환불 때 돌려받지 못하는 비용 (예상)</div>
       <table>${costs.map(c => TR(c[0], won(c[1]) + "원"))}${TR(html`<b>합계</b>`, html`<b>${won(sum)}원</b>`)}</table>`}`;
@@ -186,7 +191,7 @@ export function RefundPrep({ app, car, sale, shareLink, onClose }) {
       q(app.db.from("car_loans").select("id").eq("car_id", car.id).eq("status", "진행중")),
       q(app.db.from("car_inspections").select("insur_price,recept_date").eq("car_id", car.id).order("recept_date", { ascending: false }).limit(1))]);
     const price = Number(sale?.sale_amount || car.ad_price || car.list_price || 0), insurance = Number(ins[0]?.insur_price || 0);
-    setF({ price, mileage: car.mileage ?? "", keys: 2, insurance, note: "", dest: "", move_km: "",
+    setF({ price, mileage: car.mileage ?? "", keys: 2, insurance, note: "", dest: "", move_km: "", depart: 오늘(),
       lien: loans.length ? "재고금융 저당 있음 — 고객이 차량 인수를 확정하면 이전등록과 함께 해지" : "없음",
     });
   }); }, [car.id]);
@@ -194,9 +199,11 @@ export function RefundPrep({ app, car, sale, shareLink, onClose }) {
   const make = () => run(async () => {
     if (!f.price) throw new Error("판매금액을 넣어 주세요");
     if (f.mileage === "" || f.mileage == null) throw new Error("인도 전 주행거리를 넣어 주세요");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(f.depart || "")) throw new Error("차량 출발일을 정해 주세요");
+    if (Date.parse(출발기한(f.depart)) < Date.now()) throw new Error("이 출발일이면 환불 기한이 이미 지났습니다. 출발일을 확인해 주세요");
     const token = crypto.randomUUID().replace(/-/g, "");
     const prepared = { price: f.price, keys: Number(f.keys) || 0, lien: f.lien.trim() || "없음", insurance: Number(f.insurance) || 0, note: f.note.trim(), dest: f.dest.trim(), move_km: Number(f.move_km) || 0,
-      costs: [] };
+      depart: f.depart, costs: [] };
     await q(app.db.from("sign_docs").insert({ kind: "3일환불", car_id: car.id, car_no: car.plate, car_name: car.car_name, mileage: Number(String(f.mileage).replace(/[^\d]/g, "")),
       prepared, token, prepared_by: app.user.id, signed_at: null, agreed: false }));
     load();
@@ -212,6 +219,7 @@ export function RefundPrep({ app, car, sale, shareLink, onClose }) {
       <td class="r">${d.signature_path ? html`<a class="btn sm" href=${"#/signs/" + d.id}>약정서 보기</a>`
         : html`<button class="btn sm" onClick=${() => shareLink(url(d.token), `${car.plate} 3일 환불 약정서`)}>링크 다시 보내기</button>`}</td></tr>`)}</tbody></table>`}
     ${!f ? html`<${Loading} />` : html`<div class="fgrid">
+      <${Field} label="차량 출발일" hint=${/^\d{4}-\d{2}-\d{2}$/.test(f.depart || "") ? `이 날이 1일째 → 환불 기한 ${기한글(출발기한(f.depart))}까지` : "매장에서 차가 출발하는 날 (이 날이 환불 1일째)"}><input type="date" value=${f.depart} onInput=${e => set("depart", e.target.value)} /><//>
       <${Field} label="판매금액 (차량대금)"><${Money} value=${f.price} onInput=${v => set("price", v)} /><//>
       <${Field} label="인도 전 주행거리 (km)" hint="매장에서 출발하기 전 계기판"><input inputmode="numeric" value=${f.mileage} onInput=${e => set("mileage", e.target.value.replace(/[^\d]/g, ""))} /><//>
       <${Field} label="인도 장소 (있으면)"><input value=${f.dest} placeholder="예: 고객 자택 (부산 해운대구)" onInput=${e => set("dest", e.target.value)} /><//>
