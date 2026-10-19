@@ -1,6 +1,6 @@
 {
- "updated": "2026-10-18 17:47",
- "count": 44,
+ "updated": "2026-10-19 18:02",
+ "count": 52,
  "cars": [
   {
    "id": "42351261",
@@ -133,6 +133,32 @@
    "link": "https://fem.encar.com/cars/detail/42577207"
   },
   {
+   "id": "42949580",
+   "plate": "53도6507",
+   "maker": "현대",
+   "model": "아이오닉9",
+   "grade": "항속형 2WD",
+   "year": "25년 12월",
+   "yearRaw": "202512",
+   "mileage": 18346,
+   "fuel": "전기",
+   "transmission": "오토",
+   "color": "검정색",
+   "price": 6800,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture04/pic4294/42949580_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949580_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949580_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949580_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949580_009.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949580_053.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949580_010.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949580_015.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42949580"
+  },
+  {
    "id": "42184774",
    "plate": "169마7440",
    "maker": "벤츠",
@@ -209,6 +235,32 @@
     "https://ci.encar.com/carpicture06/pic4256/42568440_009.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42568440"
+  },
+  {
+   "id": "42949600",
+   "plate": "54다8079",
+   "maker": "기아",
+   "model": "EV5",
+   "grade": "롱레인지 2WD",
+   "year": "26년 02월",
+   "yearRaw": "202602",
+   "mileage": 18330,
+   "fuel": "전기",
+   "transmission": "오토",
+   "color": "흰색",
+   "price": 5400,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture04/pic4294/42949600_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949600_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949600_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949600_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949600_043.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949600_049.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949600_048.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949600_021.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42949600"
   },
   {
    "id": "42855860",
@@ -289,6 +341,32 @@
    "link": "https://fem.encar.com/cars/detail/42873091"
   },
   {
+   "id": "42954696",
+   "plate": "18러4132",
+   "maker": "BYD",
+   "model": "씨라이언 7 ",
+   "grade": "플러스",
+   "year": "26년 08월",
+   "yearRaw": "202608",
+   "mileage": 1408,
+   "fuel": "전기",
+   "transmission": "오토",
+   "color": "흰색",
+   "price": 4190,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture05/pic4295/42954696_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4295/42954696_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4295/42954696_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4295/42954696_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4295/42954696_024.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4295/42954696_036.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4295/42954696_033.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4295/42954696_032.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42954696"
+  },
+  {
    "id": "42916835",
    "plate": "234소8288",
    "maker": "기아",
@@ -315,32 +393,6 @@
    "link": "https://fem.encar.com/cars/detail/42916835"
   },
   {
-   "id": "42873077",
-   "plate": "102고5546",
-   "maker": "기아",
-   "model": "스팅어",
-   "grade": "3.3 GT AWD 트리뷰트 에디션",
-   "year": "23년 01월",
-   "yearRaw": "202301",
-   "mileage": 27989,
-   "fuel": "가솔린",
-   "transmission": "오토",
-   "color": "은색",
-   "price": 4190,
-   "diagnosis": true,
-   "photos": [
-    "https://ci.encar.com/carpicture07/pic4287/42873077_027.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4287/42873077_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4287/42873077_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4287/42873077_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4287/42873077_007.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4287/42873077_034.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4287/42873077_044.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4287/42873077_043.jpg?impolicy=widthRate&wid=800"
-   ],
-   "link": "https://fem.encar.com/cars/detail/42873077"
-  },
-  {
    "id": "42806257",
    "plate": "150마9800",
    "maker": "BMW",
@@ -365,6 +417,32 @@
     "https://ci.encar.com/carpicture10/pic4280/42806257_032.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42806257"
+  },
+  {
+   "id": "42873077",
+   "plate": "102고5546",
+   "maker": "기아",
+   "model": "스팅어",
+   "grade": "3.3 GT AWD 트리뷰트 에디션",
+   "year": "23년 01월",
+   "yearRaw": "202301",
+   "mileage": 27989,
+   "fuel": "가솔린",
+   "transmission": "오토",
+   "color": "은색",
+   "price": 4090,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture07/pic4287/42873077_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4287/42873077_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4287/42873077_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4287/42873077_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4287/42873077_009.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4287/42873077_036.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4287/42873077_046.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4287/42873077_032.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42873077"
   },
   {
    "id": "42828503",
@@ -593,10 +671,10 @@
     "https://ci.encar.com/carpicture07/pic4277/42773383_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture07/pic4277/42773383_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture07/pic4277/42773383_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4277/42773383_020.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4277/42773383_008.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4277/42773383_040.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4277/42773383_016.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture07/pic4277/42773383_031.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42773383_009.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42773383_048.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42773383_005.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42773383"
   },
@@ -809,6 +887,32 @@
    "link": "https://fem.encar.com/cars/detail/42757118"
   },
   {
+   "id": "42948787",
+   "plate": "356저1139",
+   "maker": "현대",
+   "model": "투싼",
+   "grade": "인스퍼레이션 2WD",
+   "year": "21년 01월",
+   "yearRaw": "202101",
+   "mileage": 84630,
+   "fuel": "가솔린+전기",
+   "transmission": "오토",
+   "color": "쥐색",
+   "price": 2490,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture04/pic4294/42948787_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42948787_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42948787_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42948787_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42948787_034.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42948787_043.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42948787_006.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42948787_010.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42948787"
+  },
+  {
    "id": "42819398",
    "plate": "235저9381",
    "maker": "KG모빌리티(쌍용)",
@@ -879,10 +983,10 @@
     "https://ci.encar.com/carpicture09/pic4219/42193712_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture09/pic4219/42193712_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture09/pic4219/42193712_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4219/42193712_019.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4219/42193712_021.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4219/42193712_035.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4219/42193712_036.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture09/pic4219/42193712_017.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4219/42193712_043.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4219/42193712_005.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4219/42193712_020.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42193712"
   },
@@ -965,6 +1069,58 @@
    "link": "https://fem.encar.com/cars/detail/42873315"
   },
   {
+   "id": "42949368",
+   "plate": "814머4532",
+   "maker": "르노코리아(삼성)",
+   "model": "QM6",
+   "grade": "퀘스트 2.0 LPe 어드벤처 2WD",
+   "year": "23년 12월",
+   "yearRaw": "202312",
+   "mileage": 30083,
+   "fuel": "LPG(일반인 구입)",
+   "transmission": "오토",
+   "color": "흰색",
+   "price": 1890,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture04/pic4294/42949368_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949368_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949368_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949368_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949368_041.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949368_019.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949368_034.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949368_015.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42949368"
+  },
+  {
+   "id": "42949261",
+   "plate": "305로3413",
+   "maker": "현대",
+   "model": "쏘나타",
+   "grade": "1.6 터보",
+   "year": "20년 11월",
+   "yearRaw": "202011",
+   "mileage": 46735,
+   "fuel": "가솔린",
+   "transmission": "오토",
+   "color": "쥐색",
+   "price": 1700,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture04/pic4294/42949261_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949261_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949261_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949261_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949261_015.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949261_033.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949261_047.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949261_022.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42949261"
+  },
+  {
    "id": "42193880",
    "plate": "136어3189",
    "maker": "제네시스",
@@ -976,17 +1132,17 @@
    "fuel": "가솔린",
    "transmission": "오토",
    "color": "검정색",
-   "price": 1350,
+   "price": 1390,
    "diagnosis": false,
    "photos": [
     "https://ci.encar.com/carpicture09/pic4219/42193880_001.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture09/pic4219/42193880_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture09/pic4219/42193880_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture09/pic4219/42193880_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4219/42193880_041.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4219/42193880_010.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture09/pic4219/42193880_019.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture09/pic4219/42193880_032.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4219/42193880_031.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture09/pic4219/42193880_036.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42193880"
   },
@@ -1095,6 +1251,32 @@
    "link": "https://fem.encar.com/cars/detail/42509871"
   },
   {
+   "id": "42949480",
+   "plate": "16모1891",
+   "maker": "기아",
+   "model": "쏘렌토",
+   "grade": "디젤 2.0 2WD",
+   "year": "14년 01월",
+   "yearRaw": "201401",
+   "mileage": 179207,
+   "fuel": "디젤",
+   "transmission": "오토",
+   "color": "흰색",
+   "price": 690,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture04/pic4294/42949480_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949480_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949480_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949480_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949480_006.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949480_016.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949480_024.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949480_049.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42949480"
+  },
+  {
    "id": "42935053",
    "plate": "24어0256",
    "maker": "현대",
@@ -1145,6 +1327,32 @@
     "https://ci.encar.com/carpicture02/pic4292/42922293_016.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42922293"
+  },
+  {
+   "id": "42955631",
+   "plate": "26우3922",
+   "maker": "쉐보레(GM대우)",
+   "model": "크루즈",
+   "grade": "2.0 LTZ+ 더 퍼펙트 블랙",
+   "year": "14년 08월",
+   "yearRaw": "201408",
+   "mileage": 232579,
+   "fuel": "디젤",
+   "transmission": "오토",
+   "color": "검정색",
+   "price": 150,
+   "diagnosis": false,
+   "photos": [
+    "https://ci.encar.com/carpicture05/pic4295/42955631_001.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4295/42955631_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4295/42955631_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4295/42955631_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4295/42955631_010.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4295/42955631_009.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4295/42955631_018.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4295/42955631_001.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42955631"
   }
  ]
 }
