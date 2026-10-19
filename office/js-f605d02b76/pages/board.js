@@ -161,6 +161,8 @@ function 매도칸({ f, set }) {
     <${Field} label="계약금 받은 날짜·시간"><input value=${f.deposit_when || ""} placeholder="10/13 14:00" onInput=${e => set("deposit_when", e.target.value)} /><//>
   </div>`;
 }
+/** 매도정보 제목은 쓰지 않고 칸에서 짓는다: 차번호 차명 매도 */
+const 매도제목 = form => [form.plate, form.car_name, "매도"].filter(Boolean).join(" ");
 /** 화면용 칸 값(문자) → 저장할 form */
 function 양식정리(cat, f) {
   if (cat === "송금요청") {
@@ -220,8 +222,8 @@ function Write({ app }) {
     if (cat === "매도정보" && !form.plate) return toast("차량번호를 입력하세요", "err");
     const plate = 양식 ? form.plate : 번호(t.plate);
     if (등록증 && !plate) return toast("등록증은 차량번호를 입력하세요", "err");
-    const title = t.title.trim() || (cat === "송금요청" ? `${form.plate || ""} ${form.kind}${form.route ? `(${form.route})` : ""} ${form.amount % 10000 === 0 ? form.amount / 10000 + "만원" : 원(form.amount)}`.trim()
-      : cat === "매도정보" ? `매도 ${form.plate} ${form.car_name || ""}`.trim() : 등록증 ? `${plate} ${이름[cat]}` : "");
+    const title = cat === "매도정보" ? 매도제목(form) : t.title.trim() || (cat === "송금요청" ? `${form.plate || ""} ${form.kind}${form.route ? `(${form.route})` : ""} ${form.amount % 10000 === 0 ? form.amount / 10000 + "만원" : 원(form.amount)}`.trim()
+      : 등록증 ? `${plate} ${이름[cat]}` : "");
     if (!title) return toast("제목을 입력하세요", "err");
     const body = cat === "송금요청" ? (form.paste || 송금글(form, form.memo || "")) : cat === "매도정보" ? 매도글(form, form.memo || "") : t.body;
     setBusy(true);
@@ -260,7 +262,7 @@ function Write({ app }) {
         <${Field} label="게시판"><${Select} value=${cat} onChange=${setCat} options=${BOARDS.map(b => [b[0], `${b[2]} ${b[1]}`])} /><//>
         <${Field} label="필독(위에 고정)"><input type="checkbox" style="width:auto" checked=${t.pinned} onChange=${e => setx("pinned", e.target.checked)} /><//>
       </div>
-      <${Field} label="제목" wide hint=${양식 || 등록증 ? "비워 두면 자동으로 지어집니다" : ""}><input value=${t.title} onInput=${e => setx("title", e.target.value)} /><//>
+      ${cat !== "매도정보" && html`<${Field} label="제목" wide hint=${양식 || 등록증 ? "비워 두면 자동으로 지어집니다" : ""}><input value=${t.title} onInput=${e => setx("title", e.target.value)} /><//>`}
       ${cat === "송금요청" && html`<div class="tpl" style="max-width:none">
         <div class="tg">📄 템플릿 · 송금요청</div>
         <${Field} label="📋 알림 붙여넣기 (엔카·헤이딜러 문자를 그대로)" wide hint="붙여넣으면 아래 칸이 자동으로 채워집니다 · 직접 적어도 됩니다">
@@ -381,7 +383,7 @@ function Post({ app, id }) {
     const 양식 = 송금 || p.category === "매도정보";
     const form = 양식 ? 양식정리(p.category, { ...edit.f, memo: edit.f.memo || null }) : p.form;
     const body = 송금 ? (form.paste || 송금글(form, form.memo || "")) : p.category === "매도정보" ? 매도글(form, form.memo || "") : edit.body;
-    await q(app.db.from("board_posts").update({ title: edit.title.trim() || p.title, body, form, plate: 양식 ? form.plate : p.plate, updated_at: new Date().toISOString() }).eq("id", id));
+    await q(app.db.from("board_posts").update({ title: p.category === "매도정보" ? 매도제목(form) : edit.title.trim() || p.title, body, form, plate: 양식 ? form.plate : p.plate, updated_at: new Date().toISOString() }).eq("id", id));
     setEdit(null); load();
   }, "고쳤습니다");
   const del = () => ask("이 글을 지울까요? 첨부도 함께 지워집니다. (차에 붙인 등록증은 그대로 남습니다)") && run(async () => {
@@ -421,7 +423,7 @@ function Post({ app, id }) {
         <button class="btn sm primary" onClick=${() => 완료(true)}>✔ 송금 완료</button></div>`)}
 
     ${edit ? html`<div style="margin-top:14px">
-        <${Field} label="제목" wide><input value=${edit.title} onInput=${e => setEdit({ ...edit, title: e.target.value })} /><//>
+        ${p.category !== "매도정보" && html`<${Field} label="제목" wide><input value=${edit.title} onInput=${e => setEdit({ ...edit, title: e.target.value })} /><//>`}
         ${송금 ? html`<${송금칸} f=${edit.f} set=${(k, v) => setEdit(s => ({ ...s, f: { ...s.f, [k]: v } }))} />`
           : p.category === "매도정보" ? html`<${매도칸} f=${edit.f} set=${(k, v) => setEdit(s => ({ ...s, f: { ...s.f, [k]: v } }))} />` : ""}
         <${Field} label=${양식 ? "메모" : "내용"} wide><textarea rows="5" value=${양식 ? edit.f.memo || "" : edit.body}
