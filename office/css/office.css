@@ -576,7 +576,7 @@ svg.drawing .pnl { pointer-events: none; }
 .td-add { padding: 12px 14px; }
 .td-add .td-title { width: 100%; font-size: 15px; padding: 10px 12px; }
 .td-opts { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
-.td-opts label { display: inline-flex; gap: 6px; align-items: center; } .td-opts input, .td-opts select { padding: 5px 8px; }
+.td-opts label { display: inline-flex; gap: 6px; align-items: center; white-space: nowrap; } .td-opts input, .td-opts select { padding: 5px 8px; }
 .td-wrap { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; align-items: start; }
 .td-wrap.open { grid-template-columns: minmax(0, 1fr) 340px; }
 .td-wrap > * { min-width: 0; }

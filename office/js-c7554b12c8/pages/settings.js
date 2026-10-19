@@ -2,9 +2,10 @@ import { html, useState, useEffect, Money, Field, Seg, Select, run, won, toast, 
 import { q } from "../db.js";
 import { DEMO } from "../config.js";
 import { popbill, accounts } from "../pb.js";
+import { Alerts } from "./alerts.js";
 
 const TABS = [["company", "상사정보"], ["ops", "운영설정"], ["dealers", "대표·딜러"], ["lenders", "재고금융사"],
-  ["items", "항목"], ["popbill", "팝빌 연동"], ["accounts", "계정·권한"]];
+  ["items", "항목"], ["alerts", "알림"], ["popbill", "팝빌 연동"], ["accounts", "계정·권한"]];
 
 export function Settings({ app, tab }) {
   const admin = app.profile.role === "admin";
@@ -12,7 +13,7 @@ export function Settings({ app, tab }) {
     <nav class="tabs">${TABS.filter(([k]) => k !== "accounts" || admin).map(([k, l]) => html`<a class=${tab === k ? "on" : ""} href=${"#/settings/" + k}>${l}</a>`)}</nav>
     ${tab === "company" ? html`<${Company} app=${app} />` : tab === "items" ? html`<${Items} app=${app} />` : tab === "popbill" ? html`<${Popbill} app=${app} />`
       : tab === "dealers" ? html`<${Dealers} app=${app} />` : tab === "lenders" ? html`<${Lenders} app=${app} />`
-      : tab === "parking" ? html`<${Parking} app=${app} />` : tab === "accounts" && admin ? html`<${Accounts} app=${app} />` : html`<${Ops} app=${app} />`}`;
+      : tab === "parking" ? html`<${Parking} app=${app} />` : tab === "alerts" ? html`<${Alerts} app=${app} />` : tab === "accounts" && admin ? html`<${Accounts} app=${app} />` : html`<${Ops} app=${app} />`}`;
 }
 
 function Ops({ app }) {
