@@ -2047,3 +2047,76 @@ create function encar_reserve_sync_request() returns void language sql security 
 $$;
 revoke execute on function encar_reserve_sync_request() from public, anon;
 grant execute on function encar_reserve_sync_request() to authenticated;
+
+
+-- 20261019000008_board_sales_match.sql
+-- 게시판 매도정보 ↔ 통장 입금: 계약금 받고 올린 글은 '잔금 대기', 한 번에 결제면 '입금 대기' → 다 들어오면 '잔금 완료'
+--   찾는 입금: 구매자 이름(앞부분 비교, 송금요청과 같은 _이름키) 또는 번호판 이름으로 들어온 입금,
+--              또는 번호판 뒤 4자리 + '캐'(캐피탈 할부 입금, 예: '9869_우리캐'). 글 올린 날 14일 전 ~ 60일 뒤.
+--              다른 글에 붙었거나, 매도대금 말고 다른 분류(재고금융 등)로 정한 입금, 다른 차로 정한 입금은 빼고.
+--   찾은 입금은 그때그때 이 글에 붙인다(bank_txs.post_id, 분류 '차량매도대금') — 화면에 '입금 확인 얼마'가 보인다.
+--   완료: 들어온 합계 ≥ 매도금액. 계약금이 통장에 안 보이면(현금 등) 계약금은 받은 것으로 보고 합계 + 계약금 ≥ 매도금액.
+--   나눠 들어와도(1000만 + 1000만 + 900만 …) 합쳐서 본다.
+
+-- 옛 글: 매도금액·계약금을 '3050'처럼 만원 단위로 적어 3,050원으로 저장된 것 고침 (10만원 미만은 만원 단위로 본다)
+update board_posts set form = jsonb_set(form, '{amount}', to_jsonb((form->>'amount')::bigint * 10000))
+ where category = '매도정보' and coalesce(form->>'amount', '') ~ '^[0-9]+$' and (form->>'amount')::bigint between 1 and 99999;
+update board_posts set form = jsonb_set(form, '{deposit}', to_jsonb((form->>'deposit')::bigint * 10000))
+ where category = '매도정보' and coalesce(form->>'deposit', '') ~ '^[0-9]+$' and (form->>'deposit')::bigint between 1 and 99999;
+
+create function board_match_sales()
+returns table (post_id uuid, created_by uuid, title text, received bigint, done_now boolean)
+language plpgsql security definer set search_path = public as $$
+#variable_conflict use_column
+declare p record; v_d date; v_name text; v_plate text; v_p4 text; v_car uuid; v_amt bigint; v_dep bigint;
+        v_sum bigint; v_dep_seen boolean; v_new int; v_done boolean; v_last record;
+begin
+  if not (is_office() or coalesce(auth.role(), '') = 'service_role') then raise exception '권한이 없습니다'; end if;
+  for p in select bp.id, bp.created_by, bp.title, bp.car_id, bp.form, bp.done_at, bp.created_at from board_posts bp
+            where bp.category = '매도정보' and bp.done_at is null and coalesce(bp.form->>'amount', '') ~ '^[0-9]+$'
+            order by bp.created_at loop
+    v_d := (p.created_at at time zone 'Asia/Seoul')::date;
+    v_amt := (p.form->>'amount')::bigint;
+    v_dep := case when coalesce(p.form->>'deposit', '') ~ '^[0-9]+$' then (p.form->>'deposit')::bigint else 0 end;
+    v_name := _이름키(p.form->>'buyer');
+    if length(v_name) < 2 or v_name in ('내수', '수출', 'fm', 'am', '엔카믿고', '없음') then v_name := null; end if;
+    v_plate := _이름키(p.form->>'plate');
+    v_p4 := case when right(v_plate, 4) ~ '^[0-9]{4}$' then right(v_plate, 4) end;
+    v_car := coalesce(p.car_id, (select c.id from cars c where c.deleted_at is null and replace(c.plate, ' ', '') = replace(p.form->>'plate', ' ', '')
+                                  order by c.purchase_date desc nulls last limit 1));
+
+    create temp table if not exists _sale_tx (id uuid, amt bigint) on commit drop;
+    truncate _sale_tx;
+    insert into _sale_tx
+    select x.id, x.deposit from bank_txs x
+     where x.deposit > 0 and (x.post_id is null or x.post_id = p.id)
+       and coalesce(x.match_kind, '차량매도대금') = '차량매도대금'
+       and (x.car_id is null or v_car is null or x.car_id = v_car)
+       and x.tx_date between v_d - 14 and v_d + 60
+       and (
+         (v_name is not null and length(_이름키(coalesce(x.counterparty, x.remark))) >= 2
+            and (starts_with(v_name, _이름키(coalesce(x.counterparty, x.remark))) or starts_with(_이름키(coalesce(x.counterparty, x.remark)), v_name)))
+         or (length(v_plate) >= 7 and _이름키(coalesce(x.counterparty, x.remark)) = v_plate)
+         or (v_p4 is not null and coalesce(x.counterparty, x.remark) like '%' || v_p4 || '%' and coalesce(x.counterparty, x.remark) like '%캐%')
+       );
+
+    select count(*) into v_new from _sale_tx t join bank_txs x on x.id = t.id where x.post_id is null;
+    select coalesce(sum(amt), 0), coalesce(bool_or(amt = v_dep), false) into v_sum, v_dep_seen from _sale_tx;
+    continue when v_sum = 0;
+
+    update bank_txs x set post_id = p.id, match_kind = '차량매도대금', car_id = coalesce(x.car_id, v_car), matched_by = coalesce(x.matched_by, '자동')
+      from _sale_tx t where x.id = t.id and x.post_id is null;
+
+    v_done := v_sum >= v_amt or (v_dep > 0 and not v_dep_seen and v_sum + v_dep >= v_amt);
+    if v_done then
+      select x.tx_date, x.tx_time into v_last from bank_txs x join _sale_tx t on t.id = x.id order by x.tx_date desc, x.tx_time desc nulls last limit 1;
+      update board_posts set done_at = (v_last.tx_date + coalesce(nullif(v_last.tx_time, '')::time, '00:00'::time)) at time zone 'Asia/Seoul',
+                             done_by = '통장 확인' where id = p.id;
+    end if;
+    continue when v_new = 0 and not v_done;
+    post_id := p.id; created_by := p.created_by; title := p.title; received := v_sum; done_now := v_done;
+    return next;
+  end loop;
+end $$;
+revoke execute on function board_match_sales() from public, anon;
+grant execute on function board_match_sales() to authenticated;   -- service_role 은 Supabase 기본 권한으로 실행됨
