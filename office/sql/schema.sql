@@ -1837,3 +1837,181 @@ update board_posts p set done_at = c.created_at, done_by = c.author_name
   from (select distinct on (post_id) post_id, created_at, author_name from board_comments
          where body ~ '(입완|입금\s*완료|송금\s*완료|완료|^\s*완\s*$)' order by post_id, created_at) c
  where p.id = c.post_id and p.category = '송금요청' and p.done_at is null;
+
+
+-- 20261019000003_board_form_match.sql
+-- 게시판 양식 칸(form) + 송금요청 ↔ 통장 출금 자동 짝짓기
+--   form: 송금요청 {kind 매입대금|수수료|업무비, route, plate, bank, account, payee, amount, due, customer}
+--         매도정보 {type, plate, car_name, buyer, phone, amount, fee_included, deposit, deposit_when}  (web/js/forms.js 가 읽고 쓴다)
+--   짝짓기: 금액이 같고 예금주가 맞는(통장은 이름을 잘라 적으니 앞부분 비교) 아직 연결 안 된 출금이 '딱 1건'일 때만 자동.
+--           요청 글 2일 전 ~ 7일 뒤 (요청 글보다 돈이 먼저 나간 경우가 있었다). 자금관리 분류: 매입대금→차량매입대금, 수수료→상품화비,
+--           업무비→차가 있으면 상품화비, 없으면 운영비. 아직 완료 안 된 요청이면 '통장 확인'으로 완료.
+alter table board_posts add column form jsonb;
+alter table bank_txs add column post_id uuid references board_posts(id) on delete set null;
+create index bank_txs_post on bank_txs (post_id);
+
+-- 이름 비교용 ('(주)피알앤디컴퍼니' = '(주)피알앤디컴퍼' 앞부분, '엔카닷컴 주식회사' = '엔카닷컴')
+create function _이름키(t text) returns text language sql immutable as $$
+  select regexp_replace(lower(coalesce(t, '')), '\(주\)|㈜|주식회사|\(유\)|유한회사|[[:space:]()·.,-]|\[|\]', '', 'g')
+$$;
+
+create function board_match_payments()
+returns table (post_id uuid, created_by uuid, title text, tx_id uuid, done_now boolean)
+language plpgsql security definer set search_path = public as $$
+#variable_conflict use_column
+declare p record; t record; n int; tid uuid; c_id uuid; k text; d date; a text;
+begin
+  if not (is_office() or coalesce(auth.role(), '') = 'service_role') then raise exception '권한이 없습니다'; end if;
+  for p in select bp.id, bp.created_by, bp.title, bp.car_id, bp.form, bp.done_at, bp.created_at from board_posts bp
+            where bp.category = '송금요청' and coalesce(bp.form->>'amount', '') ~ '^[0-9]+$'
+              and length(_이름키(bp.form->>'payee')) >= 2
+              and not exists (select 1 from bank_txs x where x.post_id = bp.id)
+            order by bp.created_at loop
+    d := (p.created_at at time zone 'Asia/Seoul')::date;
+    a := _이름키(p.form->>'payee');
+    select count(*), (array_agg(x.id))[1] into n, tid from bank_txs x
+     where x.withdraw = (p.form->>'amount')::bigint and x.post_id is null and x.match_kind is null
+       and x.tx_date between d - 2 and d + 7
+       and length(_이름키(coalesce(x.counterparty, x.remark))) >= 2
+       and (starts_with(a, _이름키(coalesce(x.counterparty, x.remark))) or starts_with(_이름키(coalesce(x.counterparty, x.remark)), a));
+    continue when n <> 1;
+    select x.* into t from bank_txs x where x.id = tid;
+    c_id := coalesce(p.car_id, (select c.id from cars c where c.deleted_at is null and replace(c.plate, ' ', '') = p.form->>'plate'
+                                 order by c.purchase_date desc nulls last limit 1));
+    k := case p.form->>'kind' when '매입대금' then '차량매입대금' when '수수료' then '상품화비'
+              else case when c_id is null then '운영비' else '상품화비' end end;
+    update bank_txs set post_id = p.id, match_kind = k, car_id = c_id, matched_by = '자동' where id = t.id;
+    done_now := p.done_at is null;
+    if done_now then
+      update board_posts set done_at = (t.tx_date + coalesce(nullif(t.tx_time, '')::time, '00:00'::time)) at time zone 'Asia/Seoul',
+                             done_by = '통장 확인' where id = p.id;
+    end if;
+    post_id := p.id; created_by := p.created_by; title := p.title; tx_id := t.id;
+    return next;
+  end loop;
+end $$;
+revoke execute on function board_match_payments() from public, anon;
+grant execute on function board_match_payments() to authenticated;   -- service_role 은 Supabase 기본 권한으로 실행됨
+
+
+-- 20261019000004_board_match_fix.sql
+-- board_match_payments 고침: 변수 이름 tid 가 bank_txs.tid(은행 거래번호, text) 칸과 겹쳐 'uuid = text' 오류 → v_tx 로
+create or replace function board_match_payments()
+returns table (post_id uuid, created_by uuid, title text, tx_id uuid, done_now boolean)
+language plpgsql security definer set search_path = public as $$
+#variable_conflict use_column
+declare p record; t record; n int; v_tx uuid; c_id uuid; k text; d date; a text;
+begin
+  if not (is_office() or coalesce(auth.role(), '') = 'service_role') then raise exception '권한이 없습니다'; end if;
+  for p in select bp.id, bp.created_by, bp.title, bp.car_id, bp.form, bp.done_at, bp.created_at from board_posts bp
+            where bp.category = '송금요청' and coalesce(bp.form->>'amount', '') ~ '^[0-9]+$'
+              and length(_이름키(bp.form->>'payee')) >= 2
+              and not exists (select 1 from bank_txs x where x.post_id = bp.id)
+            order by bp.created_at loop
+    d := (p.created_at at time zone 'Asia/Seoul')::date;
+    a := _이름키(p.form->>'payee');
+    select count(*), (array_agg(x.id))[1] into n, v_tx from bank_txs x
+     where x.withdraw = (p.form->>'amount')::bigint and x.post_id is null and x.match_kind is null
+       and x.tx_date between d - 2 and d + 7
+       and length(_이름키(coalesce(x.counterparty, x.remark))) >= 2
+       and (starts_with(a, _이름키(coalesce(x.counterparty, x.remark))) or starts_with(_이름키(coalesce(x.counterparty, x.remark)), a));
+    continue when n <> 1;
+    select x.* into t from bank_txs x where x.id = v_tx;
+    c_id := coalesce(p.car_id, (select c.id from cars c where c.deleted_at is null and replace(c.plate, ' ', '') = p.form->>'plate'
+                                 order by c.purchase_date desc nulls last limit 1));
+    k := case p.form->>'kind' when '매입대금' then '차량매입대금' when '수수료' then '상품화비'
+              else case when c_id is null then '운영비' else '상품화비' end end;
+    update bank_txs set post_id = p.id, match_kind = k, car_id = c_id, matched_by = '자동' where id = t.id;
+    done_now := p.done_at is null;
+    if done_now then
+      update board_posts set done_at = (t.tx_date + coalesce(nullif(t.tx_time, '')::time, '00:00'::time)) at time zone 'Asia/Seoul',
+                             done_by = '통장 확인' where id = p.id;
+    end if;
+    post_id := p.id; created_by := p.created_by; title := p.title; tx_id := t.id;
+    return next;
+  end loop;
+end $$;
+
+
+-- 20261019000005_works_like.sql
+-- 웍스처럼: 사무실 구성원 목록 · 게시판 읽음/중요/리액션/게시판별 알림 · 할 일 담당자(요청) · 일정 담당자·시간
+-- (2026-10-19 사용자: "웍스 대부분 카피", 할 일에 '요청' 기능, 캘린더도)
+
+-- 사무실 구성원 (담당자 고르기·작성자 이니셜·읽은 사람 보기용). 직원은 남의 profiles 를 못 읽으므로 이름·역할만 함수로 준다.
+create function office_members() returns table (user_id uuid, name text, role app_role)
+language sql stable security definer set search_path = public as $$
+  select p.user_id, p.name, p.role from profiles p
+   where is_office() and p.role in ('admin', 'staff') order by p.role, p.name
+$$;
+revoke execute on function office_members() from public, anon;
+grant execute on function office_members() to authenticated;
+
+-- 게시판: 누가 언제 읽었나 (목록 굵게·빨간 점, '읽음 3' 누르면 누가 읽었는지)
+create table board_reads (
+  post_id  uuid not null references board_posts(id) on delete cascade,
+  user_id  uuid not null references auth.users(id) on delete cascade default auth.uid(),
+  read_at  timestamptz not null default now(),
+  primary key (post_id, user_id)
+);
+alter table board_reads enable row level security;
+create policy office_read on board_reads for select to authenticated using (is_office());
+create policy own_write on board_reads for insert to authenticated with check (is_office() and user_id = auth.uid());
+create policy own_update on board_reads for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- 게시판: 나만의 중요 ☆
+create table board_stars (
+  post_id  uuid not null references board_posts(id) on delete cascade,
+  user_id  uuid not null references auth.users(id) on delete cascade default auth.uid(),
+  primary key (post_id, user_id)
+);
+alter table board_stars enable row level security;
+create policy own on board_stars for all to authenticated using (is_office() and user_id = auth.uid()) with check (is_office() and user_id = auth.uid());
+
+-- 게시판: 리액션 (👍 ✅ 🙏 😂 등 — 한 사람이 같은 것 한 번)
+create table board_reactions (
+  post_id  uuid not null references board_posts(id) on delete cascade,
+  user_id  uuid not null references auth.users(id) on delete cascade default auth.uid(),
+  emoji    text not null check (char_length(emoji) <= 8),
+  name     text not null default '',
+  created_at timestamptz not null default now(),
+  primary key (post_id, user_id, emoji)
+);
+alter table board_reactions enable row level security;
+create policy office_read on board_reactions for select to authenticated using (is_office());
+create policy own_write on board_reactions for insert to authenticated with check (is_office() and user_id = auth.uid());
+create policy own_del on board_reactions for delete to authenticated using (user_id = auth.uid());
+
+-- 알림 설정: 끈 것만 적는다 (없으면 켜짐). key 예: 'board:송금요청', 'board:매입등록증', 'todo', 'calendar'
+create table push_prefs (
+  user_id  uuid not null references auth.users(id) on delete cascade default auth.uid(),
+  key      text not null,
+  enabled  boolean not null default false,
+  primary key (user_id, key)
+);
+alter table push_prefs enable row level security;
+create policy own on push_prefs for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- 할 일: 담당자(계정)·기한·메모 — 남에게 맡기면 '요청', 내가 맡으면 '담당'
+alter table todos add column assignee_id uuid references auth.users(id) on delete set null;
+alter table todos add column due date;
+alter table todos add column memo text;
+create index todos_assignee on todos (assignee_id, done);
+
+-- 일정: 누구 일정인지(구성원 주간 보기 줄), 시간, 여러 날
+alter table calendar_events add column owner_id uuid references auth.users(id) on delete set null;
+alter table calendar_events add column d_end date;              -- 여러 날이면 끝 날
+alter table calendar_events add column start_time time;          -- 비어 있으면 하루 종일
+alter table calendar_events add column end_time time;
+alter table calendar_events add column car_id uuid references cars(id) on delete set null;
+update calendar_events e set owner_id = e.created_by where owner_id is null;
+
+
+-- 20261019000006_board_reads_seed.sql
+-- 게시판 읽음 기록을 시작하면서, 지금까지의 글(웍스에서 옮겨 온 326개 포함)은 모두 '읽은 것'으로 깔아 둔다
+-- (안 그러면 처음 열 때 전부 안 읽음으로 굵게 뜬다). 깔아 둔 줄(seed)은 '읽음 N' 숫자에는 넣지 않는다.
+alter table board_reads add column seed boolean not null default false;
+insert into board_reads (post_id, user_id, read_at, seed)
+select p.id, m.user_id, p.created_at, true
+  from board_posts p cross join profiles m
+ where m.role in ('admin', 'staff')
+on conflict do nothing;

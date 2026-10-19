@@ -502,3 +502,71 @@ svg.drawing .pnl { pointer-events: none; }
 /* 버튼 탭이 많아 폰 폭을 넘으면 가로로 밀어서 (게시판 분류 등) */
 .hscroll { overflow-x: auto; max-width: 100%; scrollbar-width: none; -webkit-overflow-scrolling: touch; } .hscroll::-webkit-scrollbar { display: none; }
 .hscroll .seg button { white-space: nowrap; }
+
+/* ───────── 게시판 (웍스식, 2026-10-19) ───────── */
+.av { display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; color: #fff; font-weight: 700; flex: 0 0 auto; line-height: 1; }
+.bd { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 22px; align-items: start; }
+.bd-side { position: sticky; top: 12px; }
+.bd-write { width: 100%; padding: 12px; font-size: 15px; border-radius: 10px; }
+.bd-quick { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; margin: 12px 0 10px; text-align: center; }
+.bd-quick button { background: none; border: 0; padding: 6px 0; border-radius: 8px; cursor: pointer; font: inherit; color: var(--sub); font-size: 12px; }
+.bd-quick button b { display: block; font-size: 17px; color: var(--ink); margin-bottom: 2px; }
+.bd-quick button.on { background: #eef2ff; color: var(--pri); } .bd-quick button.on b { color: var(--pri); }
+.bd-tree { border-top: 1px solid var(--line); padding-top: 8px; }
+.bd-tree .grp { font-size: 12px; color: var(--sub); margin: 12px 8px 4px; font-weight: 600; }
+.bd-tree a { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 8px; color: var(--ink); font-size: 14px; }
+.bd-tree a.sub { padding-left: 24px; }
+.bd-tree a:hover { background: #f1f5f9; } .bd-tree a.on { background: #eef2ff; color: var(--pri); font-weight: 600; }
+.bd-tree a .n { margin-left: auto; font-size: 12px; color: var(--sub); }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: #ef4444; display: inline-block; flex: 0 0 auto; }
+.bd-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 2px 0 12px; }
+.bd-head h2 { margin: 0; font-size: 22px; }
+.toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--sub); cursor: pointer; user-select: none; }
+.toggle i { width: 32px; height: 18px; border-radius: 9px; background: #cbd5e1; position: relative; transition: .15s; }
+.toggle i::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; transition: .15s; }
+.toggle.on i { background: var(--pri); } .toggle.on i::after { left: 16px; }
+.bd-rows { background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.bd-row { display: flex; gap: 12px; align-items: center; padding: 13px 16px; border-bottom: 1px solid var(--line2); cursor: pointer; }
+.bd-row:last-child { border-bottom: 0; } .bd-row:hover { background: #f8fafc; }
+.bd-row .bx { flex: 1; min-width: 0; }
+.bd-row .t { font-size: 15px; color: #475569; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.bd-row.new .t { color: var(--ink); font-weight: 700; }
+.bd-row .m { font-size: 12.5px; color: var(--sub); margin-top: 4px; }
+.bd-row .w { font-size: 12.5px; color: var(--sub); white-space: nowrap; align-self: flex-start; }
+.bd-row.pin { background: #fffdf5; }
+.bd-post .crumb { font-size: 13px; color: var(--sub); }
+.bd-post h1 { font-size: 24px; margin: 14px 0 12px; line-height: 1.35; }
+.bd-who { display: flex; align-items: center; gap: 10px; }
+.bd-who .nm { font-weight: 600; } .bd-who .sm { font-size: 12.5px; color: var(--sub); }
+.bd-body { white-space: pre-wrap; line-height: 1.75; font-size: 15px; padding: 18px 2px; }
+.linkbtn { background: none; border: 0; padding: 0; color: var(--pri); cursor: pointer; font: inherit; }
+/* 웍스 템플릿 카드 */
+.tpl { border: 1px solid var(--line); border-radius: 14px; padding: 18px 22px; margin: 16px 0; max-width: 720px; background: #fff; }
+.tpl .tg { font-size: 12.5px; color: var(--sub); }
+.tpl h3 { font-size: 20px; margin: 6px 0 6px; } .tpl .by { font-size: 12.5px; color: var(--sub); }
+.tpl hr { border: 0; border-top: 2px solid var(--ink); margin: 14px 0 6px; }
+.tpl .f { margin: 14px 0 0; } .tpl .f > b { display: block; font-size: 14px; margin-bottom: 6px; }
+.tpl .f > div { border-left: 2px solid var(--ink); padding: 2px 0 2px 10px; font-size: 15px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.tpl .big { font-size: 20px; font-weight: 700; }
+.bank-ok { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; background: #effaf3; border: 1px solid #c8eed6; border-radius: 10px; padding: 10px 12px; margin: 12px 0; font-size: 14px; }
+.bank-wait { background: #fff7e6; border-color: #fde3b0; }
+/* 리액션 */
+.rx { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; padding: 12px 0; border-top: 1px solid var(--line2); border-bottom: 1px solid var(--line2); margin: 10px 0 0; }
+.rx button { border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 4px 10px; cursor: pointer; font: inherit; font-size: 14px; }
+.rx button.on { background: #eef2ff; border-color: #c7d2fe; color: var(--pri); font-weight: 600; }
+.cmt { display: flex; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--line2); }
+.cmt .bx { flex: 1; min-width: 0; } .cmt .hd { font-size: 13px; } .cmt .hd b { margin-right: 6px; } .cmt .hd span { color: var(--sub); }
+.cmt .tx { white-space: pre-wrap; margin-top: 3px; line-height: 1.6; }
+.pop { position: absolute; z-index: 30; background: #fff; border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.12); padding: 8px 10px; min-width: 160px; }
+.pop .pr { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 13.5px; }
+@media (max-width: 760px) {
+  .bd { grid-template-columns: 1fr; gap: 10px; }
+  .bd-side { position: static; }
+  .bd-quick { margin: 8px 0 6px; }
+  .bd-tree { display: flex; overflow-x: auto; gap: 6px; border: 0; padding: 0 0 4px; scrollbar-width: none; }
+  .bd-tree::-webkit-scrollbar { display: none; }
+  .bd-tree .grp { display: none; }
+  .bd-tree a, .bd-tree a.sub { white-space: nowrap; padding: 6px 12px; background: #fff; border: 1px solid var(--line); border-radius: 999px; font-size: 13.5px; }
+  .bd-row { padding: 12px 12px; } .bd-post h1 { font-size: 20px; }
+  .tpl { padding: 14px 14px; }
+}
