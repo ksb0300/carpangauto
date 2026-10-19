@@ -1814,3 +1814,26 @@ create policy office_read  on board_comments for select to authenticated using (
 create policy office_write on board_comments for insert to authenticated with check (is_office());
 create policy owner_del    on board_comments for delete to authenticated
   using (is_office() and (created_by = auth.uid() or my_role() = 'admin'));
+
+
+-- 20261019000002_board_done.sql
+-- 게시판 송금요청 '처리 완료' — 지금까지는 사무장이 댓글로 '입완'을 달았다. 글 고치기는 쓴 사람·공동대표만이라
+-- 완료 표시만 사무실 누구나 할 수 있게 전용 함수로 (내용은 못 고친다).
+alter table board_posts add column done_at timestamptz;
+alter table board_posts add column done_by text;
+
+create function board_mark_done(p_id uuid, p_done boolean) returns void
+language sql security definer set search_path = public as $$
+  update board_posts
+     set done_at = case when p_done then now() end,
+         done_by = case when p_done then (select name from profiles where user_id = auth.uid()) end
+   where id = p_id and is_office();
+$$;
+revoke execute on function board_mark_done(uuid, boolean) from public, anon;
+grant execute on function board_mark_done(uuid, boolean) to authenticated;
+
+-- 웍스에서 옮겨 온 송금요청: '입완'·'완'·'송금완료' 댓글이 달린 글은 그 시각으로 완료
+update board_posts p set done_at = c.created_at, done_by = c.author_name
+  from (select distinct on (post_id) post_id, created_at, author_name from board_comments
+         where body ~ '(입완|입금\s*완료|송금\s*완료|완료|^\s*완\s*$)' order by post_id, created_at) c
+ where p.id = c.post_id and p.category = '송금요청' and p.done_at is null;

@@ -1,4 +1,5 @@
-import { html, render, useState, useEffect, AppCtx, Toasts, Loading, run, toast } from "./ui.js";
+import { html, render, useState, useEffect, AppCtx, Toasts, Loading, run, toast, ask } from "./ui.js";
+import { 상태 as 알림상태, 켜기 as 알림켜기, 끄기 as 알림끄기 } from "./push.js";
 import { getDb, q } from "./db.js";
 import { DEMO } from "./config.js";
 import { CarList } from "./pages/cars.js";
@@ -82,6 +83,20 @@ export function ChangePassword({ db, forced, onDone }) {
     </form></div>`;
 }
 
+/** 🔔 이 기기 폰 알림 켜기·끄기 (갤럭시: 허용만 / 아이폰: 홈 화면에 추가한 앱에서) */
+function Bell({ app }) {
+  const [st, setSt] = useState(null);
+  useEffect(() => { 알림상태().then(setSt).catch(() => setSt("안됨")); }, []);
+  if (!st || st === "안됨") return null;
+  const click = () => run(async () => {
+    if (st === "설치필요") return toast("아이폰은 사파리 공유 버튼 → '홈 화면에 추가'로 설치한 뒤, 설치된 업무관리 앱에서 🔔를 눌러 주세요.", "err");
+    if (st === "차단") return toast("이 브라우저에서 알림이 막혀 있습니다. 주소창 왼쪽 자물쇠 → 권한 → 알림 → 허용으로 바꾼 뒤 다시 눌러 주세요.", "err");
+    if (st === "켜짐") { if (ask("이 기기의 알림을 끌까요?")) { await 알림끄기(app); setSt("꺼짐"); toast("이 기기 알림을 껐습니다"); } return; }
+    await 알림켜기(app); setSt("켜짐"); toast("알림을 켰습니다 — 곧 시험 알림이 옵니다");
+  });
+  return html`<button type="button" class=${"btn sm " + (st === "켜짐" ? "ghost" : "primary")} title="이 기기로 업무관리 알림 받기" onClick=${click}>${st === "켜짐" ? "🔔 알림 켜짐" : "🔕 알림 켜기"}</button>`;
+}
+
 function Shell({ app, children, path }) {
   const { profile, db } = app;
   const office = profile.role !== "dealer";
@@ -113,6 +128,7 @@ function Shell({ app, children, path }) {
         ${DEMO && html`<span class="badge amber">데모</span>`}
         <a class="me-name" href="/" title="홈페이지(매물)로">홈페이지</a>
         ${office && html`<a class="me-name" href="https://mail.google.com/mail/u/?authuser=tierone@tieronekorea.com" target="_blank" rel="noopener" title="tierone@tieronekorea.com 메일 (Gmail)">✉️ 메일</a>`}
+        ${office && !DEMO && html`<${Bell} app=${app} />`}
         <a class="me-name" href="#/password" title="비밀번호 변경">${profile.name} · ${{ admin: "공동대표", staff: "사무장", dealer: "권한 없음" }[profile.role]}</a>
         <button class="btn ghost sm" onClick=${async () => { await db.auth.signOut(); location.reload(); }}>로그아웃</button>
       </div>
