@@ -506,6 +506,7 @@ svg.drawing .pnl { pointer-events: none; }
 /* ───────── 게시판 (웍스식, 2026-10-19) ───────── */
 .av { display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; color: #fff; font-weight: 700; flex: 0 0 auto; line-height: 1; }
 .bd { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 22px; align-items: start; }
+.bd > * { min-width: 0; }      /* 안쪽 가로 메뉴가 칸을 밀어 넓히지 않게 (폰에서 화면이 넘치던 것) */
 .bd-side { position: sticky; top: 12px; }
 .bd-write { width: 100%; padding: 12px; font-size: 15px; border-radius: 10px; }
 .bd-quick { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; margin: 12px 0 10px; text-align: center; }
@@ -560,7 +561,7 @@ svg.drawing .pnl { pointer-events: none; }
 .pop { position: absolute; z-index: 30; background: #fff; border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.12); padding: 8px 10px; min-width: 160px; }
 .pop .pr { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 13.5px; }
 @media (max-width: 760px) {
-  .bd { grid-template-columns: 1fr; gap: 10px; }
+  .bd { grid-template-columns: minmax(0, 1fr); gap: 10px; }
   .bd-side { position: static; }
   .bd-quick { margin: 8px 0 6px; }
   .bd-tree { display: flex; overflow-x: auto; gap: 6px; border: 0; padding: 0 0 4px; scrollbar-width: none; }
