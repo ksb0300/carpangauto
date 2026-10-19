@@ -88,7 +88,7 @@
 </section>
 
 <script src="/assets/site.js?v=42ab3af3"></script>
-<script src="/sign/pad.js?v=2"></script>
+<script src="/sign/pad.js?v=3"></script>
 <script>
 var API = "https://fwqtyyjhfewpxihpaasu.supabase.co/functions/v1/sign";
 var 매수자 = "김상혁 (티어원)", 매수자주소 = "부산광역시 기장군 장안읍 반룡산단3로 95, 604호, 605호(경동오토필드)";
@@ -141,13 +141,14 @@ $("send").onclick = function () {
     .then(function (r) { return r.json(); })
     .then(function (res) {
       if (!res || !res.ok) throw new Error((res && res.msg) || "제출에 실패했습니다. 다시 시도해 주세요.");
-      $("paper").innerHTML = 확인서(d, d.signature, res.at);
+      $("paper").innerHTML = 확인서(d, d.signature, res.at); DOC = res.id;
       $("form").hidden = true; $("done").hidden = false; window.scrollTo(0, 0);
     })
     .catch(function (e) { showErr(/fetch|network/i.test(e.message) ? "통신 오류: 인터넷 연결을 확인해 주세요." : e.message); btn.disabled = false; btn.textContent = "제출하기"; });
 };
-$("print").onclick = function () { SignPad.saveCopy($("paper"), this); };
-if (SignPad.inApp) $("printHint").textContent = "누르면 사본이 사진으로 만들어집니다. 길게 눌러 저장하시거나 화면을 캡처해 두셔도 됩니다.";
+var DOC = null;    // 접수된 서류 id (사본 PDF 올릴 때)
+$("print").onclick = function () { SignPad.saveCopy($("paper"), this, API, DOC); };
+if (SignPad.inApp) $("printHint").textContent = "누르면 A4 사본 PDF 가 열립니다. 저장해 두세요.";
 </script>
 </body>
 </html>

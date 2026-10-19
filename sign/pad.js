@@ -39,24 +39,76 @@ SignPad.autoNext = function ($, list) {
     el.addEventListener("keydown", function (e) { if (e.key === "Backspace" && this.value === "" && c[3]) $(c[3]).focus(); });
   });
 };
-/* 사본 저장: 보통 브라우저는 인쇄 창(PDF 저장), 카톡 등 앱 안 브라우저는 인쇄가 안 되므로 사본을 사진으로 만들어 길게 눌러 저장 */
+/* 사본 저장: 보통 브라우저는 인쇄 창(A4, PDF 저장). 카톡 등 앱 안 브라우저는 인쇄가 막혀 있어서
+   사본을 A4 쪽으로 나눈 PDF 로 만들어 서버에 올리고(car-files/sign/<id>-copy.pdf) 그 주소를 연다 — 안드로이드는 내려받기, 아이폰은 바로 보기 */
 SignPad.inApp = /KAKAOTALK|NAVER\(inapp|Instagram|FBAN|FBAV|Line\/|DaumApps|; wv\)/i.test(navigator.userAgent);
-SignPad.saveCopy = function (paper, btn) {
-  if (!SignPad.inApp) return window.print();
-  var old = paper.previousElementSibling;
-  if (old && old.className === "copyimg") { old.scrollIntoView({ behavior: "smooth" }); return; }
-  var label = btn.textContent; btn.disabled = true; btn.textContent = "사본 사진 만드는 중…";
-  var load = window.html2canvas ? Promise.resolve() : new Promise(function (ok, bad) {
-    var s = document.createElement("script"); s.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"; s.onload = ok; s.onerror = bad; document.head.appendChild(s);
+function 스크립트(src, has) {
+  return has() ? Promise.resolve() : new Promise(function (ok, bad) { var s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = bad; document.head.appendChild(s); });
+}
+/* 사본(.paper) → A4 PDF Blob. 여백 15mm. 먼저 화면에서 쪽을 나누고(표는 줄, 조항은 항목 단위로 다음 쪽에 이어서) 쪽마다 그린다 */
+SignPad.a4Pdf = function (paper) {
+  var W = 680, MM = 180 / W, FULL = Math.floor(267 / MM), H = FULL - 30;   // 본문 폭 180mm = 680px, 쪽 높이(아래 쪽번호 자리 빼고)
+  var host = document.createElement("div"); host.style.cssText = "position:absolute;left:-10000px;top:0";
+  document.body.appendChild(host);
+  var pages = [], cur;
+  function newPage() {     // 쪽(A4 높이 고정) 안에 본문 칸(cur) — 넘침은 본문 칸 높이로 잰다
+    var pg = document.createElement("div"); pg.className = "paper";
+    pg.style.cssText = "width:" + W + "px;height:" + FULL + "px;max-width:none;margin:0 0 20px;padding:0;border-radius:0;box-sizing:content-box;position:relative;overflow:hidden";
+    cur = pg.appendChild(document.createElement("div")); cur.style.cssText = "display:flow-root";
+    host.appendChild(pg); pages.push(pg);
+  }
+  var over = function () { return cur.offsetHeight > H; };
+  newPage();
+  var src = document.createElement("div"); src.innerHTML = paper.innerHTML;
+  Array.prototype.slice.call(src.children).forEach(function (el) {
+    cur.appendChild(el);
+    if (!over()) return;
+    cur.removeChild(el);
+    var rows = el.tagName === "TABLE" ? el.querySelectorAll("tr") : el.tagName === "OL" ? el.children : [];
+    if (rows.length < 2) { newPage(); cur.appendChild(el); return; }
+    rows = Array.prototype.slice.call(rows);                       // 표·조항은 줄 단위로 나눠 담는다
+    var n = 0, shell = function () {
+      var s = el.cloneNode(false); if (s.tagName === "OL") s.start = n + 1;
+      var body = s.tagName === "TABLE" ? s.appendChild(document.createElement("tbody")) : s;
+      cur.appendChild(s); return body;
+    };
+    var into = shell();
+    rows.forEach(function (r) {
+      into.appendChild(r); n++;
+      if (over() && into.children.length > 1) { into.removeChild(r); newPage(); into = shell(); into.appendChild(r); }
+    });
   });
-  load.then(function () { return html2canvas(paper, { scale: 3, backgroundColor: "#ffffff" }); }).then(function (c) {
-    var box = document.createElement("div"); box.className = "copyimg"; box.style.cssText = "margin:14px 0;text-align:center";
-    box.innerHTML = "<p style='font-size:14px;margin:0 0 8px'>아래 사진을 <b>길게 눌러 '이미지 저장'</b>을 누르시면 사진첩에 보관됩니다.</p>";
-    var img = new Image(); img.src = c.toDataURL("image/png"); img.alt = "사본"; img.style.cssText = "width:100%;border:1px solid #ccc;border-radius:6px";
-    box.appendChild(img); paper.parentNode.insertBefore(box, paper); paper.hidden = true;
-    btn.textContent = label; btn.disabled = false; box.scrollIntoView({ behavior: "smooth" });
-  }).catch(function () {
+  return Promise.all([
+    스크립트("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js", function () { return window.html2canvas; }),
+    스크립트("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js", function () { return window.jspdf; })
+  ]).then(function () {
+    if (pages.length > 1) pages.forEach(function (p, i) {
+      var f = document.createElement("div"); f.textContent = "- " + (i + 1) + " / " + pages.length + " -";
+      f.style.cssText = "position:absolute;left:0;right:0;bottom:4px;text-align:center;font-size:10px;color:#555"; p.appendChild(f);
+    });
+    var pdf = new jspdf.jsPDF({ unit: "mm", format: "a4" });
+    return pages.reduce(function (p, pg, i) {
+      return p.then(function () { return html2canvas(pg, { scale: 2.5, backgroundColor: "#ffffff" }); }).then(function (c) {
+        if (i) pdf.addPage();
+        pdf.addImage(c.toDataURL("image/jpeg", 0.92), "JPEG", 15, 15, 180, FULL * MM);
+      });
+    }, Promise.resolve()).then(function () { return pdf.output("blob"); });
+  }).finally(function () { host.remove(); });
+};
+SignPad.saveCopy = function (paper, btn, api, id) {
+  if (!SignPad.inApp) return window.print();
+  if (SignPad.copyUrl) { location.href = SignPad.copyUrl; return; }
+  var label = btn.textContent; btn.disabled = true; btn.textContent = "PDF 만드는 중…";
+  SignPad.a4Pdf(paper).then(function (blob) {
+    return new Promise(function (ok) { var r = new FileReader(); r.onload = function () { ok(String(r.result).split(",")[1]); }; r.readAsDataURL(blob); });
+  }).then(function (b64) {
+    return fetch(api, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind: "사본", id: id, pdf: b64 }) }).then(function (r) { return r.json(); });
+  }).then(function (res) {
+    if (!res || !res.ok) throw new Error(res && res.msg);
+    SignPad.copyUrl = res.url; btn.textContent = "📄 사본 PDF 다시 열기"; btn.disabled = false;
+    location.href = res.url;
+  }).catch(function (e) {
     btn.textContent = label; btn.disabled = false;
-    alert("사본 사진을 만들지 못했습니다. 아래 사본 화면을 캡처해 보관해 주세요.");
+    alert((e && e.message) || "사본 PDF 를 만들지 못했습니다. 아래 사본 화면을 캡처해 보관해 주세요.");
   });
 };
