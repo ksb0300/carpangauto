@@ -2204,3 +2204,100 @@ begin
 end $$;
 revoke execute on function att_clock(text, double precision, double precision, double precision) from public, anon;
 grant execute on function att_clock(text, double precision, double precision, double precision) to authenticated;
+
+
+-- 20261019000010_reminders.sql
+-- 1) 등록증을 게시판에 먼저 올리고 차는 나중에 등록해도: 차가 생기거나 번호판이 바뀌면 같은 번호판 등록증 글을 그 차 첨부서류로
+-- 2) 게시판 예약 게시 + 차대금(송금요청 매입대금) 재촉 알림 + 송금 기한 30분 전 알림
+-- 3) 할 일 시각 (날짜 + 시각 → 10분 전 알림, 일정에도 보임)
+-- 2·3 의 알림은 서버가 1분마다 깨어나(pg_cron → Edge Function 'tick') 보낸다. (2026-10-19 사용자)
+
+-- ── 1) 등록증 자동 연결 ──
+create function _board_reg_link() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare p record; v_plate text := replace(coalesce(new.plate, ''), ' ', '');
+begin
+  if length(v_plate) < 7 then return null; end if;
+  for p in select bp.id, bp.category from board_posts bp
+            where bp.category in ('매입등록증', '매도등록증') and bp.car_id is null and replace(coalesce(bp.plate, ''), ' ', '') = v_plate loop
+    update board_posts set car_id = new.id where id = p.id;
+    insert into car_files (car_id, kind, name, path, size, mime)
+      select new.id, case p.category when '매입등록증' then '등록증' else '매도등록증' end, bf.name, bf.path, bf.size, bf.mime
+        from board_files bf where bf.post_id = p.id
+      on conflict (path) do nothing;
+  end loop;
+  return null;
+end $$;
+create trigger board_reg_link after insert or update of plate on cars
+  for each row when (new.deleted_at is null) execute function _board_reg_link();
+
+-- ── 2) 게시판: 예약 게시 · 첫 알림 · 차대금 확인·재촉 · 기한 ──
+alter table board_posts add column publish_at    timestamptz;          -- 예약 게시: 이때부터 보인다 (쓴 사람·대표는 미리 보임)
+alter table board_posts add column notified_at   timestamptz;          -- 새 글 알림을 보낸 때 (화면이 바로 보냈거나, tick 이 예약·차대금을 보냄)
+alter table board_posts add column ack_at        timestamptz;          -- 차대금: 사무장 [확인] — 재촉이 멈춘다
+alter table board_posts add column ack_by        text;
+alter table board_posts add column nag_count     int not null default 0; -- 재촉 보낸 횟수 (3번 뒤 글쓴이에게 '아직 못 봄' 한 번 → 4)
+alter table board_posts add column nag_at        timestamptz;          -- 다음 재촉 때
+alter table board_posts add column due_at        timestamptz;          -- 송금 기한 (양식 '기한' 글에서 읽은 시각)
+alter table board_posts add column due_warned_at timestamptz;
+-- 지금까지의 글은 알림 끝난 것으로 (tick 이 옛 글을 한꺼번에 울리지 않게)
+update board_posts set notified_at = created_at, ack_at = case when category = '송금요청' then created_at end;
+create index board_posts_pending on board_posts (created_at) where notified_at is null or (category = '송금요청' and done_at is null);
+
+drop policy office_read on board_posts;
+create policy office_read on board_posts for select to authenticated
+  using (is_office() and (publish_at is null or publish_at <= now() or created_by = auth.uid() or my_role() = 'admin'));
+
+-- 차대금 [👀 확인] — 사무실 누구나 (글 고치기 권한 없이)
+create function board_ack(p_id uuid) returns void
+language sql security definer set search_path = public as $$
+  update board_posts set ack_at = now(), ack_by = (select name from profiles where user_id = auth.uid())
+   where id = p_id and is_office() and ack_at is null;
+$$;
+revoke execute on function board_ack(uuid) from public, anon;
+grant execute on function board_ack(uuid) to authenticated;
+
+-- ── 3) 할 일 시각 ──
+alter table todos add column due_time    time;
+alter table todos add column reminded_at timestamptz;
+create function _todo_remind_reset() returns trigger language plpgsql as $$
+begin
+  if new.due is distinct from old.due or new.due_time is distinct from old.due_time then new.reminded_at := null; end if;
+  return new;
+end $$;
+create trigger todos_remind_reset before update on todos for each row execute function _todo_remind_reset();
+
+-- tick 전용: 10분 안에 시작하는 할 일을 집어 '보냄'으로 표시하고 돌려준다 (한 시간 넘게 지난 건 안 보냄)
+create function todo_reminders_take() returns table (id uuid, title text, user_id uuid, due date, due_time time)
+language sql security definer set search_path = public as $$
+  update todos t set reminded_at = now()
+   where not t.done and t.reminded_at is null and t.due is not null and t.due_time is not null
+     and ((t.due + t.due_time) at time zone 'Asia/Seoul') <= now() + interval '10 minutes'
+     and ((t.due + t.due_time) at time zone 'Asia/Seoul') > now() - interval '1 hour'
+  returning t.id, t.title, coalesce(t.assignee_id, t.created_by), t.due, t.due_time;
+$$;
+revoke execute on function todo_reminders_take() from public, anon, authenticated;
+
+-- ── 1분마다 깨우기 (pg_cron + pg_net → tick). 열쇠는 vault 에만 — tick 이 check_tick_key 로 맞는지 묻는다 ──
+create function check_tick_key(p text) returns boolean
+language plpgsql stable security definer set search_path = public as $$
+begin
+  return exists (select 1 from vault.decrypted_secrets where name = 'tick_key' and decrypted_secret = p and length(p) >= 32);
+end $$;
+revoke execute on function check_tick_key(text) from public, anon, authenticated;
+
+do $$ begin
+  create extension if not exists pg_cron;
+  create extension if not exists pg_net;
+  if not exists (select 1 from vault.secrets where name = 'tick_key') then
+    perform vault.create_secret(encode(extensions.gen_random_bytes(24), 'hex'), 'tick_key');
+  end if;
+  perform cron.schedule('office-tick', '* * * * *', $c$
+    select net.http_post(url := 'https://fwqtyyjhfewpxihpaasu.supabase.co/functions/v1/tick',
+      headers := jsonb_build_object('Content-Type', 'application/json',
+                                    'x-tick-key', (select decrypted_secret from vault.decrypted_secrets where name = 'tick_key')),
+      body := '{}'::jsonb, timeout_milliseconds := 20000);
+  $c$);
+exception when others then
+  raise notice '1분 알림 예약은 건너뜀 (이 DB 에는 pg_cron·pg_net·vault 가 없음): %', sqlerrm;
+end $$;
