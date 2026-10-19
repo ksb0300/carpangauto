@@ -28,7 +28,8 @@ import { startSync } from "./check-store.js";
 
 function useHash() {
   const [h, setH] = useState(location.hash.slice(1) || "/");
-  useEffect(() => { const f = () => setH(location.hash.slice(1) || "/"); addEventListener("hashchange", f); return () => removeEventListener("hashchange", f); }, []);
+  // 듣기 시작하는 순간 한 번 더 읽는다 — 첫 화면을 그린 뒤 듣기 전 사이에 주소가 바뀌면(로딩 중 메뉴 클릭 등) 그 변화를 놓쳤다
+  useEffect(() => { const f = () => setH(location.hash.slice(1) || "/"); addEventListener("hashchange", f); f(); return () => removeEventListener("hashchange", f); }, []);
   return h;
 }
 
