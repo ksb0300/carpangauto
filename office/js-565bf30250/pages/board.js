@@ -22,7 +22,7 @@ const 이름 = Object.fromEntries(BOARDS.map(b => [b[0], b[1]]));
 const 아이콘 = Object.fromEntries(BOARDS.map(b => [b[0], b[2]]));
 const 빠른 = [["최신", "최신글"], ["필독", "필독"], ["중요", "중요"], ["내글", "내 게시글"]];
 const CAR_KIND = { 매입등록증: "등록증", 매도등록증: "매도등록증" };      // car_files.kind
-const 경로들 = ["엔카", "헤이딜러", "개인", "기타"];
+const 경로들 = [["엔카", "엔카"], ["헤이딜러", "헤딜"], ["개인", "개인"], ["기타", "기타"]];     // 칸이 좁아 '헤이딜러'는 '헤딜'로 보여 줌
 const EMOJIS = ["👍", "✅", "🙏", "😂", "❤️", "🎉"];
 const 완료말 = /(입완|입금\s*완료|송금\s*완료|완료|^\s*완\s*$)/;       // 사무장이 댓글로 '입완' → 송금요청 완료 (웍스 때 습관)
 const MAX = 20 * 1024 * 1024;
@@ -87,8 +87,9 @@ function List({ app }) {
     ]);
     const cnt = rows => { const n = {}; rows.forEach(x => { n[x.post_id] = (n[x.post_id] || 0) + 1; }); return n; };
     const mine = new Set(r.filter(x => x.user_id === me).map(x => x.post_id));
+    const 가입 = Date.parse(app.user.created_at || 0) || 0;       // 계정을 만들기 전에 올라온 글은 읽은 것으로 (새 직원에게 옛 글이 전부 '안 읽음'으로 뜨지 않게)
     setD({ posts: p, cmt: cnt(c), readN: cnt(r.filter(x => !x.seed)), files: cnt(f), stars: new Set(star.map(x => x.post_id)),
-      off: new Set(prefs.filter(x => !x.enabled).map(x => x.key)), 새: x => !mine.has(x.id) && x.created_by !== me });
+      off: new Set(prefs.filter(x => !x.enabled).map(x => x.key)), 새: x => !mine.has(x.id) && x.created_by !== me && Date.parse(x.created_at) > 가입 });
   });
   useEffect(() => {
     load();

@@ -571,3 +571,54 @@ svg.drawing .pnl { pointer-events: none; }
   .bd-row { padding: 12px 12px; } .bd-post h1 { font-size: 20px; }
   .tpl { padding: 14px 14px; }
 }
+
+/* ───────── 할 일 (웍스식) ───────── */
+.td-add { padding: 12px 14px; }
+.td-add .td-title { width: 100%; font-size: 15px; padding: 10px 12px; }
+.td-opts { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+.td-opts label { display: inline-flex; gap: 6px; align-items: center; } .td-opts input, .td-opts select { padding: 5px 8px; }
+.td-wrap { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; align-items: start; }
+.td-wrap.open { grid-template-columns: minmax(0, 1fr) 340px; }
+.td-wrap > * { min-width: 0; }
+.td-row { display: flex; gap: 12px; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--line2); cursor: pointer; }
+.td-row:last-child { border-bottom: 0; } .td-row:hover { background: #f8fafc; } .td-row.on { background: #eef2ff; }
+.td-row .bx { flex: 1; min-width: 0; } .td-row .t { font-size: 15px; font-weight: 600; } .td-row .m { font-size: 12.5px; color: var(--sub); margin-top: 3px; }
+.td-row.done .t { text-decoration: line-through; color: var(--sub); font-weight: 400; }
+.td-row .m .red { color: var(--red); font-weight: 600; } .td-row .m .amber { color: var(--amber); font-weight: 600; }
+.td-chk { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #94a3b8; background: #fff; cursor: pointer; flex: 0 0 auto; font-size: 12px; color: #fff; padding: 0; line-height: 1; }
+.td-chk:hover { border-color: var(--pri); } .td-chk.on { background: var(--green); border-color: var(--green); }
+.td-detail { position: sticky; top: 12px; }
+
+/* ───────── 캘린더 (웍스식) ───────── */
+.mini-cal { margin: 12px 0; } .mini-cal .bar { margin-bottom: 4px; }
+.mc-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; text-align: center; }
+.mc-w { font-size: 11.5px; color: var(--sub); padding: 3px 0; } .mc-w.sun, .mc-d.sun { color: var(--red); }
+.mc-d { position: relative; background: none; border: 0; border-radius: 50%; aspect-ratio: 1; font: inherit; font-size: 12.5px; cursor: pointer; color: var(--ink); padding: 0; }
+.mc-d:hover { background: #f1f5f9; } .mc-d.other { color: #cbd5e1; } .mc-d.on { background: #eef2ff; color: var(--pri); font-weight: 700; }
+.mc-d.today { background: var(--ink); color: #fff; font-weight: 700; }
+.mc-d i { position: absolute; left: 50%; bottom: 2px; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: var(--pri); }
+.cal-week { overflow-x: auto; background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
+.cal-week table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 760px; }
+.cal-week th { font-weight: 500; font-size: 13px; color: var(--sub); padding: 8px 6px; border-bottom: 1px solid var(--line); text-align: left; }
+.cal-week th.sun { color: var(--red); } .cal-week th.sat { color: var(--blue); }
+.cal-week .tdy { display: inline-flex; width: 22px; height: 22px; align-items: center; justify-content: center; border-radius: 50%; background: var(--ink); color: #fff; font-weight: 700; }
+.cal-week th.who, .cal-week td.who { width: 92px; text-align: center; }
+.cal-week td { vertical-align: top; border-bottom: 1px solid var(--line2); border-left: 1px solid var(--line2); padding: 4px; height: 92px; cursor: pointer; }
+.cal-week td:hover { background: #fafbff; } .cal-week td.who { cursor: default; font-size: 13px; font-weight: 600; } .cal-week td.who .av { margin: 2px auto 4px; }
+.cal-week tr.auto td { height: auto; background: #fcfcfd; cursor: default; }
+.cal-ev { font-size: 12px; line-height: 1.35; background: #f1f5f9; border-left: 3px solid var(--blue); border-radius: 4px; padding: 3px 5px; margin-bottom: 3px; cursor: pointer; overflow: hidden; word-break: keep-all; }
+.cal-ev b { display: block; font-size: 11.5px; } .cal-ev:hover { filter: brightness(.96); }
+.cal-month { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.cm-w { font-size: 12.5px; color: var(--sub); padding: 6px 8px; border-bottom: 1px solid var(--line); } .cm-w.sun { color: var(--red); } .cm-w.sat { color: var(--blue); }
+.cm-d { min-height: 96px; padding: 4px; border-bottom: 1px solid var(--line2); border-left: 1px solid var(--line2); cursor: pointer; min-width: 0; }
+.cm-d .n { font-size: 12.5px; display: inline-block; margin-bottom: 2px; } .cm-d.other { background: #fafafa; } .cm-d.other .n { color: #cbd5e1; }
+.cm-d.today .n { background: var(--ink); color: #fff; border-radius: 50%; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; }
+.cm-d .cal-ev { white-space: nowrap; text-overflow: ellipsis; } .cm-d .cal-ev b { display: inline; margin-right: 3px; }
+.cal-list-d { display: flex; gap: 14px; padding: 12px 16px; border-bottom: 1px solid var(--line2); }
+.cal-list-d .dt { width: 84px; flex: 0 0 auto; font-weight: 600; font-size: 14px; } .cal-list-d .dt.today { color: var(--pri); }
+.cal-list-d .evs { flex: 1; min-width: 0; }
+@media (max-width: 760px) {
+  .td-wrap.open { grid-template-columns: minmax(0, 1fr); } .td-detail { position: static; }
+  .cm-d { min-height: 64px; } .cm-d .cal-ev { font-size: 10.5px; padding: 2px 3px; }
+  .mini-cal { display: none; }
+}
