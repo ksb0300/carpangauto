@@ -2120,3 +2120,87 @@ begin
 end $$;
 revoke execute on function board_match_sales() from public, anon;
 grant execute on function board_match_sales() to authenticated;   -- service_role 은 Supabase 기본 권한으로 실행됨
+
+
+-- 20261019000009_attendance.sql
+-- 근태 (2026-10-19 사용자: 웍스 근태 체험 전에 업무관리에도 만들어 보기). 사무실(대표·직원)만.
+--   출근·퇴근: 버튼을 누르면 서버 시각으로 찍힌다(폰 시계를 바꿔도 소용없다). 위치는 사무실 반경 안인지만 남긴다(좌표는 저장 안 함).
+--   휴가·외근: 본인이 신청 → 대표가 승인·반려. 기록 고치기(퇴근 안 찍음 등)는 대표만, 고친 사람·시각을 남긴다.
+
+create table att_settings (
+  id          int primary key default 1 check (id = 1),
+  start_time  time not null default '09:00',     -- 이 시각 넘어 출근하면 '지각'
+  end_time    time not null default '18:00',     -- 이 시각 전에 퇴근하면 '조퇴'
+  office_lat  double precision,                  -- 사무실 위치 (대표가 사무실에서 '지금 위치를 사무실로')
+  office_lng  double precision,
+  radius_m    int not null default 300
+);
+insert into att_settings default values;
+alter table att_settings enable row level security;
+create policy office_read on att_settings for select to authenticated using (is_office());
+create policy admin_write on att_settings for update to authenticated using (my_role() = 'admin') with check (my_role() = 'admin');
+
+create table att_days (
+  user_id     uuid not null references auth.users(id) on delete cascade,
+  d           date not null,                     -- 한국 날짜
+  in_at       timestamptz,
+  out_at      timestamptz,
+  in_place    text check (in_place in ('사무실', '외부', '위치 없음')),
+  out_place   text check (out_place in ('사무실', '외부', '위치 없음')),
+  in_dist     int,                               -- 사무실까지 거리 (m, 반올림)
+  out_dist    int,
+  memo        text,
+  edited_by   text,
+  edited_at   timestamptz,
+  primary key (user_id, d)
+);
+alter table att_days enable row level security;
+create policy office_read on att_days for select to authenticated using (is_office());
+create policy admin_write on att_days for all to authenticated using (my_role() = 'admin') with check (my_role() = 'admin');
+
+create table att_leaves (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null references auth.users(id) on delete cascade default auth.uid(),
+  kind        text not null check (kind in ('연차', '오전반차', '오후반차', '외근', '병가', '기타')),
+  d_from      date not null,
+  d_to        date not null,
+  memo        text,
+  status      text not null default '신청' check (status in ('신청', '승인', '반려')),
+  decided_by  text,
+  decided_at  timestamptz,
+  created_at  timestamptz not null default now(),
+  check (d_to >= d_from)
+);
+alter table att_leaves enable row level security;
+create policy office_read on att_leaves for select to authenticated using (is_office());
+create policy own_insert on att_leaves for insert to authenticated with check (is_office() and user_id = auth.uid() and status = '신청');
+create policy own_cancel on att_leaves for delete to authenticated using ((user_id = auth.uid() and status = '신청') or my_role() = 'admin');
+create policy admin_decide on att_leaves for update to authenticated using (my_role() = 'admin') with check (my_role() = 'admin');
+
+-- 출근·퇴근 찍기 (본인만, 서버 시각). p_kind '출근' | '퇴근'. 위치가 없으면 '위치 없음'.
+--   출근은 하루 한 번(이미 찍었으면 그대로), 퇴근은 다시 누르면 마지막 시각으로 바뀐다.
+create function att_clock(p_kind text, p_lat double precision default null, p_lng double precision default null, p_acc double precision default null)
+returns att_days language plpgsql security definer set search_path = public as $$
+declare s att_settings; v_d date := (now() at time zone 'Asia/Seoul')::date; v_dist int; v_place text; r att_days;
+begin
+  if not is_office() then raise exception '권한이 없습니다'; end if;
+  if p_kind not in ('출근', '퇴근') then raise exception '잘못된 요청입니다'; end if;
+  select * into s from att_settings where id = 1;
+  if p_lat is null or p_lng is null then v_place := '위치 없음';
+  elsif s.office_lat is null then v_place := '위치 없음';
+  else
+    v_dist := round(6371000 * 2 * asin(sqrt(power(sin(radians(p_lat - s.office_lat) / 2), 2)
+              + cos(radians(s.office_lat)) * cos(radians(p_lat)) * power(sin(radians(p_lng - s.office_lng) / 2), 2))));
+    v_place := case when v_dist <= s.radius_m + least(coalesce(p_acc, 0), 200) then '사무실' else '외부' end;
+  end if;
+  insert into att_days (user_id, d) values (auth.uid(), v_d) on conflict do nothing;
+  if p_kind = '출근' then
+    update att_days set in_at = now(), in_place = v_place, in_dist = v_dist where user_id = auth.uid() and d = v_d and in_at is null;
+  else
+    update att_days set out_at = now(), out_place = v_place, out_dist = v_dist where user_id = auth.uid() and d = v_d;
+  end if;
+  select * into r from att_days where user_id = auth.uid() and d = v_d;
+  return r;
+end $$;
+revoke execute on function att_clock(text, double precision, double precision, double precision) from public, anon;
+grant execute on function att_clock(text, double precision, double precision, double precision) to authenticated;

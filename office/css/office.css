@@ -622,3 +622,13 @@ svg.drawing .pnl { pointer-events: none; }
   .cm-d { min-height: 64px; } .cm-d .cal-ev { font-size: 10.5px; padding: 2px 3px; }
   .mini-cal { display: none; }
 }
+
+/* 근태 */
+.att-now { text-align: center; padding: 22px 18px; }
+.att-clock { font-size: 15px; color: var(--sub); } .att-clock b { display: block; font-size: 44px; color: var(--ink); letter-spacing: 1px; margin: 2px 0 14px; }
+.att-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.att-btn { min-width: 160px; padding: 14px 18px; font-size: 17px; font-weight: 700; border-radius: 12px; }
+.att-out:not(:disabled) { background: #fff1f2; border-color: #fecdd3; color: #be123c; }
+.att-line { margin-top: 14px; font-size: 14px; line-height: 1.9; }
+.grid tbody tr.on td { background: #eef2ff; }
+@media (max-width: 760px) { .att-btn { flex: 1; min-width: 0; } }
