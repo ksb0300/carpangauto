@@ -104,12 +104,12 @@ function Shell({ app, children, path }) {
   const office = profile.role !== "dealer";
   const nav = office
     ? [["/purchases", "리스트"], ["/sales", "매도차량"], ["/loans", "재고금융"],
-       ["/bank", "자금관리"], ["/reports", "종합업무현황"], ["/stats", "통계"], ["/settings", "환경설정"]]
+       ["/bank", "자금관리"], ["/board", "게시판"], ["/reports", "종합업무현황"], ["/stats", "통계"], ["/settings", "환경설정"]]
     : [["/purchases", "내 제시차량"], ["/sales", "매도차량"], ["/settlements", "정산내역"], ["/brokerage", "알선"], ["/reports", "내 실적"]];
   // 펼침 메뉴 (화면은 그대로 있고 메뉴줄에서만 묶는다)
-  //   테스트: 새로 만들어 시험 중인 것 (사용자 2026-10-18) / 기타: 지금 잘 안 쓰는 것 (사용자 2026-10-05)
+  //   업무: 웍스 대신 쓰는 것 (2026-10-20 테스트 → 정식, 게시판은 맨 위 메뉴로) / 기타: 지금 잘 안 쓰는 것 (사용자 2026-10-05)
   const groups = office ? [
-    ["테스트", [["/board", "게시판"], ["/checks", "차량검수"], ["/todos", "할 일"], ["/calendar", "일정"], ["/contacts", "연락처"], ["/attendance", "근태"]]],
+    ["업무", [["/todos", "할 일"], ["/calendar", "일정"], ["/attendance", "근태 (시험)"], ["/contacts", "연락처"], ["/checks", "차량검수"]]],
     ["기타", [["/settlements", "정산내역"], ["/issue", "매출관리"], ["/signs", "서류"], ["/brokerage", "타상사알선"], ["/reserve", "광고장 예약"], ["/ktx", "KTX 예매"]]],
   ] : [];
   const 켜짐 = p => path.startsWith(p) || (p === "/checks" && path.startsWith("/check/"));

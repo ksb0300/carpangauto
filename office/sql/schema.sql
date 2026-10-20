@@ -2319,3 +2319,10 @@ create function office_holidays() returns date[]
 language sql stable security definer set search_path = public as $$ select holidays from settings where is_office() limit 1 $$;
 revoke execute on function office_holidays() from public, anon;
 grant execute on function office_holidays() to authenticated;
+
+
+-- 20261020000002_inspect_files.sql
+-- 검수지 앱 '업무관리로 상품화 요청' (웍스 대신, 2026-10-20): 검수지 PDF 를 차 첨부서류 '검수지' 로 붙인다
+alter table car_files drop constraint car_files_kind_check;
+alter table car_files add constraint car_files_kind_check
+  check (kind = any (array['제시', '매도', '정산', '성능', '등록증', '매도등록증', '검수지', '기타']));

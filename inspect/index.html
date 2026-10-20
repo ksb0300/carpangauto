@@ -70,7 +70,7 @@ button, .bar, .pages { -webkit-user-select: none; user-select: none; -webkit-tou
 .menu { position: absolute; right: 10px; top: 8px; z-index: 5; background: var(--bar); border-radius: 14px; padding: 10px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 10px 30px rgba(0,0,0,.5); min-width: 230px; }
 .menu .tb { width: 100%; text-align: left; }
 .menu small { color: var(--sub); padding: 0 4px; }
-/* 웍스로 상품화 지시 */
+/* 업무관리로 상품화 요청 */
 #works { position: fixed; inset: 0; z-index: 25; background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center; padding: 16px; }
 .wk { background: var(--bar); border-radius: 18px; padding: 22px; width: min(460px, 100%); display: flex; flex-direction: column; gap: 12px; }
 .wk h2 { margin: 0; font-size: 20px; } .wk p { margin: 0; color: var(--sub); font-size: 14px; line-height: 1.6; }
@@ -138,7 +138,7 @@ button, .bar, .pages { -webkit-user-select: none; user-select: none; -webkit-tou
       <button class="tb" id="shareJpg">사진(JPG)으로</button>
       <button class="tb" id="shareOne">문자용 (한 장 사진)</button>
       <small style="margin-top:4px">사무실</small>
-      <button class="tb" id="worksBtn">웍스로 상품화 지시 (은수 님)</button>
+      <button class="tb" id="worksBtn">업무관리로 상품화 요청 (은수 님)</button>
     </div>
     <div class="menu" id="photoMenu" hidden style="top:auto;bottom:8px;left:10px;right:auto">
       <small>검수지 뒤에 사진 쪽으로 붙습니다</small>
@@ -152,17 +152,18 @@ button, .bar, .pages { -webkit-user-select: none; user-select: none; -webkit-tou
 <section id="works" hidden>
   <form class="wk" id="wkLogin" hidden>
     <h2>업무관리 로그인</h2>
-    <p>웍스로 보내려면 처음 한 번 업무관리 계정으로 로그인해 주세요. 이 기기에 기억됩니다.</p>
+    <p>업무관리로 보내려면 처음 한 번 업무관리 계정으로 로그인해 주세요. 이 기기에 기억됩니다.</p>
     <label>이메일<input type="email" id="wkEmail" autocomplete="username" required></label>
     <label>비밀번호<input type="password" id="wkPw" autocomplete="current-password" required></label>
     <div class="row"><button type="button" class="tb" data-close>취소</button><button class="tb pri" id="wkLoginBtn">로그인</button></div>
   </form>
   <form class="wk" id="wkSend" hidden>
-    <h2>웍스로 상품화 지시</h2>
+    <h2>업무관리로 상품화 요청</h2>
     <p id="wkInfo"></p>
+    <label>담당<select id="wkWho"></select></label>
     <label>마감일<input type="date" id="wkDue"></label>
-    <label>지시 내용<textarea id="wkNote" placeholder="예) 앞범퍼 판금·도색, 실내 클리닝, 타이어 앞 2개 교체"></textarea></label>
-    <div class="row"><button type="button" class="tb" data-close>취소</button><button class="tb pri" id="wkSendBtn">은수 님께 보내기</button></div>
+    <label>요청 내용<textarea id="wkNote" placeholder="예) 앞범퍼 판금·도색, 실내 클리닝, 타이어 앞 2개 교체"></textarea></label>
+    <div class="row"><button type="button" class="tb" data-close>취소</button><button class="tb pri" id="wkSendBtn">요청하기</button></div>
   </form>
 </section>
 <section id="cam" hidden>
@@ -479,8 +480,8 @@ function drawD1(c) {
   title(c, "상품화 계획", 40, by + 30, 17);
   c.fillStyle = SUB; c.font = `italic 500 12px ${F}`; c.fillText("Reconditioning Plan", 140, by + 29);
   // 칸마다 수량 숫자만: 외판 몇 판 · 휠 몇 개 · 타이어 몇 개 (사용자: "숫자 적으면 되고", "예상금액은 필요없고")
-  const tx = 40, tw = 450, hy = by + 42, HR = 24, RR = (1386 - hy - HR) / 3;
-  const cQty = tx + 130;                                        // 수량 칸 시작
+  const tx = 40, tw = 220, hy = by + 42, HR = 24, RR = (1386 - hy - HR) / 3;   // 수량은 숫자만 → 좁게, 남는 폭은 메모로
+  const cQty = tx + 100;                                        // 수량 칸 시작
   c.lineWidth = 1.6; c.strokeStyle = "#2a2a30"; c.strokeRect(tx, hy, tw, 1386 - hy);
   c.fillStyle = "#f4f4f7"; c.fillRect(tx + 1, hy + 1, tw - 2, HR - 1);
   c.fillStyle = SUB; c.font = `700 13px ${F}`; c.textAlign = "center";
@@ -493,9 +494,9 @@ function drawD1(c) {
     c.fillStyle = SUB; c.font = `600 15px ${F}`; c.textAlign = "right"; c.fillText(u, tx + tw - 14, ry + RR / 2 + 6); c.textAlign = "left";
   });
   c.lineWidth = 1; c.strokeStyle = "#2a2a30"; c.beginPath(); c.moveTo(cQty, hy); c.lineTo(cQty, 1386); c.stroke();
-  title(c, "사고 판단", 510, by + 30, 17);
-  [["무사고", 600], ["단순교환", 705], ["사고", 835]].forEach(([t, x]) => { check(c, x, by + 11, 24); c.fillStyle = "#1d1d22"; c.font = `600 16px ${F}`; c.fillText(t, x + 32, by + 30); });
-  box(c, 510, by + 42, 450, 1386 - (by + 42), "메모 (그 밖의 상품화 · 특이사항)");
+  title(c, "사고 판단", 280, by + 30, 17);
+  [["무사고", 380], ["단순교환", 490], ["사고", 625]].forEach(([t, x]) => { check(c, x, by + 11, 24); c.fillStyle = "#1d1d22"; c.font = `600 16px ${F}`; c.fillText(t, x + 32, by + 30); });
+  box(c, 280, by + 42, 680, 1386 - (by + 42), "메모 (그 밖의 상품화 · 특이사항)");
   foot(c, 1);
 }
 function drawD2(c) {
@@ -503,8 +504,8 @@ function drawD2(c) {
   box(c, 660, 110, 300, 62, "차량번호");
   c.fillStyle = SUB; c.font = `500 15px ${F}`; c.fillText("양호·이상 중 하나에 체크하세요. 이상은 내용을 아래 메모에.", 40, 146);
   // 서류(차대번호·압류저당·보험·정비 이력)·시운전은 뺌, 변속 충격·지연만 엔진룸으로 — 사용자: 필요없는 부분
-  // OBD 고장코드(이상이면 코드를 메모에)·외관(앞유리·램프)·침수 흔적(하부 포함) 추가 — 사용자 2026-10-20 고름
-  const L = [["엔진룸", ["시동", "공회전·떨림", "엔진오일 양·오염", "엔진 누유", "냉각수·누수", "벨트·풀리 소음", "배기 연기", "미션 누유", "변속 충격·지연", "배터리", "엔진 마운트", "OBD 고장코드"]],
+  // OBD 고장코드(이상이면 코드를 메모에)·외관(앞유리·램프)·침수 흔적(하부 포함) 추가, 미션 누유는 뺌(현장에서 알 수 없음) — 사용자 2026-10-20
+  const L = [["엔진룸", ["시동", "공회전·떨림", "엔진오일 양·오염", "엔진 누유", "냉각수·누수", "벨트·풀리 소음", "배기 연기", "변속 충격·지연", "배터리", "엔진 마운트", "OBD 고장코드"]],
     ["하체", ["브레이크 패드·디스크", "쇼크업소버 누유", "등속 부트", "하체 부식", "조향 장치·유격"]]];
   const R = [["실내", ["계기판 경고등", "에어컨·히터", "시트 오염·손상", "열선·통풍", "디스플레이·오디오", "카메라·센서", "창문·미러", "선루프", "냄새 (흡연·곰팡이)", "침수 흔적 (하부 진흙·녹)", "천장·내장재", "트렁크 내부"]],
     ["외관", ["앞유리 돌빵·금", "램프 점등"]]];
@@ -788,9 +789,9 @@ $("fileIn").onchange = async () => {
   afterPhotos(n);
 };
 
-/* ───────── 웍스로 상품화 지시 ─────────
+/* ───────── 업무관리로 상품화 요청 (2026-10-20, 웍스 대신) ─────────
    업무관리 계정(공동대표·사무장)으로 로그인 → 검수지 PDF 를 업무관리 저장소(car-files/inspect/…)에 올리고
-   서버 함수 works-send 가 웍스 봇으로 은수 님께 요약 + PDF 를 보낸다 (웍스 '할 일' 등록은 권한이 켜져 있을 때만). */
+   ① 번호판이 같은 차가 있으면 그 차 첨부서류 '검수지'로 붙이고 ② 담당(기본 사무장)에게 업무관리 '할 일'을 맡기고 ③ 폰 알림. */
 const SB_URL = "https://fwqtyyjhfewpxihpaasu.supabase.co", SB_KEY = "sb_publishable_op7s3siOFMjUk99QfFbVZw_mmRBmZl1";
 let sb = null;
 async function supa() {
@@ -802,17 +803,21 @@ async function supa() {
 const addDays = n => { const d = new Date(Date.now() + n * 864e5); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 async function openWorks() {
   $("shareMenu").hidden = true;
-  if (!navigator.onLine) return toast("인터넷이 연결돼야 웍스로 보낼 수 있습니다");
+  if (!navigator.onLine) return toast("인터넷이 연결돼야 업무관리로 보낼 수 있습니다");
   let session = null;
   try { session = (await (await supa()).auth.getSession()).data.session; } catch { return toast("연결이 안 됩니다. 잠시 후 다시 해 주세요"); }
   $("works").hidden = false; $("wkLogin").hidden = !!session; $("wkSend").hidden = !session;
   if (session) showWorksForm(); else setTimeout(() => $("wkEmail").focus(), 50);
 }
-function showWorksForm() {
+let 구성원 = [];
+async function showWorksForm() {
   const f = sheet.fields || {};
-  $("wkInfo").textContent = `${f.plate || "차량번호 미입력"}${f.km ? " · " + kmText(f.km) + "km" : ""} — 검수지 ${sheet.pages.length}쪽을 PDF 로 붙여 보냅니다.`;
+  $("wkInfo").textContent = `${f.plate || "차량번호 미입력"}${f.km ? " · " + kmText(f.km) + "km" : ""} — 검수지 ${sheet.pages.length}쪽을 PDF 로 차 첨부서류에 붙이고 할 일로 맡깁니다.`;
   if (!$("wkDue").value) $("wkDue").value = addDays(2);
   $("wkLogin").hidden = true; $("wkSend").hidden = false;
+  try { 구성원 = (await (await supa()).rpc("office_members")).data || []; } catch { 구성원 = []; }
+  const 기본 = (구성원.find(m => m.role === "staff") || 구성원[0] || {}).user_id;          // 사무장
+  $("wkWho").innerHTML = 구성원.map(m => `<option value="${m.user_id}"${m.user_id === 기본 ? " selected" : ""}>${esc(m.name)}${m.role === "staff" ? " (사무장)" : ""}</option>`).join("");
 }
 $("worksBtn").onclick = openWorks;
 document.querySelectorAll("#works [data-close]").forEach(b => b.onclick = () => { $("works").hidden = true; });
@@ -834,14 +839,35 @@ $("wkSend").onsubmit = async e => {
     const path = `inspect/${sheet.id}/${stamp()}.pdf`;
     const up = await db.storage.from("car-files").upload(path, pdf, { contentType: "application/pdf", upsert: true });
     if (up.error) throw new Error(/row-level|policy|Unauthorized/i.test(up.error.message) ? "이 계정은 보낼 권한이 없습니다" : up.error.message);
-    const { data, error } = await db.functions.invoke("works-send", { body: { path, plate: f.plate || "", km: f.km || "", date: f.date || "", due: $("wkDue").value, note: $("wkNote").value.trim(), toSelf: new URLSearchParams(location.search).has("works-test") } });
-    if (error || !data || !data.ok) throw new Error((data && data.msg) || (error && error.message) || "보내지 못했습니다");
-    sheet.works = [...(sheet.works || []), { at: Date.now(), path, task: data.task }]; save();
+    const uid = (await db.auth.getUser()).data.user?.id, 나 = (구성원.find(m => m.user_id === uid) || {}).name || "";
+    const 담당 = $("wkWho").value || null, 담당이름 = (구성원.find(m => m.user_id === 담당) || {}).name || null;
+    // ① 같은 번호판 차 찾아 첨부서류 '검수지'
+    const plate = String(f.plate || "").replace(/\s/g, ""), tail = plate.slice(-4);
+    let car = null;
+    if (/^\d{4}$/.test(tail)) {
+      const { data: cs } = await db.from("cars").select("id, plate, car_name, purchase_date").is("deleted_at", null).ilike("plate", `%${tail}%`);
+      car = (cs || []).filter(c => c.plate.replace(/\s/g, "") === plate).sort((a, b) => String(b.purchase_date || "").localeCompare(String(a.purchase_date || "")))[0] || null;
+    }
+    if (car) {
+      const { error } = await db.from("car_files").insert({ car_id: car.id, kind: "검수지", name: `검수지_${plate}_${f.date || today()}.pdf`, path, size: pdf.size, mime: "application/pdf" });
+      if (error) throw new Error("차 첨부서류에 못 붙였습니다: " + error.message);
+    }
+    // ② 할 일 (담당에게 맡김)
+    const note = $("wkNote").value.trim();
+    const memo = [note, "", `검수 ${f.date || today()}${f.km ? " · " + kmText(f.km) + "km" : ""}`,
+      car ? "📄 검수지 PDF: 업무관리 차 → 첨부서류 '검수지'" : `📄 검수지 PDF: 업무관리에 아직 없는 차라 첨부서류에 못 붙였습니다 (저장 위치 ${path})`].join("\n").trim();
+    const title = `🛠 상품화: ${f.plate || "차량번호 미입력"}${car && car.car_name ? " " + car.car_name.split(" ").slice(0, 3).join(" ") : ""}`;
+    const { data: td, error: te } = await db.from("todos").insert({ title, due: $("wkDue").value || null, assignee_id: 담당, assignee: 담당이름, author_name: 나, memo, car_id: car ? car.id : null }).select("id").single();
+    if (te) throw new Error("할 일을 만들지 못했습니다: " + te.message);
+    // ③ 폰 알림 (본인에게 맡기면 안 보냄)
+    if (담당 && 담당 !== uid) await db.functions.invoke("push", { body: { title: `📋 할 일 요청: ${title}`, body: `${나}${note ? " · " + note.slice(0, 80) : ""}`,
+      url: "/office/#/todos", tag: "todo-" + td.id, to_users: [담당], pref: "todo" } }).catch(() => {});
+    sheet.works = [...(sheet.works || []), { at: Date.now(), path, todo: td.id, car: car ? car.id : null }]; save();
     $("works").hidden = true; $("wkNote").value = "";
-    toast(data.task === "created" ? "은수 님께 보내고 웍스 할 일에 등록했습니다" : "은수 님께 웍스로 보냈습니다");
+    toast(`${담당이름 || "담당"} 님께 상품화를 요청했습니다${car ? " · 차 첨부서류에도 붙임" : ""}`);
   } catch (err) {
-    toast("웍스로 보내지 못했습니다: " + (err.message || err));
-  } finally { btn.disabled = false; btn.textContent = "은수 님께 보내기"; }
+    toast("보내지 못했습니다: " + (err.message || err));
+  } finally { btn.disabled = false; btn.textContent = "요청하기"; }
 };
 
 /* ───────── 연속 촬영 ─────────

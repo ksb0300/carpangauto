@@ -230,7 +230,7 @@ function Write({ app }) {
     if (cat === "매도정보" && !form.car_name) return toast("차명을 입력하세요 (대충이라도)", "err");
     if (cat === "매도정보" && !form.amount) return toast("매도 금액을 입력하세요", "err");
     if (cat === "매도정보" && form.fee_included == null) return toast("매도비 별도·포함을 고르세요", "err");
-    const plate = 양식 ? form.plate : 번호(t.plate);
+    const plate = 양식 ? form.plate : 번호판(t.plate) || 번호(t.plate);     // '33우4535말리부' 처럼 차명을 붙여 써도 번호판만
     if (등록증 && !plate) return toast("등록증은 차량번호를 입력하세요", "err");
     const title = cat === "매도정보" ? 매도제목(form) : t.title.trim() || (cat === "송금요청" ? `${form.plate || ""} ${form.kind}${form.route ? `(${form.route})` : ""} ${form.amount % 10000 === 0 ? form.amount / 10000 + "만원" : 원(form.amount)}`.trim()
       : 등록증 ? `${plate} ${이름[cat]}` : "");
@@ -329,6 +329,30 @@ function 매도카드({ f, p }) {
     <div class="f"><b>계약금</b><div>${f.deposit === 0 ? "없음" : [f.deposit_when, f.deposit ? 원(f.deposit) : ""].filter(Boolean).join(" · ") || "-"}</div></div>
     ${f.memo && html`<div class="f"><b>메모</b><div style="white-space:pre-wrap">${f.memo}</div></div>`}
   </div>`;
+}
+
+/* 첨부 저장·공유 (폰: 공유창으로 카톡 등에 바로, 저장은 파일로 내려받기) — 서명 주소에서 받아 원래 파일 이름으로 */
+const 공유됨 = typeof navigator !== "undefined" && !!navigator.canShare && (() => { try { return navigator.canShare({ files: [new File(["x"], "x.png", { type: "image/png" })] }); } catch { return false; } })();
+async function 받기(f, url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error("파일을 받지 못했습니다. 새로고침 후 다시 눌러 주세요.");
+  const b = await r.blob();
+  return new File([b], f.name, { type: f.mime || b.type || "application/octet-stream" });
+}
+const 첨부저장 = (f, url) => run(async () => {
+  const file = await 받기(f, url), a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(file), download: f.name });
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+});
+const 첨부공유 = (list, title) => run(async () => {
+  const files = await Promise.all(list.map(([f, url]) => 받기(f, url)));
+  try { await navigator.share({ files, title }); }
+  catch (e) { if (e?.name !== "AbortError") throw new Error("공유하지 못했습니다. [저장]으로 내려받아 보내 주세요."); }
+});
+function 첨부버튼({ f, url }) {
+  if (!url) return "";
+  return html`<span class="row" style="gap:6px;margin-top:4px">
+    <button class="btn sm ghost" onClick=${() => 첨부저장(f, url)}>⬇️ 저장</button>
+    ${공유됨 && html`<button class="btn sm ghost" onClick=${() => 첨부공유([[f, url]], f.name)}>📤 공유</button>`}</span>`;
 }
 
 /** 매도정보 진행: 계약금 받고 올린 글은 잔금 대기, 계약금 없으면 입금 대기 → 통장에 다 들어오면(DB board_match_sales) 잔금 완료 */
@@ -482,8 +506,11 @@ function Post({ app, id }) {
         ${양식 ? (p.body && html`<details><summary class="small muted">원문 보기</summary><div class="bd-body">${p.body}</div></details>`) : p.body && html`<div class="bd-body">${p.body}</div>`}`}
     ${!양식 && p.plate && html`<p class="small">차량번호 <b>${p.plate}</b> ${p.car_id ? html`· <a href=${"#/car/" + p.car_id + "/files"}>차 첨부서류 보기 →</a>` : html`<span class="muted">· 업무관리에 없는 차</span>`}</p>`}
     ${imgs.length > 0 && html`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:12px">
-      ${imgs.map(f => html`<a href=${x.urls[f.id]} target="_blank" rel="noopener"><img src=${x.urls[f.id]} alt=${f.name} style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;border:1px solid var(--line)" /></a>`)}</div>`}
-    ${etc.length > 0 && html`<ul class="todo" style="margin-top:10px">${etc.map(f => html`<li>📎 ${x.urls[f.id] ? html`<a href=${x.urls[f.id]} target="_blank" rel="noopener">${f.name}</a>` : f.name}</li>`)}</ul>`}
+      ${imgs.map(f => html`<div><a href=${x.urls[f.id]} target="_blank" rel="noopener"><img src=${x.urls[f.id]} alt=${f.name} style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;border:1px solid var(--line)" /></a>
+        <${첨부버튼} f=${f} url=${x.urls[f.id]} /></div>`)}</div>`}
+    ${etc.length > 0 && html`<ul class="todo" style="margin-top:10px">${etc.map(f => html`<li style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">📎 ${x.urls[f.id] ? html`<a href=${x.urls[f.id]} target="_blank" rel="noopener">${f.name}</a>` : f.name}
+      <${첨부버튼} f=${f} url=${x.urls[f.id]} /></li>`)}</ul>`}
+    ${x.files.length > 1 && 공유됨 && html`<div class="bar" style="margin-top:8px"><button class="btn sm" onClick=${() => 첨부공유(x.files.filter(f => x.urls[f.id]).map(f => [f, x.urls[f.id]]), p.title)}>📤 첨부 ${x.files.length}개 한꺼번에 공유</button></div>`}
 
     <div class="rx">${EMOJIS.map(e => { const who = x.rx.filter(r => r.emoji === e); const 나 = who.some(r => r.user_id === me);
       return html`<button class=${나 ? "on" : ""} title=${who.map(r => r.name).join(", ")} onClick=${() => 리액션(e)}>${e}${who.length ? " " + who.length : ""}</button>`; })}
