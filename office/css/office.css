@@ -157,6 +157,20 @@ a.stat { color: inherit; } a.stat:hover { border-color: var(--pri); }
 .todo li:last-child { border-bottom: 0; }
 .bar-meter { height: 8px; background: #eef0f3; border-radius: 99px; overflow: hidden; min-width: 120px; }
 .bar-meter i { display: block; height: 100%; background: var(--pri); } .bar-meter i.over { background: var(--red); }
+/* 재고금융 한도 카드 — 잔여 한도를 크게 */
+.limit-sum { font-size: 15px; margin: 4px 0 10px; color: var(--sub); } .limit-sum b { color: var(--ink); font-size: 17px; } .limit-sum b.green { color: #15803d; } .limit-sum b.red { color: var(--red); }
+.limit-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.limit-card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; cursor: pointer; }
+.limit-card:hover { border-color: var(--pri); }
+.limit-card .ln { font-weight: 700; font-size: 15px; }
+.limit-card .lleft { font-size: 26px; font-weight: 800; color: #15803d; margin: 6px 0 8px; letter-spacing: -.5px; line-height: 1.15; }
+.limit-card .lleft small { display: block; font-size: 12px; font-weight: 600; color: var(--sub); letter-spacing: 0; }
+.limit-card .lleft.muted { color: var(--sub); font-size: 18px; }
+.limit-card .bar-meter { min-width: 0; }
+.limit-card .lsub { font-size: 12.5px; color: var(--sub); margin-top: 6px; }
+.limit-card.warn .lleft { color: #b45309; } .limit-card.warn { border-color: #fcd34d; }
+.limit-card.over .lleft { color: var(--red); } .limit-card.over { border-color: #fca5a5; background: #fff7f7; }
+@media (max-width: 760px) { .limit-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .limit-card .lleft { font-size: 21px; } }
 .grid tr.sub td { background: #fafbfc; font-size: 13px; }
 .grid tr.matched td { color: var(--sub); }
 .dropzone { border: 2px dashed var(--line); border-radius: 10px; padding: 18px; text-align: center; color: var(--sub); cursor: pointer; }

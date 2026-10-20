@@ -153,12 +153,15 @@ function SendBox({ app, car, sale }) {
   const price = sale ? Number(sale.sale_amount) : Number(car.list_price || car.ad_price || 0);
   const quoteUrl = `${location.origin}/quote/?car=${encodeURIComponent(car.plate)}${price ? "&price=" + price : ""}`;
   const encarUrl = car.encar_id ? `https://fem.encar.com/cars/detail/${car.encar_id}` : null;
+  // 폰·태블릿은 공유창(카톡 등), PC 는 내려받기·링크 복사 — 윈도우 크롬도 공유창이 있어서 PC 에서 파일이 안 받아지던 것 (2026-10-20)
+  const 폰 = /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.platform));
   const shareFiles = async (files, title) => {
-    if (navigator.canShare?.({ files })) { try { await navigator.share({ files, title }); } catch {} return; }
-    for (const f of files) { const a = document.createElement("a"); a.href = URL.createObjectURL(f); a.download = f.name; a.click(); }   // PC: 내려받기
+    if (폰 && navigator.canShare?.({ files })) { try { await navigator.share({ files, title }); } catch {} return; }
+    for (const f of files) { const a = document.createElement("a"); a.href = URL.createObjectURL(f); a.download = f.name; document.body.appendChild(a); a.click(); a.remove(); }
+    if (!폰) toast(`${files.length > 1 ? files.length + "개 파일을" : "파일을"} 내려받았습니다 (다운로드 폴더)`);
   };
   const shareLink = async (url, title) => {
-    if (navigator.share) { try { await navigator.share({ title, url }); return; } catch { return; } }
+    if (폰 && navigator.share) { try { await navigator.share({ title, url }); return; } catch { return; } }
     try { await navigator.clipboard.writeText(url); toast("링크를 복사했습니다 — 카톡에 붙여 넣으세요"); } catch { window.open(url, "_blank"); }
   };
   return html`<div class="card sendbox no-print"><b>고객에게 보내기</b>
