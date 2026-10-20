@@ -112,7 +112,8 @@ function Shell({ app, children, path }) {
   //   업무: 웍스 대신 쓰는 것 (2026-10-20 테스트 → 정식, 게시판은 맨 위 메뉴로) / 기타: 지금 잘 안 쓰는 것 (사용자 2026-10-05)
   const groups = office ? [
     ["업무", [["/todos", "할 일"], ["/calendar", "일정"], ["/attendance", "근태 (시험)"], ["/contacts", "연락처"], ["/checks", "차량검수"]]],
-    ["기타", [["/settlements", "정산내역"], ["/issue", "매출관리"], ["/signs", "서류"], ["/brokerage", "타상사알선"], ["/reserve", "광고장 예약"], ["/ktx", "KTX 예매"]]],
+    // 정산내역·매출관리·서류·타상사알선은 메뉴에서만 숨김 (사용자 2026-10-20) — 주소로는 그대로 열리고, 서류는 대시보드 '새 서류'·차 화면에서 들어간다
+    ["기타", [["/reserve", "광고장 예약"], ["/ktx", "KTX 예매"]]],
   ] : [];
   const 켜짐 = p => path.startsWith(p) || (p === "/checks" && path.startsWith("/check/"));
   const [menu, setMenu] = useState(null);         // 펼친 메뉴 { name, left, top } (메뉴줄이 가로 스크롤이라 밖에 띄운다)

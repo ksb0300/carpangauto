@@ -2382,3 +2382,24 @@ create policy admin_write on att_people for all to authenticated using (my_role(
 insert into att_people (user_id, start_time, end_time)
   select user_id, '08:30', '17:00' from profiles where role = 'staff' and name = '유은수'
   on conflict (user_id) do update set start_time = excluded.start_time, end_time = excluded.end_time;
+
+
+-- 20261020000005_board_refund_docs.sql
+-- 게시판 '3일환불제 서류' (2026-10-20 사용자). 고객이 3일 환불 약정서에 서명하면 sign 함수가 여기에 글을 올린다(알림은 tick).
+-- 종이로 받은 약정서 사진 등은 직접 올려도 된다.
+alter table board_posts drop constraint board_posts_category_check;
+alter table board_posts add constraint board_posts_category_check
+  check (category = any (array['공지', '매입등록증', '매도등록증', '자료', '송금요청', '매도정보', '말소서류', '3일환불제서류', '자유']));
+
+-- 이미 서명된 약정서도 게시판에 (알림 없이 — notified_at 을 서명 때로)
+insert into board_posts (category, title, body, plate, car_id, author_name, created_at, updated_at, notified_at, src)
+select '3일환불제서류',
+       trim(coalesce(d.car_no, '') || ' ' || coalesce(d.car_name, '')) || ' 3일 환불 약정서',
+       '고객 ' || coalesce(d.name, '') ||
+         case when d.deadline is not null then E'\n환불 기한 ' || to_char(d.deadline at time zone 'Asia/Seoul', 'YYYY-MM-DD HH24') || '시' else '' end ||
+         E'\n\n약정서: https://tieronekorea.com/office/#/signs/' || d.id,
+       replace(coalesce(d.car_no, ''), ' ', ''), d.car_id, '고객 전자서명',
+       coalesce(d.signed_at, d.created_at), coalesce(d.signed_at, d.created_at), coalesce(d.signed_at, d.created_at), 'sign:' || d.id
+  from sign_docs d
+ where d.kind = '3일환불' and d.signature_path is not null
+   and not exists (select 1 from board_posts b where b.src = 'sign:' || d.id);
