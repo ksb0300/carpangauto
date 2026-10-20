@@ -140,7 +140,7 @@ function List({ app }) {
 function 송금칸({ f, set }) {
   const a = 금액(f.amountText ?? "") ?? (Number(String(f.amountText || "").replace(/[^\d]/g, "")) || null);
   return html`<div class="fgrid">
-    <${Field} label="종류" hint=${f.kind === "매입대금" ? "차대금 — 사무장님이 [확인] 누를 때까지 재촉 알림 (평일 9~19시)" : "알림 한 번"}><${Seg} value=${f.kind} onChange=${v => set("kind", v)} options=${송금종류} /><//>
+    <${Field} label="종류" hint=${f.kind === "매입대금" ? "차대금 — 사무장님이 [확인] 누를 때까지 재촉 알림 (사무장 근무시간 평일 8:30~17:00)" : "알림 한 번"}><${Seg} value=${f.kind} onChange=${v => set("kind", v)} options=${송금종류} /><//>
     ${f.kind !== "업무비" && html`<${Field} label="매입경로"><${Seg} value=${f.route || ""} onChange=${v => set("route", v)} options=${경로들} /><//>`}
     <${Field} label="차량번호" hint=${f.kind === "업무비" ? "차에 쓴 돈이면 적어 주세요 (선택)" : ""}><input value=${f.plate || ""} placeholder="예: 54다8079" onInput=${e => set("plate", e.target.value)} /><//>
     <${Field} label="금액" req hint=${a ? "= " + 원(a) : "1311만 · 13,110,000 · 15000원 다 됩니다"}><input value=${f.amountText ?? ""} onInput=${e => set("amountText", e.target.value)} /><//>
@@ -238,7 +238,7 @@ function Write({ app }) {
     const body = cat === "송금요청" ? (form.paste || 송금글(form, form.memo || "")) : cat === "매도정보" ? 매도글(form, form.memo || "") : t.body;
     const 예약 = t.publish ? new Date(t.publish).toISOString() : null;
     if (예약 && Date.parse(예약) < Date.now() - 60e3) return toast("예약 시각이 이미 지났습니다", "err");
-    const 차 = cat === "송금요청" && form.kind === "매입대금";      // 차대금: 알림·재촉은 서버(tick)가 — 평일 9~19시, [확인]까지
+    const 차 = cat === "송금요청" && form.kind === "매입대금";      // 차대금: 알림·재촉은 서버(tick)가 — 받는 사람 근무시간(근태 → 관리 → 사람마다 근무시간), [확인]까지
     setBusy(true);
     await run(async () => {
       const 올릴 = await 모두줄이기(files);
@@ -258,7 +258,7 @@ function Write({ app }) {
       if (!예약 && !차) await 알림(app, { title: `[${이름[cat]}] ${title}`, body: `${app.profile.name}${cat === "송금요청" && form.amount ? " · " + 원(form.amount) + (form.payee ? " → " + form.payee : "") : t.body ? " · " + t.body.trim().slice(0, 80) : ""}`,
         url: "/office/#/board/" + p.id, tag: "board-" + p.id, exclude_self: true, pref: "board:" + cat });
       if (예약) toast(`${날짜시각(예약)}에 올라가고 그때 알림이 갑니다.`);
-      else if (차) toast("사무장님께 알림이 갑니다 — [확인]을 누를 때까지 재촉 (평일 9~19시)");
+      else if (차) toast("사무장님께 알림이 갑니다 — [확인]을 누를 때까지 재촉 (사무장 근무시간에만)");
       if (cat === "송금요청") {       // 이미 나간 돈이면 바로 짝지어 완료
         const { data } = await app.db.rpc("board_match_payments");
         if ((data || []).some(x => x.post_id === p.id)) toast("통장에 이미 나간 출금이 있어 '통장 확인'으로 완료했습니다.");
@@ -490,7 +490,7 @@ function Post({ app, id }) {
         <button class="btn sm primary" onClick=${() => 완료(true)}>✔ 송금 완료</button></div>`)}
     ${송금 && p.form?.kind === "매입대금" && !p.done_at && html`<div class=${"bank-ok" + (p.ack_at ? "" : " bank-wait")}>${p.ack_at
       ? html`👀 <b>${p.ack_by || ""} 확인</b> <span class="muted small">${날짜시각(p.ack_at)} · 재촉 끝</span>`
-      : html`🔔 <b>사무장 확인 전</b> <span class="muted small">[확인]을 누를 때까지 평일 9~19시에 재촉합니다 (최대 3번)</span><span class="grow"></span>
+      : html`🔔 <b>사무장 확인 전</b> <span class="muted small">[확인]을 누를 때까지 사무장 근무시간(평일 8:30~17:00)에 재촉합니다 (최대 3번)</span><span class="grow"></span>
         <button class="btn sm primary" onClick=${확인}>👀 확인했어요</button>`}</div>`}
     ${p.publish_at && Date.parse(p.publish_at) > Date.now() && html`<p class="note">🕒 ${날짜시각(p.publish_at)}에 올라가고 그때 알림이 갑니다. 지금은 쓴 사람과 대표만 보입니다.</p>`}
     ${매도 && p.form?.amount && html`<${잔금줄} p=${p} ins=${x.ins || []} 완료=${완료} />`}

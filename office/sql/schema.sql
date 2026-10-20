@@ -2364,3 +2364,21 @@ do $$ begin
 exception when others then
   raise notice '사진 저장소 설정은 건너뜀 (이 DB 에는 storage 가 없음): %', sqlerrm;
 end $$;
+
+
+-- 20261020000004_att_people.sql
+-- 사람마다 근무시간 (2026-10-20 사용자: 사무장 8시 30분 출근 · 17시 퇴근 — 지켜줘)
+--   근태: 그 사람의 지각·조퇴 기준 / tick: 차대금 재촉은 받는 사람 근무시간에만. 없으면 근태 기본(att_settings).
+create table att_people (
+  user_id     uuid primary key references auth.users(id) on delete cascade,
+  start_time  time not null,
+  end_time    time not null,
+  check (end_time > start_time)
+);
+alter table att_people enable row level security;
+create policy office_read on att_people for select to authenticated using (is_office());
+create policy admin_write on att_people for all to authenticated using (my_role() = 'admin') with check (my_role() = 'admin');
+
+insert into att_people (user_id, start_time, end_time)
+  select user_id, '08:30', '17:00' from profiles where role = 'staff' and name = '유은수'
+  on conflict (user_id) do update set start_time = excluded.start_time, end_time = excluded.end_time;
