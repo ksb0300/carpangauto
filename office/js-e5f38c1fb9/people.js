@@ -34,7 +34,7 @@ export function Avatar({ name, size = 32, id }) {
   useEffect(() => { const f = () => 다시(x => x + 1); 듣는이.add(f); return () => 듣는이.delete(f); }, []);
   const u = (id && 사진.get(id)) || 사진.get(name);
   const st = `width:${size}px;height:${size}px;font-size:${Math.round(size * 0.44)}px;background:${색(name)}`;
-  return u ? html`<img class="av" src=${u} alt=${name || ""} title=${name || ""} style=${st + ";object-fit:cover"} loading="lazy" />`
+  return u ? html`<img class="av" src=${u} alt=${name || ""} title=${name || ""} style=${st + ";object-fit:cover"} />`
     : html`<span class="av" title=${name || ""} style=${st}>${String(name || "?").trim().slice(0, 1)}</span>`;
 }
 

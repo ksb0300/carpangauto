@@ -103,6 +103,7 @@ export function 할일(l, lender, t) {
 
 export function LenderOverview({ app }) {
   const [d, setD] = useState(null);
+  const [펼침, set펼침] = useState({});          // 금융사별 대출 목록 펼침 (처음엔 접어 둠)
   const load = () => run(async () => setD(await loadAll(app.db)));
   useEffect(() => { load(); }, []);
   const ext = async (e, l) => { e.stopPropagation(); if (await extendLoan(app, l)) load(); };
@@ -116,7 +117,22 @@ export function LenderOverview({ app }) {
   const 전체 = act.reduce((s, l) => s + n(l.amount) - n(l.principal_repaid), 0);
   const 이자 = act.reduce((s, l) => s + 재고금융이자(l, l.start_date, t), 0);
   const 급함 = act.filter(l => ["red", "amber"].includes(할일(l, d.lenders.find(x => x.id === l.lender_id), t).tone)).length;
+  // 한도 카드 — 금융사마다 잔여 한도를 크게 (사용자 2026-10-20: 한도·사용·잔여가 제일 중요, 한눈에)
+  const 쓴돈 = x => act.filter(l => l.lender_id === x.id).reduce((s, l) => s + n(l.amount) - n(l.principal_repaid), 0) + n(x.existing_amount);
+  const 카드들 = lenders.filter(x => n(x.credit_limit) || cnt(x.id))
+    .map(x => ({ x, lim: n(x.credit_limit), used: 쓴돈(x) })).sort((a, b) => (b.lim ? 1 : 0) - (a.lim ? 1 : 0) || (b.lim - b.used) - (a.lim - a.used));
+  const 합 = 카드들.reduce((s, k) => ({ lim: s.lim + k.lim, used: s.used + (k.lim ? k.used : 0) }), { lim: 0, used: 0 });
   return html`
+    <div class="limit-sum">전체 한도 <b>${won(합.lim)}</b> · 사용 <b>${won(합.used)}</b> · 잔여 <b class=${합.lim - 합.used < 0 ? "red" : "green"}>${won(합.lim - 합.used)}</b></div>
+    <div class="limit-grid">${카드들.map(({ x, lim, used }) => {
+      const left = lim - used, pct = lim ? Math.round(used / lim * 100) : 0;
+      return html`<div class=${"limit-card" + (lim && left < 0 ? " over" : lim && pct >= 85 ? " warn" : "")} onClick=${() => { set펼침(p => ({ ...p, [x.id]: true })); setTimeout(() => document.getElementById("lender-" + x.id)?.scrollIntoView({ behavior: "smooth" }), 50); }}>
+        <div class="ln">${x.name}</div>
+        ${lim ? html`<div class="lleft"><small>잔여</small>${won(left)}</div>
+          <div class="bar-meter"><i class=${pct > 100 ? "over" : ""} style=${`width:${Math.min(100, pct)}%`}></i></div>
+          <div class="lsub">사용 ${won(used)} / 한도 ${won(lim)} · ${pct}%</div>`
+        : html`<div class="lleft muted"><small>한도 미입력</small>사용 ${won(used)}</div><div class="lsub">조건 설정에서 한도를 넣으세요</div>`}
+        <div class="lsub">${cnt(x.id)}건 진행중</div></div>`; })}</div>
     <div class="stat-grid">
       <div class="stat"><span>진행중 재고금융</span><b>${won(전체)}</b><small>${act.length}건</small></div>
       <div class="stat"><span>오늘까지 쌓인 이자</span><b>${won(이자)}</b><small>실행일부터 일할</small></div>
@@ -125,12 +141,14 @@ export function LenderOverview({ app }) {
     ${lenders.filter(x => cnt(x.id) || n(x.credit_limit)).map(x => {
       const mine = act.filter(l => l.lender_id === x.id).sort((a, b) => 대출상태(a, t).만기.localeCompare(대출상태(b, t).만기));
       const used = mine.reduce((s, l) => s + n(l.amount) - n(l.principal_repaid), 0) + n(x.existing_amount), lim = n(x.credit_limit);
-      return html`<div class="card lender">
-        <div class="bar"><h3>${x.name}</h3>${!x.active && html`<span class="badge gray">사용 안 함</span>`}<span class="grow"></span>
+      const 열림 = !!펼침[x.id], 급한것 = mine.filter(l => ["red", "amber"].includes(할일(l, x, t).tone)).length;
+      return html`<div class="card lender" id=${"lender-" + x.id}>
+        <div class="bar" style=${"cursor:pointer" + (열림 ? "" : ";margin-bottom:0")} onClick=${() => set펼침(p => ({ ...p, [x.id]: !열림 }))}><h3>${열림 ? "▾" : "▸"} ${x.name}</h3>${!x.active && html`<span class="badge gray">사용 안 함</span>`}
+          <span class="muted small">${mine.length}건${급한것 ? html` · <span class="badge amber">챙길 것 ${급한것}</span>` : ""}</span><span class="grow"></span>
           <span class="muted small">${lim ? `한도 ${won(lim)} · 사용 ${won(used)} · 잔여 ` : `사용 ${won(used)}`}${lim ? html`<b class=${lim - used < 0 ? "red" : ""}>${won(lim - used)}</b>` : ""}</span>
-          <button class="btn sm" onClick=${() => go(`/loans/lender/${x.id}`)}>조건 설정</button></div>
-        <p class="note" style="margin-top:0">${조건요약(x)}${x.rule_memo ? ` — ${x.rule_memo}` : ""}</p>
-        ${!mine.length ? html`<p class="muted small">진행중 대출 없음</p>` : html`<div class="table-wrap"><table class="grid click">
+          <button class="btn sm" onClick=${e => { e.stopPropagation(); go(`/loans/lender/${x.id}`); }}>조건 설정</button></div>
+        ${열림 && html`<p class="note" style="margin-top:0">${조건요약(x)}${x.rule_memo ? ` — ${x.rule_memo}` : ""}</p>`}
+        ${!열림 ? "" : !mine.length ? html`<p class="muted small">진행중 대출 없음</p>` : html`<div class="table-wrap"><table class="grid click">
           <thead><tr><th>차량</th><th class="r">대출(잔액)</th><th>실행일</th><th>단계</th><th>만기</th><th class="r">이율</th><th class="r">오늘까지 이자</th><th class="r" title="중도상환수수료 + 저당해지비용">지금 갚으면 상환비용</th><th>다음 할 일</th><th></th></tr></thead>
           <tbody>${mine.map(l => { const s = 대출상태(l, t), h = 할일(l, x, t), c = car[l.car_id];
             return html`<tr onClick=${() => go(`/car/${c.id}/loans`)}><td>${차줄(c)}</td>
