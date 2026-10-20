@@ -1049,7 +1049,19 @@ let wake = null;
 async function keepWake() { try { if (navigator.wakeLock && document.visibilityState === "visible") wake = await navigator.wakeLock.request("screen"); } catch {} }
 function releaseWake() { try { wake && wake.release(); } catch {} wake = null; }
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && sheet) keepWake(); });
-if ("serviceWorker" in navigator && window.isSecureContext) navigator.serviceWorker.register("sw.js").catch(() => {});
+// 새 버전이 깔리면(목록 화면일 때만) 한 번 새로 고침 — 쓰던 검수지는 기기에 저장돼 있어 안 사라진다
+if ("serviceWorker" in navigator && window.isSecureContext) {
+  const 처음 = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(r => { r.update().catch(() => {}); }).catch(() => {});
+  let 다시 = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!처음 || 다시) return;
+    다시 = true;
+    if (!$("home").hidden) location.reload();
+    else toast("새 버전이 준비됐습니다. 앱을 다시 열면 바뀝니다");
+  });
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") navigator.serviceWorker.getRegistration().then(r => r && r.update()).catch(() => {}); });
+}
 
 showHome();
 </script>
