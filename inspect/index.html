@@ -478,25 +478,21 @@ function drawD1(c) {
   // 상품화 계획 (외판·휠·타이어 — 나머지는 메모) + 사고 판단 + 메모  (사용자 2026-10-20: 판별 단서는 뺌)
   title(c, "상품화 계획", 40, by + 30, 17);
   c.fillStyle = SUB; c.font = `italic 500 12px ${F}`; c.fillText("Reconditioning Plan", 140, by + 29);
-  // 칸마다 숫자만: 외판 몇 판 · 휠 몇 개 · 타이어 몇 개 + 예상 금액 (사용자: "숫자 적으면 되고")
-  const tx = 40, tw = 450, hy = by + 42, HR = 24, RR = (1386 - hy - HR) / 4;
-  const cQty = tx + 90, cAmt = tx + 230;                        // 수량 칸 · 예상 금액 칸 시작
+  // 칸마다 수량 숫자만: 외판 몇 판 · 휠 몇 개 · 타이어 몇 개 (사용자: "숫자 적으면 되고", "예상금액은 필요없고")
+  const tx = 40, tw = 450, hy = by + 42, HR = 24, RR = (1386 - hy - HR) / 3;
+  const cQty = tx + 130;                                        // 수량 칸 시작
   c.lineWidth = 1.6; c.strokeStyle = "#2a2a30"; c.strokeRect(tx, hy, tw, 1386 - hy);
   c.fillStyle = "#f4f4f7"; c.fillRect(tx + 1, hy + 1, tw - 2, HR - 1);
   c.fillStyle = SUB; c.font = `700 13px ${F}`; c.textAlign = "center";
-  c.fillText("부위", (tx + cQty) / 2, hy + 17); c.fillText("수량", (cQty + cAmt) / 2, hy + 17); c.fillText("예상 금액", (cAmt + tx + tw) / 2, hy + 17); c.textAlign = "left";
+  c.fillText("부위", (tx + cQty) / 2, hy + 17); c.fillText("수량", (cQty + tx + tw) / 2, hy + 17); c.textAlign = "left";
   c.lineWidth = 1; c.strokeStyle = "#2a2a30"; c.beginPath(); c.moveTo(tx, hy + HR); c.lineTo(tx + tw, hy + HR); c.stroke();
-  [["외판", "판"], ["휠", "개"], ["타이어", "개"], ["합계", ""]].forEach(([t, u], i) => {
+  [["외판", "판"], ["휠", "개"], ["타이어", "개"]].forEach(([t, u], i) => {
     const ry = hy + HR + RR * i;
-    if (i) { c.lineWidth = i === 3 ? 1.6 : 1; c.strokeStyle = i === 3 ? "#2a2a30" : "#dadae0"; c.beginPath(); c.moveTo(tx, ry); c.lineTo(tx + tw, ry); c.stroke(); }
-    c.fillStyle = INK; c.font = `${i === 3 ? 800 : 700} 16px ${F}`; c.textAlign = "center"; c.fillText(t, (tx + cQty) / 2, ry + RR / 2 + 6);
-    c.fillStyle = SUB; c.font = `600 13px ${F}`; c.textAlign = "right";
-    if (u) c.fillText(u, cAmt - 10, ry + RR - 8);
-    c.fillText("만원", tx + tw - 10, ry + RR - 8); c.textAlign = "left";
+    if (i) { c.lineWidth = 1; c.strokeStyle = "#dadae0"; c.beginPath(); c.moveTo(tx, ry); c.lineTo(tx + tw, ry); c.stroke(); }
+    c.fillStyle = INK; c.font = `700 17px ${F}`; c.textAlign = "center"; c.fillText(t, (tx + cQty) / 2, ry + RR / 2 + 6);
+    c.fillStyle = SUB; c.font = `600 15px ${F}`; c.textAlign = "right"; c.fillText(u, tx + tw - 14, ry + RR / 2 + 6); c.textAlign = "left";
   });
-  c.lineWidth = 1; c.strokeStyle = "#2a2a30";
-  [cQty, cAmt].forEach(x => { c.beginPath(); c.moveTo(x, hy); c.lineTo(x, 1386); c.stroke(); });
-  c.fillStyle = "#e9e9ee"; c.fillRect(cQty + 1, hy + HR + RR * 3 + 1, cAmt - cQty - 2, RR - 2);   // 합계 줄은 금액만
+  c.lineWidth = 1; c.strokeStyle = "#2a2a30"; c.beginPath(); c.moveTo(cQty, hy); c.lineTo(cQty, 1386); c.stroke();
   title(c, "사고 판단", 510, by + 30, 17);
   [["무사고", 600], ["단순교환", 705], ["사고", 835]].forEach(([t, x]) => { check(c, x, by + 11, 24); c.fillStyle = "#1d1d22"; c.font = `600 16px ${F}`; c.fillText(t, x + 32, by + 30); });
   box(c, 510, by + 42, 450, 1386 - (by + 42), "메모 (그 밖의 상품화 · 특이사항)");
@@ -512,7 +508,7 @@ function drawD2(c) {
   const R = [["실내", ["계기판 경고등", "에어컨·히터", "시트 오염·손상", "열선·통풍", "디스플레이·오디오", "카메라·센서", "창문·미러", "선루프", "냄새 (흡연·곰팡이)", "침수 흔적", "천장·내장재", "트렁크 내부"]],
     ["시운전", ["변속 충격·지연", "가속·출력", "직진성 (쏠림)", "제동", "핸들 떨림", "하체 소음", "주행 보조 (ADAS)"]]];
   const yL = checklist1(c, 40, 206, 450, L, 33.5), yR = checklist1(c, 510, 206, 450, R, 33.5);
-  drawP2Bottom(c, Math.max(yL, yR) + 22);
+  drawP2Bottom(c, Math.max(yL, yR) + 22, true);
   foot(c, 2);
 }
 
@@ -530,7 +526,7 @@ function drawP2(c) {
   foot(c, 2);
 }
 /** 2쪽 아래: 타이어·연료·키·판정·금액·메모 (예전 p2 와 새 d2 공통) */
-function drawP2Bottom(c, y) {
+function drawP2Bottom(c, y, 새양식 = false) {
   title(c, "타이어", 40, y + 30); c.fillStyle = SUB; c.font = `500 13px ${F}`; c.fillText("트레드 mm", 40, y + 50); c.fillText("생산 주차 DOT", 40, y + 70);
   [["앞 좌", 150], ["앞 우", 355], ["뒤 좌", 560], ["뒤 우", 765]].forEach(([t, x]) => {
     box(c, x, y, 195, 86, t);
@@ -550,9 +546,10 @@ function drawP2Bottom(c, y) {
   title(c, "판정", 40, y + 24, 21);
   [["매입", 130], ["조건부 매입", 250], ["보류", 410], ["매입 안 함", 520]].forEach(([t, x]) => { check(c, x, y + 4, 24); c.fillStyle = "#1d1d22"; c.font = `600 17px ${F}`; c.fillText(t, x + 32, y + 24); });
   y += 44;
-  box(c, 40, y, 450, 74, "예상 상품화 비용", "만원"); box(c, 510, y, 450, 74, "제시 매입가", "만원");
+  if (새양식) box(c, 40, y, 450, 74, "제시 매입가", "만원");            // 새 양식: 예상 상품화 비용 칸 없음 (사용자: 예상금액은 필요없다)
+  else { box(c, 40, y, 450, 74, "예상 상품화 비용", "만원"); box(c, 510, y, 450, 74, "제시 매입가", "만원"); }
   y += 86;
-  box(c, 40, y, 920, 1384 - y, "메모 (주의·불량 내용, 고객 요청, 협의)");
+  box(c, 40, y, 920, 1384 - y, 새양식 ? "메모 (이상 내용, 고객 요청, 협의)" : "메모 (주의·불량 내용, 고객 요청, 협의)");
   c.lineWidth = 1; c.strokeStyle = "#e5e5ea";
   for (let ly = y + 64; ly < 1376; ly += 40) { c.beginPath(); c.moveTo(56, ly); c.lineTo(944, ly); c.stroke(); }
 }

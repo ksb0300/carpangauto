@@ -1,5 +1,5 @@
 ﻿// 검수지 앱을 인터넷 없이도 열리게 — 앱 파일을 기기에 담아 두고, 연결되면 새 버전으로 바꿔 둔다.
-const CACHE = "tierone-sheet-v14";
+const CACHE = "tierone-sheet-v15";
 const FILES = ["./", "./index.html", "./manifest.webmanifest", "./icon-180.png", "./icon-192.png", "./icon-512.png", "./diag.jpg"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES))); self.skipWaiting(); });
 self.addEventListener("activate", e => {
