@@ -2326,3 +2326,41 @@ grant execute on function office_holidays() to authenticated;
 alter table car_files drop constraint car_files_kind_check;
 alter table car_files add constraint car_files_kind_check
   check (kind = any (array['제시', '매도', '정산', '성능', '등록증', '매도등록증', '검수지', '기타']));
+
+
+-- 20261020000003_avatars.sql
+-- 프로필 사진 (2026-10-20): 각자 내 정보에서 올린다. 사진은 공개 버킷 'avatars/<내 user_id>/…' (주소를 알아야 보임),
+-- 올리기·지우기는 본인 폴더만. profiles.avatar_path 는 본인만 함수로 바꾼다(역할 등 다른 칸은 못 건드리게).
+alter table profiles add column avatar_path text;
+
+create function set_my_avatar(p_path text) returns void
+language sql security definer set search_path = public as $$
+  update profiles set avatar_path = nullif(p_path, '')
+   where user_id = auth.uid() and is_office()
+     and (coalesce(p_path, '') = '' or p_path like auth.uid()::text || '/%');
+$$;
+revoke execute on function set_my_avatar(text) from public, anon;
+grant execute on function set_my_avatar(text) to authenticated;
+
+-- 구성원 목록에 사진도
+drop function office_members();
+create function office_members() returns table (user_id uuid, name text, role app_role, avatar_path text)
+language sql stable security definer set search_path = public as $$
+  select p.user_id, p.name, p.role, p.avatar_path from profiles p
+   where is_office() and p.role in ('admin', 'staff') order by p.role, p.name
+$$;
+revoke execute on function office_members() from public, anon;
+grant execute on function office_members() to authenticated;
+
+do $$ begin
+  insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+    values ('avatars', 'avatars', true, 2097152, array['image/jpeg', 'image/png', 'image/webp']) on conflict (id) do nothing;
+  execute $p$create policy avatars_own_insert on storage.objects for insert to authenticated
+    with check (bucket_id = 'avatars' and is_office() and (storage.foldername(name))[1] = auth.uid()::text)$p$;
+  execute $p$create policy avatars_own_update on storage.objects for update to authenticated
+    using (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text)$p$;
+  execute $p$create policy avatars_own_delete on storage.objects for delete to authenticated
+    using (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text)$p$;
+exception when others then
+  raise notice '사진 저장소 설정은 건너뜀 (이 DB 에는 storage 가 없음): %', sqlerrm;
+end $$;

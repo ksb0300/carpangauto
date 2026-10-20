@@ -25,6 +25,8 @@ import { ContactsPage } from "./pages/contacts.js";
 import { TodosPage } from "./pages/todos.js";
 import { CalendarPage } from "./pages/calendar.js";
 import { AttendancePage } from "./pages/attendance.js";
+import { MyPage } from "./pages/me.js";
+import { Avatar, 사진기억, 구성원 } from "./people.js";
 import { startSync } from "./check-store.js";
 
 function useHash() {
@@ -104,12 +106,12 @@ function Shell({ app, children, path }) {
   const office = profile.role !== "dealer";
   const nav = office
     ? [["/purchases", "리스트"], ["/sales", "매도차량"], ["/loans", "재고금융"],
-       ["/bank", "자금관리"], ["/reports", "종합업무현황"], ["/stats", "통계"], ["/settings", "환경설정"]]
+       ["/bank", "자금관리"], ["/board", "게시판"], ["/reports", "종합업무현황"], ["/stats", "통계"], ["/settings", "환경설정"]]
     : [["/purchases", "내 제시차량"], ["/sales", "매도차량"], ["/settlements", "정산내역"], ["/brokerage", "알선"], ["/reports", "내 실적"]];
   // 펼침 메뉴 (화면은 그대로 있고 메뉴줄에서만 묶는다)
-  //   테스트: 새로 만들어 시험 중인 것 (사용자 2026-10-18) / 기타: 지금 잘 안 쓰는 것 (사용자 2026-10-05)
+  //   업무: 웍스 대신 쓰는 것 (2026-10-20 테스트 → 정식, 게시판은 맨 위 메뉴로) / 기타: 지금 잘 안 쓰는 것 (사용자 2026-10-05)
   const groups = office ? [
-    ["테스트", [["/board", "게시판"], ["/checks", "차량검수"], ["/todos", "할 일"], ["/calendar", "일정"], ["/contacts", "연락처"], ["/attendance", "근태"]]],
+    ["업무", [["/todos", "할 일"], ["/calendar", "일정"], ["/attendance", "근태 (시험)"], ["/contacts", "연락처"], ["/checks", "차량검수"]]],
     ["기타", [["/settlements", "정산내역"], ["/issue", "매출관리"], ["/signs", "서류"], ["/brokerage", "타상사알선"], ["/reserve", "광고장 예약"], ["/ktx", "KTX 예매"]]],
   ] : [];
   const 켜짐 = p => path.startsWith(p) || (p === "/checks" && path.startsWith("/check/"));
@@ -131,7 +133,7 @@ function Shell({ app, children, path }) {
         <a class="me-name" href="/" title="홈페이지(매물)로">홈페이지</a>
         ${office && html`<a class="me-name" href="https://mail.google.com/mail/u/?authuser=tierone@tieronekorea.com" target="_blank" rel="noopener" title="tierone@tieronekorea.com 메일 (Gmail)">✉️ 메일</a>`}
         ${office && !DEMO && html`<${Bell} app=${app} />`}
-        <a class="me-name" href="#/password" title="비밀번호 변경">${profile.name} · ${{ admin: "공동대표", staff: "사무장", dealer: "권한 없음" }[profile.role]}</a>
+        <a class="me-name" href="#/me" title="내 정보 (프로필 사진·비밀번호)" style="display:inline-flex;align-items:center;gap:6px"><${Avatar} name=${profile.name} id=${app.user.id} size=${24} />${profile.name} · ${{ admin: "공동대표", staff: "사무장", dealer: "권한 없음" }[profile.role]}</a>
         <button class="btn ghost sm" onClick=${async () => { await db.auth.signOut(); location.reload(); }}>로그아웃</button>
       </div>
     </header>
@@ -173,7 +175,7 @@ function Router({ app }) {
   else if (a === "brokerage") page = html`<${BrokeragePage} app=${app} />`;
   else if (a === "ledger") page = html`<${LedgerPage} app=${app} tab=${decodeURIComponent(b || "지출")} />`;
   else if (a === "reports") page = html`<${ReportsPage} app=${app} tab=${b} />`;
-  else if (a === "password") page = html`<${ChangePassword} db=${app.db} onDone=${() => (location.hash = "/")} />`;
+  else if (a === "me" || a === "password") page = html`<${MyPage} app=${app} />`;
   else page = html`<${PurchasesPage} app=${app} />`;
   return html`<${Shell} app=${app} path=${path}>${page}</${Shell}>`;
 }
@@ -205,7 +207,9 @@ function App() {
     ]);
     const next = { db: d, user: session.user, profile, settings, dealers, lenders, parking };
     next.reload = () => load(d);
+    사진기억(session.user.id, profile.name, profile.avatar_path);
     setNeedLogin(false); setApp(next); startSync(next);
+    if (!DEMO) 구성원(next).catch(() => {});                   // 다른 사람 프로필 사진 미리 (기다리지 않음)
     if (sessionStorage.getItem("carpang-demo-upgraded")) { sessionStorage.removeItem("carpang-demo-upgraded"); toast("새 버전이라 데모 데이터를 처음 상태로 다시 만들었습니다."); }
   };
 

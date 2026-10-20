@@ -46,14 +46,15 @@ export function AttendancePage({ app }) {
   const [d, setD] = useState(null);
   const load = () => run(async () => {
     const ds = 월날짜들(ym);
-    const [[s], days, todayRows, leaves, members] = await Promise.all([
+    const [[s], days, todayRows, leaves, members, hol] = await Promise.all([
       q(app.db.from("att_settings").select("*")),
       q(app.db.from("att_days").select("*").gte("d", ds[0]).lte("d", ds[ds.length - 1])),
       q(app.db.from("att_days").select("*").eq("d", today())),
       q(app.db.from("att_leaves").select("*").order("d_from", { ascending: false }).limit(500)),
       구성원(app),
+      app.db.rpc("office_holidays"),
     ]);
-    setD({ s, days, todayRows, leaves, members });
+    setD({ s, days, todayRows, leaves, members, holidays: hol.data || [] });
   });
   useEffect(() => { load(); }, [ym]);
   if (!d) return html`<${Loading} />`;
@@ -104,7 +105,7 @@ function 오늘({ app, d, load }) {
     <div class="card"><h3>오늘 우리 사무실</h3>
       <table class="grid"><tbody>${d.members.map(m => {
         const x = d.todayRows.find(t => t.user_id === m.user_id), lv = 휴가of(d.leaves, m.user_id, today());
-        const 미출근 = !x?.in_at && !lv && !주말(today()) && 지금 > s.start_time.slice(0, 5);
+        const 미출근 = !x?.in_at && !lv && !주말(today()) && !d.holidays.includes(today()) && 지금 > s.start_time.slice(0, 5);
         return html`<tr><td><span class="row" style="gap:8px;align-items:center"><${Avatar} name=${m.name} size=${26} />${m.name}</span></td>
           <td>${lv ? html`<${Badge} tone="blue">${lv.kind}<//>` : x?.out_at ? html`<${Badge}>퇴근<//>` : x?.in_at ? html`<${Badge} tone="green">근무 중<//>` : 미출근 ? html`<${Badge} tone="red">미출근<//>` : html`<span class="muted small">-</span>`}</td>
           <td class="small">${x?.in_at ? html`출근 ${시각(x.in_at)} ${장소(x.in_place)}` : ""}${x?.out_at ? html` · 퇴근 ${시각(x.out_at)}` : ""}</td></tr>`;
@@ -164,7 +165,7 @@ function 관리({ app, d, ym, setYm, load }) {
   const s = d.s;
   const [who, setWho] = useState(null);
   const [ed, setEd] = useState(null);       // { uid, d, in, out, memo }
-  const [cfg, setCfg] = useState({ start: s.start_time.slice(0, 5), end: s.end_time.slice(0, 5), radius: s.radius_m });
+  const [cfg, setCfg] = useState({ start: s.start_time.slice(0, 5), end: s.end_time.slice(0, 5), radius: s.radius_m, hol: d.holidays.join("\n") });
   const 이름 = id => 이름표(d.members, id);
   const 결정 = (l, ok) => run(async () => {
     await q(app.db.from("att_leaves").update({ status: ok ? "승인" : "반려", decided_by: app.profile.name, decided_at: new Date().toISOString() }).eq("id", l.id));
@@ -182,7 +183,9 @@ function 관리({ app, d, ym, setYm, load }) {
     setEd(null); load();
   }, "고쳤습니다");
   const 설정저장 = () => run(async () => {
-    await q(app.db.from("att_settings").update({ start_time: cfg.start, end_time: cfg.end, radius_m: Number(cfg.radius) || 300 }).eq("id", 1)); load();
+    const hol = [...new Set((cfg.hol.match(/\d{4}-\d{2}-\d{2}/g) || []))].sort();
+    await q(app.db.from("att_settings").update({ start_time: cfg.start, end_time: cfg.end, radius_m: Number(cfg.radius) || 300 }).eq("id", 1));
+    await q(app.db.from("settings").update({ holidays: hol }).eq("id", 1)); load();
   }, "저장했습니다");
   const 여기사무실 = () => ask("지금 이 기기의 위치를 사무실로 정할까요? (사무실 안에서 누르세요)") && run(async () => {
     const c = await 위치();
@@ -223,5 +226,7 @@ function 관리({ app, d, ym, setYm, load }) {
         <${Field} label="사무실 반경 (m)" hint="이 안에서 찍으면 '사무실', 밖이면 '외부'"><input inputmode="numeric" value=${cfg.radius} onInput=${e => setCfg({ ...cfg, radius: e.target.value.replace(/[^\d]/g, "") })} /><//>
         <${Field} label="사무실 위치"><button class="btn" onClick=${여기사무실}>📍 지금 위치를 사무실로</button>
           <small class="hint">${s.office_lat != null ? `정해져 있음 (${s.office_lat.toFixed(4)}, ${s.office_lng.toFixed(4)})` : "아직 없음 — 사무실에서 눌러 주세요"}</small><//>
+        <${Field} label="공휴일 (대체공휴일 포함)" wide hint="한 줄에 하루 (예: 2026-12-25). 이 날은 차대금 재촉 알림이 안 울리고 근태 '미출근'도 안 뜹니다. 임시공휴일이 생기면 여기에 넣으세요.">
+          <textarea rows="5" value=${cfg.hol} onInput=${e => setCfg({ ...cfg, hol: e.target.value })}></textarea><//>
       </div><div class="bar"><span class="grow"></span><button class="btn primary" onClick=${설정저장}>설정 저장</button></div></div>`;
 }
