@@ -3,7 +3,7 @@ import { html, useState, useEffect, Select, run, toast, ask } from "../ui.js";
 import { q } from "../db.js";
 import { 모두줄이기 } from "../img.js";
 
-const KINDS = [["제시", "매입"], ["등록증", "매입 등록증"], ["매도", "매도"], ["매도등록증", "매도 등록증"], ["정산", "정산"], ["성능", "성능"], ["기타", "기타"]];   // 값은 그대로(DB), 화면엔 매입
+const KINDS = [["제시", "매입"], ["등록증", "매입 등록증"], ["매도", "매도"], ["매도등록증", "매도 등록증"], ["정산", "정산"], ["성능", "성능"], ["검수지", "검수지"], ["기타", "기타"]];   // 값은 그대로(DB), 화면엔 매입
 const MAX = 20 * 1024 * 1024;
 // 저장소 경로는 영문·숫자만 된다 (한글 파일 이름이면 'Invalid key'로 올라가지 않음) — 원래 이름은 car_files.name 에 그대로
 const 저장이름 = name => `${Date.now()}_${Math.random().toString(36).slice(2, 8)}${((name.match(/\.[A-Za-z0-9]{1,5}$/) || [""])[0]).toLowerCase()}`;
