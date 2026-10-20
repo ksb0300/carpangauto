@@ -19,6 +19,8 @@ const 월날짜들 = ym => { const [y, m] = ym.split("-").map(Number); const n =
 const 휴가종류 = ["연차", "오전반차", "오후반차", "외근", "병가", "기타"];
 const 휴가of = (leaves, uid, d) => leaves.find(l => l.user_id === uid && l.status === "승인" && l.d_from <= d && l.d_to >= d);
 /** 그날 기록 → 표시할 표 (지각·조퇴는 반차·외근이면 빼고) */
+/** 그 사람 근무시간 (att_people — 예: 사무장 8:30~17:00), 없으면 근태 기본 */
+const 기준 = (d, uid) => { const p = (d.people || []).find(x => x.user_id === uid); return p ? { ...d.s, start_time: p.start_time, end_time: p.end_time } : d.s; };
 function 판정(r, l, s) {
   const out = [];
   if (l) out.push(l.kind);
@@ -46,15 +48,16 @@ export function AttendancePage({ app }) {
   const [d, setD] = useState(null);
   const load = () => run(async () => {
     const ds = 월날짜들(ym);
-    const [[s], days, todayRows, leaves, members, hol] = await Promise.all([
+    const [[s], days, todayRows, leaves, members, hol, people] = await Promise.all([
       q(app.db.from("att_settings").select("*")),
       q(app.db.from("att_days").select("*").gte("d", ds[0]).lte("d", ds[ds.length - 1])),
       q(app.db.from("att_days").select("*").eq("d", today())),
       q(app.db.from("att_leaves").select("*").order("d_from", { ascending: false }).limit(500)),
       구성원(app),
       app.db.rpc("office_holidays"),
+      q(app.db.from("att_people").select("*")),
     ]);
-    setD({ s, days, todayRows, leaves, members, holidays: hol.data || [] });
+    setD({ s, days, todayRows, leaves, members, holidays: hol.data || [], people });
   });
   useEffect(() => { load(); }, [ym]);
   if (!d) return html`<${Loading} />`;
@@ -70,7 +73,7 @@ export function AttendancePage({ app }) {
 
 /* ───────── 오늘 ───────── */
 function 오늘({ app, d, load }) {
-  const me = app.user.id, s = d.s;
+  const me = app.user.id, s = 기준(d, me);
   const [now, setNow] = useState(new Date());
   const [busy, setBusy] = useState(false);
   useEffect(() => { const h = setInterval(() => setNow(new Date()), 20000); return () => clearInterval(h); }, []);
@@ -105,7 +108,7 @@ function 오늘({ app, d, load }) {
     <div class="card"><h3>오늘 우리 사무실</h3>
       <table class="grid"><tbody>${d.members.map(m => {
         const x = d.todayRows.find(t => t.user_id === m.user_id), lv = 휴가of(d.leaves, m.user_id, today());
-        const 미출근 = !x?.in_at && !lv && !주말(today()) && !d.holidays.includes(today()) && 지금 > s.start_time.slice(0, 5);
+        const 미출근 = !x?.in_at && !lv && !주말(today()) && !d.holidays.includes(today()) && 지금 > 기준(d, m.user_id).start_time.slice(0, 5);
         return html`<tr><td><span class="row" style="gap:8px;align-items:center"><${Avatar} name=${m.name} size=${26} />${m.name}</span></td>
           <td>${lv ? html`<${Badge} tone="blue">${lv.kind}<//>` : x?.out_at ? html`<${Badge}>퇴근<//>` : x?.in_at ? html`<${Badge} tone="green">근무 중<//>` : 미출근 ? html`<${Badge} tone="red">미출근<//>` : html`<span class="muted small">-</span>`}</td>
           <td class="small">${x?.in_at ? html`출근 ${시각(x.in_at)} ${장소(x.in_place)}` : ""}${x?.out_at ? html` · 퇴근 ${시각(x.out_at)}` : ""}</td></tr>`;
@@ -114,7 +117,7 @@ function 오늘({ app, d, load }) {
 
 /* ───────── 내 기록 (관리에서도 사람을 골라 씀) ───────── */
 function 기록({ d, ym, setYm, uid, 고치기 }) {
-  const s = d.s, rows = 월날짜들(ym).map(x => ({ d: x, r: d.days.find(t => t.user_id === uid && t.d === x), l: 휴가of(d.leaves, uid, x) }));
+  const s = 기준(d, uid), rows = 월날짜들(ym).map(x => ({ d: x, r: d.days.find(t => t.user_id === uid && t.d === x), l: 휴가of(d.leaves, uid, x) }));
   let 일 = 0, 총 = 0, 지 = 0, 조 = 0, 휴 = 0;
   rows.forEach(({ r, l }) => { if (r?.in_at) { 일++; 총 += 분(r.in_at, r.out_at); } const p = 판정(r, l, s); if (p.늦음) 지++; if (p.일찍) 조++; if (l && l.kind !== "외근") 휴++; });
   return html`<div class="card">
@@ -165,7 +168,9 @@ function 관리({ app, d, ym, setYm, load }) {
   const s = d.s;
   const [who, setWho] = useState(null);
   const [ed, setEd] = useState(null);       // { uid, d, in, out, memo }
-  const [cfg, setCfg] = useState({ start: s.start_time.slice(0, 5), end: s.end_time.slice(0, 5), radius: s.radius_m, hol: d.holidays.join("\n") });
+  const [cfg, setCfg] = useState({ start: s.start_time.slice(0, 5), end: s.end_time.slice(0, 5), radius: s.radius_m, hol: d.holidays.join("\n"),
+    people: Object.fromEntries((d.people || []).map(p => [p.user_id, { start: p.start_time.slice(0, 5), end: p.end_time.slice(0, 5) }])) });
+  const 사람시간 = (uid, k, v) => setCfg(c => ({ ...c, people: { ...c.people, [uid]: { ...(c.people[uid] || {}), [k]: v } } }));
   const 이름 = id => 이름표(d.members, id);
   const 결정 = (l, ok) => run(async () => {
     await q(app.db.from("att_leaves").update({ status: ok ? "승인" : "반려", decided_by: app.profile.name, decided_at: new Date().toISOString() }).eq("id", l.id));
@@ -185,7 +190,16 @@ function 관리({ app, d, ym, setYm, load }) {
   const 설정저장 = () => run(async () => {
     const hol = [...new Set((cfg.hol.match(/\d{4}-\d{2}-\d{2}/g) || []))].sort();
     await q(app.db.from("att_settings").update({ start_time: cfg.start, end_time: cfg.end, radius_m: Number(cfg.radius) || 300 }).eq("id", 1));
-    await q(app.db.from("settings").update({ holidays: hol }).eq("id", 1)); load();
+    await q(app.db.from("settings").update({ holidays: hol }).eq("id", 1));
+    // 사람마다 근무시간 — 둘 다 넣으면 그 사람 기준, 비우면 기본
+    for (const m of d.members) {
+      const p = cfg.people[m.user_id] || {};
+      if (p.start && p.end) {
+        if (p.end <= p.start) throw new Error(`${m.name}: 퇴근 시각이 출근보다 늦어야 합니다`);
+        await q(app.db.from("att_people").upsert({ user_id: m.user_id, start_time: p.start, end_time: p.end }, { onConflict: "user_id" }));
+      } else if ((d.people || []).some(x => x.user_id === m.user_id)) await q(app.db.from("att_people").delete().eq("user_id", m.user_id));
+    }
+    load();
   }, "저장했습니다");
   const 여기사무실 = () => ask("지금 이 기기의 위치를 사무실로 정할까요? (사무실 안에서 누르세요)") && run(async () => {
     const c = await 위치();
@@ -196,13 +210,13 @@ function 관리({ app, d, ym, setYm, load }) {
   const ds = 월날짜들(ym).filter(x => x <= today());
   const 집계 = d.members.map(m => {
     let 일 = 0, 총 = 0, 지 = 0, 조 = 0, 휴 = 0, 안찍 = 0;
-    ds.forEach(x => { const r = d.days.find(t => t.user_id === m.user_id && t.d === x), l = 휴가of(d.leaves, m.user_id, x), p = 판정(r, l, s);
+    ds.forEach(x => { const r = d.days.find(t => t.user_id === m.user_id && t.d === x), l = 휴가of(d.leaves, m.user_id, x), p = 판정(r, l, 기준(d, m.user_id));
       if (r?.in_at) { 일++; 총 += 분(r.in_at, r.out_at); } if (p.늦음) 지++; if (p.일찍) 조++; if (l && l.kind !== "외근") 휴++; if (p.tags.includes("퇴근 안 찍음")) 안찍++; });
     return { m, 일, 총, 지, 조, 휴, 안찍 };
   });
   const 엑셀 = () => downloadCsv(`근태_${ym}`, [["이름", "날짜", "출근", "퇴근", "근무(분)", "출근 위치", "퇴근 위치", "비고", "메모", "고친 사람"],
     ...d.members.flatMap(m => ds.map(x => { const r = d.days.find(t => t.user_id === m.user_id && t.d === x), l = 휴가of(d.leaves, m.user_id, x);
-      return r || l ? [m.name, x, 시각(r?.in_at), 시각(r?.out_at), r?.in_at && r?.out_at ? 분(r.in_at, r.out_at) : "", r?.in_place || "", r?.out_place || "", 판정(r, l, s).tags.join(" "), r?.memo || "", r?.edited_by || ""] : null; }).filter(Boolean))]);
+      return r || l ? [m.name, x, 시각(r?.in_at), 시각(r?.out_at), r?.in_at && r?.out_at ? 분(r.in_at, r.out_at) : "", r?.in_place || "", r?.out_place || "", 판정(r, l, 기준(d, m.user_id)).tags.join(" "), r?.memo || "", r?.edited_by || ""] : null; }).filter(Boolean))]);
   return html`
     ${대기.length > 0 && html`<div class="card"><h3>승인 대기 ${대기.length}</h3><table class="grid"><tbody>${대기.map(l => html`<tr>
       <td>${이름(l.user_id)}</td><td>${l.kind}</td><td>${날글(l.d_from)}${l.d_to !== l.d_from ? " ~ " + 날글(l.d_to) : ""}</td><td class="small">${l.memo || ""}</td>
@@ -228,5 +242,12 @@ function 관리({ app, d, ym, setYm, load }) {
           <small class="hint">${s.office_lat != null ? `정해져 있음 (${s.office_lat.toFixed(4)}, ${s.office_lng.toFixed(4)})` : "아직 없음 — 사무실에서 눌러 주세요"}</small><//>
         <${Field} label="공휴일 (대체공휴일 포함)" wide hint="한 줄에 하루 (예: 2026-12-25). 이 날은 차대금 재촉 알림이 안 울리고 근태 '미출근'도 안 뜹니다. 임시공휴일이 생기면 여기에 넣으세요.">
           <textarea rows="5" value=${cfg.hol} onInput=${e => setCfg({ ...cfg, hol: e.target.value })}></textarea><//>
-      </div><div class="bar"><span class="grow"></span><button class="btn primary" onClick=${설정저장}>설정 저장</button></div></div>`;
+      </div>
+      <h3 style="margin-top:8px">사람마다 근무시간</h3>
+      <p class="muted small">넣은 사람은 이 시각으로 지각·조퇴를 보고, 차대금 재촉 알림도 이 시간(평일)에만 갑니다. 비우면 위 기본 시각.</p>
+      <table class="grid"><tbody>${d.members.map(m => { const p = cfg.people[m.user_id] || {}; return html`<tr>
+        <td><span class="row" style="gap:8px;align-items:center"><${Avatar} name=${m.name} id=${m.user_id} size=${24} />${m.name}${m.role === "staff" ? html` <span class="muted small">사무장</span>` : ""}</span></td>
+        <td><input type="time" value=${p.start || ""} onInput=${e => 사람시간(m.user_id, "start", e.target.value)} /> ~ <input type="time" value=${p.end || ""} onInput=${e => 사람시간(m.user_id, "end", e.target.value)} /></td>
+        <td class="small muted">${p.start && p.end ? "" : `기본 ${cfg.start} ~ ${cfg.end}`}</td></tr>`; })}</tbody></table>
+      <div class="bar"><span class="grow"></span><button class="btn primary" onClick=${설정저장}>설정 저장</button></div></div>`;
 }

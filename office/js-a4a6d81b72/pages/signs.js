@@ -5,6 +5,7 @@
 import { html, useState, useEffect, Loading, Empty, Badge, run, toast, go, won, Money, Field } from "../ui.js";
 import { q } from "../db.js";
 import { 주행공제 } from "../calc.js";
+import { A4Preview, A4PDF저장 } from "../a4.js";
 
 const 매수자 = "김상혁 (티어원)", 매수자주소 = "부산광역시 기장군 장안읍 반룡산단3로 95, 604호, 605호(경동오토필드)";
 const 조항 = [
@@ -100,10 +101,11 @@ function SignView({ app, id }) {
       ${r.car_id && html`<a class="btn" href=${"#/car/" + r.car_id}>차 화면 (${r.cars?.plate})</a>`}
       ${admin && !ssn && !환불(r) && html`<button class="btn" onClick=${reveal} title="대표만 · 열람 기록이 남습니다">주민번호 원문 넣기</button>`}
       <button class="btn" onClick=${check}>${r.checked_at ? "확인 취소" : "확인함"}</button>
-      <button class="btn primary" onClick=${() => window.print()}>인쇄·PDF 저장</button>
+      <button class="btn" onClick=${() => window.print()}>🖨 인쇄</button>
+      <button class="btn primary" onClick=${() => run(() => A4PDF저장(`${환불(r) ? "3일환불약정서" : "비사업용확인서"}_${(r.car_no || "").replace(/\s/g, "")}_${r.name || ""}.pdf`), "PDF 파일로 저장했습니다")}>📄 PDF 저장</button>
       ${admin && html`<button class="btn danger" onClick=${remove}>삭제</button>`}</div>
     ${환불(r) && html`<${환불계산} r=${r} />`}
-    ${환불(r) ? html`<${RefundPaper} r=${r} sig=${sig} 날짜=${날짜} TR=${TR} />` : html`<div class="sign-paper">
+    ${환불(r) ? html`<${RefundPaper} r=${r} sig=${sig} 날짜=${날짜} TR=${TR} />` : html`<${A4Preview} deps=${[r.id, sig, ssn]}>
       <h1>비사업용 사실확인서</h1>
       <div class="sec">※ 매각차량</div>
       <table>${TR("차량번호", r.car_no)}${TR("차명", r.car_name)}${TR("소유자", r.name)}</table>
@@ -115,8 +117,8 @@ function SignView({ app, id }) {
       <table><tr><th>성명</th><td class="owner">${r.name}<span class="sigwrap"><span class="sigmark">(서명)</span>${sig && html`<img class="sig" src=${sig} />`}</span></td></tr>
         ${TR("주민등록번호", ssn || r.ssn_masked)}${TR("주소", r.address)}${TR("전화번호", r.phone)}${r.biz_no && TR("사업자등록번호", r.biz_no)}</table>
       <div class="buyer">매수자 : ${매수자} · ${매수자주소}<br />전자서명 접수 : ${kst(r.created_at)} · 1·2·3항 확인 체크 ${r.agreed ? "완료" : "없음"}</div>
-    </div>`}
-    <p class="note no-print">인쇄 창에서 'PDF로 저장'을 고르면 파일로 보관됩니다.${환불(r) ? " 약관은 고객이 서명할 때 본 원문 그대로입니다." : " 주민번호 원문은 대표만 넣을 수 있고, 넣을 때마다 열람 기록이 남습니다."}</p>`;
+    <//>`}
+    <p class="note no-print">미리보기는 A4 그대로입니다. [🖨 인쇄]는 프린터로, [📄 PDF 저장]은 A4 PDF 파일로 내려받습니다.${환불(r) ? " 약관은 고객이 서명할 때 본 원문 그대로입니다." : " 주민번호 원문은 대표만 넣을 수 있고, 넣을 때마다 열람 기록이 남습니다."}</p>`;
 }
 
 const 출발글 = d => { const [y, m, n] = d.split("-").map(Number); return `${y}년 ${m}월 ${n}일 (${요일[new Date(Date.UTC(y, m - 1, n)).getUTCDay()]})`; };
@@ -153,7 +155,7 @@ function RefundPaper({ r, sig, 날짜, TR }) {
   const t = r.terms || { title: "3일 환불 약정서", clauses: [], seller: "TierONE (티어원)" };
   const k = r.deadline ? new Date(Date.parse(r.deadline) + 9 * 3600e3) : null;
   const 기한 = k ? `${k.getUTCFullYear()}년 ${k.getUTCMonth() + 1}월 ${k.getUTCDate()}일 (${요일[k.getUTCDay()]}) ${k.getUTCHours()}시까지` : "-";
-  return html`<div class="sign-paper">
+  return html`<${A4Preview} deps=${[r.id, sig]}>
     <h1>${t.title}</h1>
     <div class="sec">※ 매매 차량</div>
     <table>${TR("차량번호", r.car_no)}${TR("차명", r.car_name)}${TR("주행거리", r.mileage != null ? `${Number(r.mileage).toLocaleString()} km (인도 전 계기판)` : "-")}${TR("환불기한", 기한)}</table>
@@ -166,7 +168,7 @@ function RefundPaper({ r, sig, 날짜, TR }) {
       ${TR("생년월일", r.birth)}${TR("주소", r.address)}${TR("전화번호", r.phone)}</table>
     <div class="buyer">매도인 : ${t.seller}${t.seller_addr ? ` · ${t.seller_addr}` : ""}${t.seller_tel ? ` · ${t.seller_tel}` : ""}<br />
       전자서명 접수 : ${kst(서명시각(r))} · ${r.prepared ? "안내 사항·" : ""}약관 확인 체크 ${r.agreed ? "완료" : "없음"}${t.ver ? ` · 약관 ${t.ver}` : ""}</div>
-  </div>`;
+  <//>`;
 }
 
 /** 대시보드 위젯: 아직 확인 안 한 서류 */

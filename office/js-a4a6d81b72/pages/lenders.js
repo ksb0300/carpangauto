@@ -143,7 +143,7 @@ export function LenderOverview({ app }) {
       const used = mine.reduce((s, l) => s + n(l.amount) - n(l.principal_repaid), 0) + n(x.existing_amount), lim = n(x.credit_limit);
       const 열림 = !!펼침[x.id], 급한것 = mine.filter(l => ["red", "amber"].includes(할일(l, x, t).tone)).length;
       return html`<div class="card lender" id=${"lender-" + x.id}>
-        <div class="bar" style="cursor:pointer" onClick=${() => set펼침(p => ({ ...p, [x.id]: !열림 }))}><h3>${열림 ? "▾" : "▸"} ${x.name}</h3>${!x.active && html`<span class="badge gray">사용 안 함</span>`}
+        <div class="bar" style=${"cursor:pointer" + (열림 ? "" : ";margin-bottom:0")} onClick=${() => set펼침(p => ({ ...p, [x.id]: !열림 }))}><h3>${열림 ? "▾" : "▸"} ${x.name}</h3>${!x.active && html`<span class="badge gray">사용 안 함</span>`}
           <span class="muted small">${mine.length}건${급한것 ? html` · <span class="badge amber">챙길 것 ${급한것}</span>` : ""}</span><span class="grow"></span>
           <span class="muted small">${lim ? `한도 ${won(lim)} · 사용 ${won(used)} · 잔여 ` : `사용 ${won(used)}`}${lim ? html`<b class=${lim - used < 0 ? "red" : ""}>${won(lim - used)}</b>` : ""}</span>
           <button class="btn sm" onClick=${e => { e.stopPropagation(); go(`/loans/lender/${x.id}`); }}>조건 설정</button></div>

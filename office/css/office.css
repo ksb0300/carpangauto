@@ -268,8 +268,24 @@ a.stat { color: inherit; } a.stat:hover { border-color: var(--pri); }
 .sign-paper .sig { position: absolute; left: 0; top: 0; width: 116px; height: 42px; }
 .sign-paper .buyer { margin-top: 16px; padding-top: 8px; border-top: 1px solid #bbb; font-size: 10px; color: #555; }
 @media print {
-  body:has(.sign-paper) .page > *:not(.sign-paper) { display: none !important; }
+  body:has(.sign-paper) .page > *:not(.sign-paper):not(.a4-wrap) { display: none !important; }
   .sign-paper { border: 0; border-radius: 0; max-width: none; margin: 0; }
+}
+/* A4 공식 문서 미리보기 (a4.js) — 회색 바탕 위 A4 종이(여백 15mm), 인쇄는 쪽 그대로 */
+.a4-wrap { position: relative; }
+.sign-paper.a4src { position: absolute; left: -10000px; top: 0; width: 680px; max-width: none; border: 0; border-radius: 0; padding: 0; margin: 0; }
+.a4-pages { background: #e4e6ea; border-radius: 10px; padding: 18px 0; overflow: hidden; }
+.a4page { width: 794px; height: 1123px; box-sizing: border-box; padding: 57px 57px 0; margin: 0 auto 18px; background: #fff; position: relative;
+  box-shadow: 0 1px 3px rgba(0,0,0,.12), 0 8px 24px rgba(0,0,0,.08); }
+.a4page:last-child { margin-bottom: 0; }
+.sign-paper.a4body { width: 680px; max-width: none; border: 0; border-radius: 0; padding: 0; margin: 0; display: flow-root; }
+.a4no { position: absolute; left: 0; right: 0; bottom: 22px; text-align: center; font-size: 11px; color: #666; }
+@media print {
+  @page { size: A4; margin: 0; }
+  .a4src { display: none !important; }
+  .a4-pages { background: none; padding: 0; border-radius: 0; }
+  .a4page { zoom: 1 !important; box-shadow: none; margin: 0; break-after: page; width: 210mm; height: 297mm; padding: 15mm 15mm 0; }
+  .a4page:last-child { break-after: auto; }
 }
 
 /* 메뉴 '기타' 펼침 */
