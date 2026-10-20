@@ -68,7 +68,19 @@
   .perfimgs .pimg img{width:100%;display:block}
   .perfimgs .pimg.zoom{cursor:zoom-out} .perfimgs .pimg.zoom img{width:260%;max-width:none}
   .perfpdf{display:block;text-align:center;margin-top:8px;color:var(--tx3)}
+  /* 사본 A4 미리보기 (pad.js a4Pages) — 회색 바탕 위 A4 종이, 인쇄·PDF 와 같은 모양 */
+  .paper.a4src{position:absolute;left:-10000px;top:0;width:680px;max-width:none;padding:0;margin:0;border-radius:0}
+  .a4-pages{background:#2a2c33;border-radius:12px;padding:14px 0;margin-top:18px;overflow:hidden;text-align:left}
+  .a4page{width:794px;height:1123px;box-sizing:border-box;padding:57px 57px 0;margin:0 auto 14px;background:#fff;position:relative;box-shadow:0 6px 20px rgba(0,0,0,.35)}
+  .a4page:last-child{margin-bottom:0}
+  .paper.a4body{width:680px;max-width:none;padding:0;margin:0;border-radius:0;background:none;display:flow-root}
+  .a4no{position:absolute;left:0;right:0;bottom:22px;text-align:center;font-size:11px;color:#666}
+  .copybtns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:14px}
+  .copybtns .ghostbtn{border-color:var(--pp);color:#fff;padding:11px 18px;font-size:15px}
   @media print{
-    body *{visibility:hidden} .paper,.paper *{visibility:visible}
-    .paper{position:absolute;left:0;top:0;margin:0;max-width:none;width:100%;border-radius:0;padding:30px 46px}
+    @page{size:A4;margin:0}
+    body *{visibility:hidden} .a4-pages,.a4-pages *{visibility:visible}
+    .a4-pages{position:absolute;left:0;top:0;background:none;padding:0;margin:0;border-radius:0}
+    .a4page{zoom:1 !important;box-shadow:none;margin:0;break-after:page;width:210mm;height:297mm;padding:15mm 15mm 0}
+    .a4page:last-child{break-after:auto}
   }

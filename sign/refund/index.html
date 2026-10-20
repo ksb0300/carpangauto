@@ -9,7 +9,7 @@
 <link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="stylesheet" href="/assets/style.css?v=8bb9c7a9">
-<link rel="stylesheet" href="/sign/sign.css?v=3">
+<link rel="stylesheet" href="/sign/sign.css?v=4">
 </head>
 <body>
 
@@ -97,15 +97,16 @@
       <h2>제출되었습니다</h2>
       <p>3일 환불 약정서가 접수되었습니다. 감사합니다.</p>
       <p>환불 신청 기한: <b id="doneDeadline"></b></p>
-      <p style="margin-top:14px"><button class="ghostbtn" type="button" id="print" style="border-color:var(--pp);color:#fff">약정서 사본 저장·인쇄</button></p>
-      <p style="font-size:13px;color:var(--tx3)" id="printHint">인쇄 창에서 'PDF로 저장'을 고르시면 파일로 보관됩니다. 화면을 캡처해 두셔도 됩니다.</p>
-      <div class="paper" id="paper"></div>
+      <p class="copybtns"><button class="ghostbtn" type="button" id="print">🖨 인쇄</button><button class="ghostbtn" type="button" id="pdf">📄 PDF 저장</button></p>
+      <p style="font-size:13px;color:var(--tx3)" id="printHint">아래는 약정서 사본(A4)입니다. PDF 로 저장해 두시면 언제든 다시 보실 수 있습니다.</p>
+      <div class="paper a4src" id="paper"></div>
+      <div class="a4-pages" id="a4pages"></div>
     </div>
   </div>
 </section>
 
 <script src="/assets/site.js?v=42ab3af3"></script>
-<script src="/sign/pad.js?v=3"></script>
+<script src="/sign/pad.js?v=4"></script>
 <script>
 var API = "https://fwqtyyjhfewpxihpaasu.supabase.co/functions/v1/sign";
 var $ = function (id) { return document.getElementById(id); };
@@ -251,15 +252,17 @@ $("send").onclick = function () {
     .then(function (r) { return r.json(); })
     .then(function (res) {
       if (!res || !res.ok) throw new Error((res && res.msg) || "제출에 실패했습니다. 다시 시도해 주세요.");
-      $("paper").innerHTML = 약정서(d, d.signature, res.at, res.deadline); DOC = res.id;
+      $("paper").innerHTML = 약정서(d, d.signature, res.at, res.deadline); DOC = res.id; 파일 = "3일환불약정서_" + d.carNo.replace(/\s/g, "") + ".pdf";
       $("doneDeadline").textContent = 기한글(res.deadline);
       $("form").hidden = true; $("done").hidden = false; window.scrollTo(0, 0);
+      SignPad.a4Pages($("paper"), $("a4pages"));                    // 사본을 A4 종이로 (보이게 된 뒤에 재야 폭이 맞다)
     })
     .catch(function (e) { showErr(/fetch|network/i.test(e.message) ? "통신 오류: 인터넷 연결을 확인해 주세요." : e.message); btn.disabled = false; btn.textContent = "제출하기"; });
 };
-var DOC = null;    // 접수된 약정서 id (사본 PDF 올릴 때)
-$("print").onclick = function () { SignPad.saveCopy($("paper"), this, API, DOC); };
-if (SignPad.inApp) $("printHint").textContent = "누르면 A4 사본 PDF 가 열립니다. 저장해 두세요.";
+var DOC = null, 파일 = "3일환불약정서.pdf";    // 접수된 약정서 id (앱 안 브라우저에서 사본 PDF 올릴 때)
+$("print").onclick = function () { SignPad.printA4($("a4pages")); };
+$("pdf").onclick = function () { SignPad.savePdf($("a4pages"), this, API, DOC, 파일); };
+if (SignPad.inApp) { $("print").hidden = true; $("printHint").textContent = "아래는 약정서 사본(A4)입니다. [PDF 저장]을 누르면 PDF 가 열립니다. 저장해 두세요."; }
 </script>
 </body>
 </html>
