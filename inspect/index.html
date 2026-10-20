@@ -117,9 +117,9 @@ button, .bar, .pages { -webkit-user-select: none; user-select: none; -webkit-tou
     <button class="sw" data-color="#e0262b" style="--c:#e0262b" aria-label="빨강 펜"></button>
     <button class="sw" data-color="#1f5fd6" style="--c:#1f5fd6" aria-label="파랑 펜"></button>
     <span class="sep"></span>
-    <button class="wb" data-w="1.5" aria-label="가는 펜"><i style="height:2px"></i></button>
     <button class="wb on" data-w="2.6" aria-label="보통 펜"><i style="height:4px"></i></button>
     <button class="wb" data-w="4.6" aria-label="굵은 펜"><i style="height:7px"></i></button>
+    <button class="wb" data-w="7" aria-label="더 굵은 펜"><i style="height:10px"></i></button>
     <span class="sep"></span>
     <button class="tb" id="eraserBtn">지우개</button>
     <button class="tb" id="undoBtn">되돌리기</button>
@@ -536,12 +536,15 @@ function drawP2Bottom(c, y, 새양식 = false) {
     c.fillStyle = SUB; c.font = `600 13px ${F}`; c.textAlign = "right"; c.fillText("mm", x + 187, y + 44); c.fillText("DOT", x + 187, y + 80); c.textAlign = "left";
   });
   y += 104;
-  c.fillStyle = INK; c.font = `800 17px ${F}`; c.fillText("연료", 40, y + 22);
-  c.font = `500 16px ${F}`;
-  [["가솔린", 100], ["디젤", 205], ["LPG", 290], ["하이브리드", 370], ["전기", 500]].forEach(([t, x]) => { check(c, x, y + 4, 22); c.fillStyle = "#1d1d22"; c.fillText(t, x + 30, y + 22); });
-  c.fillStyle = INK; c.font = `800 17px ${F}`; c.fillText("스마트키", 600, y + 22);
-  c.lineWidth = 1.6; c.strokeStyle = "#2a2a30"; c.strokeRect(690, y - 2, 70, 34); c.fillStyle = "#1d1d22"; c.font = `500 16px ${F}`; c.fillText("개", 768, y + 22);
-  c.fillStyle = INK; c.font = `800 17px ${F}`; c.fillText("키 번호", 810, y + 22); c.strokeRect(880, y - 2, 80, 34);
+  if (!새양식) {    // 새 양식은 연료 칸 없음 (사용자: 중요하지 않다)
+    c.fillStyle = INK; c.font = `800 17px ${F}`; c.fillText("연료", 40, y + 22);
+    c.font = `500 16px ${F}`;
+    [["가솔린", 100], ["디젤", 205], ["LPG", 290], ["하이브리드", 370], ["전기", 500]].forEach(([t, x]) => { check(c, x, y + 4, 22); c.fillStyle = "#1d1d22"; c.fillText(t, x + 30, y + 22); });
+  }
+  const kx = 새양식 ? -560 : 0;                                   // 새 양식은 연료 자리가 비어 키 칸을 왼쪽으로
+  c.fillStyle = INK; c.font = `800 17px ${F}`; c.fillText("스마트키", 600 + kx, y + 22);
+  c.lineWidth = 1.6; c.strokeStyle = "#2a2a30"; c.strokeRect(690 + kx, y - 2, 70, 34); c.fillStyle = "#1d1d22"; c.font = `500 16px ${F}`; c.fillText("개", 768 + kx, y + 22);
+  c.fillStyle = INK; c.font = `800 17px ${F}`; c.fillText("키 번호", 810 + kx, y + 22); c.strokeRect(880 + kx, y - 2, 80, 34);
   y += 52;
   if (새양식) {     // 옵션·장착품 — 있는 것에 체크
     c.fillStyle = INK; c.font = `800 17px ${F}`; c.fillText("옵션", 40, y + 22);
@@ -735,7 +738,8 @@ function setW(w) {
   if (tool === "eraser") setTool("pen");
 }
 document.querySelectorAll(".wb").forEach(b => b.onclick = () => setW(+b.dataset.w));
-setW(penW);
+// 굵기는 보통·굵게·더 굵게 (사용자: 제일 가는 건 필요 없음) — 예전에 고른 가는 펜(1.5)이면 보통으로
+setW([...document.querySelectorAll(".wb")].some(b => +b.dataset.w === penW) ? penW : PEN_W);
 $("eraserBtn").onclick = () => setTool(tool === "eraser" ? "pen" : "eraser");
 $("undoBtn").onclick = () => { const u = undos.get(pi); if (!u || !u.length) return toast("되돌릴 것이 없습니다"); page().strokes = u.pop(); redraw(); save(); };
 function setFinger(on) {
@@ -955,6 +959,11 @@ $("backBtn").onclick = async () => { document.activeElement && document.activeEl
 
 /* ───────── 보내기 (PDF / JPG) ───────── */
 $("shareBtn").onclick = () => { $("photoMenu").hidden = true; $("shareMenu").hidden = !$("shareMenu").hidden; };
+// 보내기·사진 메뉴는 바깥 아무 데나 누르면 닫힌다 (사용자: 보내기를 다시 눌러야만 닫히던 것)
+document.addEventListener("pointerdown", e => {
+  if (!e.target.closest("#shareMenu, #shareBtn")) $("shareMenu").hidden = true;
+  if (!e.target.closest("#photoMenu, #addPhoto")) $("photoMenu").hidden = true;
+}, true);
 const stamp = () => { const d = new Date(); return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}_${String(d.getHours()).padStart(2, "0")}${String(d.getMinutes()).padStart(2, "0")}`; };
 async function jpgs() {
   const out = [];
