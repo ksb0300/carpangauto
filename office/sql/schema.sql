@@ -2301,3 +2301,21 @@ do $$ begin
 exception when others then
   raise notice '1분 알림 예약은 건너뜀 (이 DB 에는 pg_cron·pg_net·vault 가 없음): %', sqlerrm;
 end $$;
+
+
+-- 20261020000001_holidays.sql
+-- 공휴일 (2026-10-20 사용자: 차대금 재촉은 쉬는 날 안 울리게). 차대금 재촉(tick)·근태 '미출근'이 본다.
+-- 대체공휴일 포함. 해마다(또는 임시공휴일이 생기면) 근태 → 관리 → 설정에서 대표가 고친다.
+alter table settings add column holidays date[] not null default '{}';
+update settings set holidays = array[
+  '2026-01-01', '2026-02-16', '2026-02-17', '2026-02-18', '2026-03-02', '2026-05-05', '2026-05-25', '2026-06-03',
+  '2026-08-17', '2026-09-24', '2026-09-25', '2026-10-05', '2026-10-09', '2026-12-25',
+  '2027-01-01', '2027-02-08', '2027-02-09', '2027-03-01', '2027-05-05', '2027-05-13', '2027-08-16',
+  '2027-09-14', '2027-09-15', '2027-09-16', '2027-10-04', '2027-10-11', '2027-12-27'
+]::date[];
+
+-- 직원도 공휴일은 읽어야 한다 (근태 화면) — settings 는 대표만 읽으므로 함수로
+create function office_holidays() returns date[]
+language sql stable security definer set search_path = public as $$ select holidays from settings where is_office() limit 1 $$;
+revoke execute on function office_holidays() from public, anon;
+grant execute on function office_holidays() to authenticated;
