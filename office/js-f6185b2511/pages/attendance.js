@@ -30,10 +30,12 @@ function 판정(r, l, s) {
   return { tags: out, 늦음, 일찍 };
 }
 const 장소 = p => p === "사무실" ? html`<${Badge} tone="green">사무실<//>` : p === "외부" ? html`<${Badge} tone="amber">외부<//>` : p ? html`<${Badge}>위치 없음<//>` : "";
-/** 폰 위치 (안 되면 null — 기록은 그대로 되고 '위치 없음') */
+/** 폰 위치 (안 되면 null — 기록은 그대로 되고 '위치 없음').
+ *  브라우저 timeout 은 위치 권한 창에 답하기 전엔 안 흘러가서, 따로 10초 지나면 포기한다 */
 const 위치 = () => new Promise(ok => {
   if (!navigator.geolocation) return ok(null);
-  navigator.geolocation.getCurrentPosition(p => ok(p.coords), () => ok(null), { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 });
+  const t = setTimeout(() => ok(null), 10000);
+  navigator.geolocation.getCurrentPosition(p => { clearTimeout(t); ok(p.coords); }, () => { clearTimeout(t); ok(null); }, { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 });
 });
 
 export function AttendancePage({ app }) {
@@ -94,7 +96,7 @@ function 오늘({ app, d, load }) {
       <div class="att-line">
         ${r?.in_at ? html`출근 <b>${시각(r.in_at)}</b> ${장소(r.in_place)}` : html`<span class="muted">아직 출근 전 · 기준 ${s.start_time.slice(0, 5)}</span>`}
         ${r?.out_at && html` · 퇴근 <b>${시각(r.out_at)}</b> ${장소(r.out_place)}`}
-        ${r?.in_at && html` · 근무 <b>${시간글(근무)}</b>${r.out_at ? "" : " (지금까지)"}`}
+        ${r?.in_at && html` · 근무 <b>${근무 ? 시간글(근무) : "0분"}</b>${r.out_at ? "" : " (지금까지)"}`}
         ${p.tags.map(t => html` <${Badge} tone=${/지각|조퇴|안 찍음/.test(t) ? "red" : "blue"}>${t}<//>`)}
       </div>
       ${s.office_lat == null && html`<p class="note small">사무실 위치가 아직 없어 '위치 없음'으로 찍힙니다. 대표가 사무실에서 근태 → 관리 → [지금 위치를 사무실로]를 한 번 눌러 주세요.</p>`}

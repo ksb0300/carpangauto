@@ -9,7 +9,7 @@ import { q } from "../db.js";
 import { 보내기 as 알림 } from "../push.js";
 import { 모두줄이기 } from "../img.js";
 import { 구성원, 이름표, Avatar, 언제, 날짜시각 } from "../people.js";
-import { 송금읽기, 송금글, 매도읽기, 매도글, 금액, 원, 송금종류, 매도형태들, 번호판 } from "../forms.js";
+import { 송금읽기, 송금글, 매도읽기, 매도글, 금액, 원, 송금종류, 매도형태들, 번호판, 기한시각 } from "../forms.js";
 
 // [값, 이름, 아이콘, 묶음]
 const BOARDS = [
@@ -79,7 +79,7 @@ function List({ app }) {
   const [st, setSt] = useState("대기");          // 송금요청: 대기 / 완료 / 전체
   const load = () => run(async () => {
     const [p, c, r, f, star, prefs] = await Promise.all([
-      전부(() => app.db.from("board_posts").select("id, category, title, body, author_name, created_by, created_at, pinned, plate, car_id, done_at, form").order("created_at", { ascending: false })),
+      전부(() => app.db.from("board_posts").select("id, category, title, body, author_name, created_by, created_at, pinned, plate, car_id, done_at, form, publish_at, ack_at").order("created_at", { ascending: false })),
       전부(() => app.db.from("board_comments").select("post_id")),
       전부(() => app.db.from("board_reads").select("post_id, user_id, seed")),
       전부(() => app.db.from("board_files").select("post_id")),
@@ -124,7 +124,9 @@ function List({ app }) {
           <${Avatar} name=${p.author_name} size=${34} />
           <div class="bx">
             <div class="t">${새 && html`<span class="dot"></span>`}${p.pinned ? "📌 " : ""}${p.title}${d.files[p.id] ? html`<span title="첨부">📎</span>` : ""}
+              ${p.publish_at && Date.parse(p.publish_at) > Date.now() && html`<${Badge} tone="blue">🕒 예약 ${날짜시각(p.publish_at).slice(6)}<//>`}
               ${p.category === "송금요청" && (p.done_at ? html`<${Badge} tone="green">✔ 완료<//>` : html`<${Badge} tone="amber">⏳ 대기<//>`)}
+              ${p.category === "송금요청" && p.form?.kind === "매입대금" && !p.done_at && (p.ack_at ? html`<${Badge}>👀 확인<//>` : html`<${Badge} tone="red">🔔 미확인<//>`)}
               ${p.category === "매도정보" && (p.done_at ? html`<${Badge} tone="green">✔ 잔금 완료<//>` : html`<${Badge} tone="amber">⏳ ${p.form?.deposit > 0 ? "잔금 대기" : "입금 대기"}<//>`)}
               ${!게시판 && html`<span class="muted small" style="font-weight:400">${아이콘[p.category]} ${이름[p.category]}</span>`}</div>
             <div class="m">${p.author_name || "-"} · 읽음 ${d.readN[p.id] || 0}${d.cmt[p.id] ? ` · 💬 ${d.cmt[p.id]}` : ""}${p.plate ? ` · ${p.plate}${p.car_id ? " ✓" : ""}` : ""}${p.form?.amount && p.category === "송금요청" ? ` · ${원(p.form.amount)}` : ""}${p.form?.amount && p.category === "매도정보" ? ` · ${p.form.type ? p.form.type + " " : ""}${원(p.form.amount)}` : ""}</div>
@@ -138,7 +140,7 @@ function List({ app }) {
 function 송금칸({ f, set }) {
   const a = 금액(f.amountText ?? "") ?? (Number(String(f.amountText || "").replace(/[^\d]/g, "")) || null);
   return html`<div class="fgrid">
-    <${Field} label="종류"><${Seg} value=${f.kind} onChange=${v => set("kind", v)} options=${송금종류} /><//>
+    <${Field} label="종류" hint=${f.kind === "매입대금" ? "차대금 — 사무장님이 [확인] 누를 때까지 재촉 알림 (평일 9~19시)" : "알림 한 번"}><${Seg} value=${f.kind} onChange=${v => set("kind", v)} options=${송금종류} /><//>
     ${f.kind !== "업무비" && html`<${Field} label="매입경로"><${Seg} value=${f.route || ""} onChange=${v => set("route", v)} options=${경로들} /><//>`}
     <${Field} label="차량번호" hint=${f.kind === "업무비" ? "차에 쓴 돈이면 적어 주세요 (선택)" : ""}><input value=${f.plate || ""} placeholder="예: 54다8079" onInput=${e => set("plate", e.target.value)} /><//>
     <${Field} label="금액" req hint=${a ? "= " + 원(a) : "1311만 · 13,110,000 · 15000원 다 됩니다"}><input value=${f.amountText ?? ""} onInput=${e => set("amountText", e.target.value)} /><//>
@@ -228,19 +230,23 @@ function Write({ app }) {
     if (cat === "매도정보" && !form.car_name) return toast("차명을 입력하세요 (대충이라도)", "err");
     if (cat === "매도정보" && !form.amount) return toast("매도 금액을 입력하세요", "err");
     if (cat === "매도정보" && form.fee_included == null) return toast("매도비 별도·포함을 고르세요", "err");
-    const plate = 양식 ? form.plate : 번호(t.plate);
+    const plate = 양식 ? form.plate : 번호판(t.plate) || 번호(t.plate);     // '33우4535말리부' 처럼 차명을 붙여 써도 번호판만
     if (등록증 && !plate) return toast("등록증은 차량번호를 입력하세요", "err");
     const title = cat === "매도정보" ? 매도제목(form) : t.title.trim() || (cat === "송금요청" ? `${form.plate || ""} ${form.kind}${form.route ? `(${form.route})` : ""} ${form.amount % 10000 === 0 ? form.amount / 10000 + "만원" : 원(form.amount)}`.trim()
       : 등록증 ? `${plate} ${이름[cat]}` : "");
     if (!title) return toast("제목을 입력하세요", "err");
     const body = cat === "송금요청" ? (form.paste || 송금글(form, form.memo || "")) : cat === "매도정보" ? 매도글(form, form.memo || "") : t.body;
+    const 예약 = t.publish ? new Date(t.publish).toISOString() : null;
+    if (예약 && Date.parse(예약) < Date.now() - 60e3) return toast("예약 시각이 이미 지났습니다", "err");
+    const 차 = cat === "송금요청" && form.kind === "매입대금";      // 차대금: 알림·재촉은 서버(tick)가 — 평일 9~19시, [확인]까지
     setBusy(true);
     await run(async () => {
       const 올릴 = await 모두줄이기(files);
       if (올릴.some(x => x.size > MAX)) throw new Error("20MB 넘는 파일은 올릴 수 없습니다.");
       const car = plate ? await 차찾기(app, plate) : null;
       const [p] = await q(app.db.from("board_posts").insert({ category: cat, title, body, plate: plate || null, car_id: car?.id || null,
-        pinned: !!t.pinned, author_name: app.profile.name, form }).select("id"));
+        pinned: !!t.pinned, author_name: app.profile.name, form, publish_at: 예약,
+        notified_at: 예약 || 차 ? null : new Date().toISOString(), due_at: cat === "송금요청" ? 기한시각(form.due) : null }).select("id"));
       for (const x of 올릴) {
         const path = `board/${p.id}/${저장이름(x.name)}`;
         const { error } = await bucket(app).upload(path, x, { contentType: x.type, upsert: false });
@@ -249,8 +255,10 @@ function Write({ app }) {
         if (car && 등록증) await q(app.db.from("car_files").insert({ car_id: car.id, kind: CAR_KIND[cat], name: x.name, path, size: x.size, mime: x.type || null }));
       }
       try { localStorage.removeItem(임시키(app)); } catch {}
-      await 알림(app, { title: `[${이름[cat]}] ${title}`, body: `${app.profile.name}${cat === "송금요청" && form.amount ? " · " + 원(form.amount) + (form.payee ? " → " + form.payee : "") : t.body ? " · " + t.body.trim().slice(0, 80) : ""}`,
+      if (!예약 && !차) await 알림(app, { title: `[${이름[cat]}] ${title}`, body: `${app.profile.name}${cat === "송금요청" && form.amount ? " · " + 원(form.amount) + (form.payee ? " → " + form.payee : "") : t.body ? " · " + t.body.trim().slice(0, 80) : ""}`,
         url: "/office/#/board/" + p.id, tag: "board-" + p.id, exclude_self: true, pref: "board:" + cat });
+      if (예약) toast(`${날짜시각(예약)}에 올라가고 그때 알림이 갑니다.`);
+      else if (차) toast("사무장님께 알림이 갑니다 — [확인]을 누를 때까지 재촉 (평일 9~19시)");
       if (cat === "송금요청") {       // 이미 나간 돈이면 바로 짝지어 완료
         const { data } = await app.db.rpc("board_match_payments");
         if ((data || []).some(x => x.post_id === p.id)) toast("통장에 이미 나간 출금이 있어 '통장 확인'으로 완료했습니다.");
@@ -274,6 +282,8 @@ function Write({ app }) {
       <div class="fgrid">
         <${Field} label="게시판"><${Select} value=${cat} onChange=${setCat} options=${BOARDS.map(b => [b[0], `${b[2]} ${b[1]}`])} /><//>
         <${Field} label="필독"><span class=${"toggle" + (t.pinned ? " on" : "")} style="min-height:38px" onClick=${e => { e.preventDefault(); setx("pinned", !t.pinned); }}><i></i>목록 맨 위에 고정</span><//>
+        <${Field} label="예약 게시 (선택)" hint=${t.publish ? "이 시각에 올라가고 그때 알림이 갑니다" : "비우면 바로 올라갑니다"}>
+          <input type="datetime-local" value=${t.publish || ""} onInput=${e => setx("publish", e.target.value)} /><//>
       </div>
       ${cat !== "매도정보" && html`<${Field} label="제목" wide hint=${양식 || 등록증 ? "비워 두면 자동으로 지어집니다" : ""}><input value=${t.title} onInput=${e => setx("title", e.target.value)} /><//>`}
       ${cat === "송금요청" && html`<div class="tpl" style="max-width:none">
@@ -397,6 +407,7 @@ function Post({ app, id }) {
     if (v) await 알림(app, { title: `✔ ${완료이름}: ${p.title}`, body: `${app.profile.name} 처리`, url, tag: "board-c-" + id, to_users: 관계자() });
     load();
   }, v ? "완료로 표시했습니다" : "완료를 취소했습니다");
+  const 확인 = () => run(async () => { await q(app.db.rpc("board_ack", { p_id: id })); load(); }, "확인했습니다 — 재촉 알림이 멈춥니다");
   const 별 = () => run(async () => {
     if (x.star) await q(app.db.from("board_stars").delete().eq("post_id", id).eq("user_id", me));
     else await q(app.db.from("board_stars").insert({ post_id: id }));
@@ -413,7 +424,9 @@ function Post({ app, id }) {
     const form = 양식 ? 양식정리(p.category, { ...edit.f, memo: edit.f.memo || null }) : p.form;
     if (매도 && (!form.plate || !form.car_name || !form.amount || form.fee_included == null)) throw new Error("차량번호·차명·매도 금액·매도비(별도/포함)는 꼭 넣어 주세요");
     const body = 송금 ? (form.paste || 송금글(form, form.memo || "")) : p.category === "매도정보" ? 매도글(form, form.memo || "") : edit.body;
-    await q(app.db.from("board_posts").update({ title: p.category === "매도정보" ? 매도제목(form) : edit.title.trim() || p.title, body, form, plate: 양식 ? form.plate : p.plate, updated_at: new Date().toISOString() }).eq("id", id));
+    const 기한 = 송금 ? 기한시각(form.due) : null;
+    await q(app.db.from("board_posts").update({ title: p.category === "매도정보" ? 매도제목(form) : edit.title.trim() || p.title, body, form, plate: 양식 ? form.plate : p.plate, updated_at: new Date().toISOString(),
+      ...(송금 ? { due_at: 기한, ...(기한 !== p.due_at ? { due_warned_at: null } : {}) } : {}) }).eq("id", id));
     setEdit(null); load();
   }, "고쳤습니다");
   const del = () => ask("이 글을 지울까요? 첨부도 함께 지워집니다. (차에 붙인 등록증은 그대로 남습니다)") && run(async () => {
@@ -451,6 +464,11 @@ function Post({ app, id }) {
         <button class="btn sm ghost" onClick=${() => ask("송금 완료를 취소할까요?") && 완료(false)}>완료 취소</button></div>`
       : html`<div class="bank-ok bank-wait">⏳ <b>송금 대기</b> <span class="muted small">금액·예금주가 맞는 출금이 통장에 들어오면 자동으로 완료 · 댓글 '입완'으로도 완료</span><span class="grow"></span>
         <button class="btn sm primary" onClick=${() => 완료(true)}>✔ 송금 완료</button></div>`)}
+    ${송금 && p.form?.kind === "매입대금" && !p.done_at && html`<div class=${"bank-ok" + (p.ack_at ? "" : " bank-wait")}>${p.ack_at
+      ? html`👀 <b>${p.ack_by || ""} 확인</b> <span class="muted small">${날짜시각(p.ack_at)} · 재촉 끝</span>`
+      : html`🔔 <b>사무장 확인 전</b> <span class="muted small">[확인]을 누를 때까지 평일 9~19시에 재촉합니다 (최대 3번)</span><span class="grow"></span>
+        <button class="btn sm primary" onClick=${확인}>👀 확인했어요</button>`}</div>`}
+    ${p.publish_at && Date.parse(p.publish_at) > Date.now() && html`<p class="note">🕒 ${날짜시각(p.publish_at)}에 올라가고 그때 알림이 갑니다. 지금은 쓴 사람과 대표만 보입니다.</p>`}
     ${매도 && p.form?.amount && html`<${잔금줄} p=${p} ins=${x.ins || []} 완료=${완료} />`}
 
     ${edit ? html`<div style="margin-top:14px">

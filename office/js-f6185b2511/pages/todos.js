@@ -9,6 +9,9 @@ import { 구성원, 이름표, Avatar, 언제, 날짜시각 } from "../people.js
 
 const 요일 = "일월화수목금토";
 const 기한글 = d => { if (!d) return ""; const x = new Date(d + "T00:00:00"); return `${x.getMonth() + 1}. ${x.getDate()}.(${요일[x.getDay()]})`; };
+/** '언제' 글: 오늘 13:00 / 내일 / 10. 21.(수) 09:30 — 시각을 넣으면 10분 전에 알림 */
+const 언제글 = (d, t) => { if (!d) return ""; const 날 = d === today() ? "오늘" : d === 내일() ? "내일" : 기한글(d); return t ? `${날} ${String(t).slice(0, 5)}` : 날; };
+const 내일 = () => new Date(Date.now() + 33 * 3600e3).toISOString().slice(0, 10);
 const 기한색 = (d, done) => !d || done ? "" : d < today() ? "red" : d === today() ? "amber" : "";
 const 보기들 = [["담당", "담당 할 일", "📥"], ["요청", "요청 할 일", "📤"], ["전체", "전체 할 일", "🗂"], ["완료", "완료", "✔"]];
 
@@ -20,9 +23,10 @@ export function TodosPage({ app }) {
   const [sel, setSel] = useState(null);           // 상세로 연 할 일 id
   const [t, setT] = useState("");
   const [due, setDue] = useState("");
+  const [tm, setTm] = useState("");
   const [who, setWho] = useState(me);
   const load = () => run(async () => {
-    const [r, m] = await Promise.all([q(app.db.from("todos").select("*").order("done").order("due", { ascending: true, nullsFirst: false }).order("created_at", { ascending: false }).limit(500)), 구성원(app)]);
+    const [r, m] = await Promise.all([q(app.db.from("todos").select("*").order("done").order("due", { ascending: true, nullsFirst: false }).order("due_time", { ascending: true, nullsFirst: false }).order("created_at", { ascending: false }).limit(500)), 구성원(app)]);
     setRows(r); setMembers(m);
   });
   useEffect(() => { load(); }, []);
@@ -32,9 +36,10 @@ export function TodosPage({ app }) {
   const add = () => run(async () => {
     if (!t.trim()) return;
     const 담당 = who || null;
-    const [r] = await q(app.db.from("todos").insert({ title: t.trim(), due: due || null, assignee_id: 담당, assignee: 담당 ? 이름(담당) : null, author_name: 나 }).select("id"));
-    if (담당 && 담당 !== me) await 알림(app, { title: `📋 할 일 요청: ${t.trim()}`, body: `${나}${due ? " · 기한 " + 기한글(due) : ""}`, url: "/office/#/todos", tag: "todo-" + r.id, to_users: [담당], pref: "todo" });
-    setT(""); setDue(""); load();
+    if (tm && !due) throw new Error("시각을 넣으려면 날짜도 골라 주세요");
+    const [r] = await q(app.db.from("todos").insert({ title: t.trim(), due: due || null, due_time: tm || null, assignee_id: 담당, assignee: 담당 ? 이름(담당) : null, author_name: 나 }).select("id"));
+    if (담당 && 담당 !== me) await 알림(app, { title: `📋 할 일 요청: ${t.trim()}`, body: `${나}${due ? " · " + 언제글(due, tm) : ""}`, url: "/office/#/todos", tag: "todo-" + r.id, to_users: [담당], pref: "todo" });
+    setT(""); setDue(""); setTm(""); load();
   }, who && who !== me ? "맡겼습니다 — 담당자에게 알림이 갑니다" : null);
   const 체크 = r => run(async () => {
     await q(app.db.from("todos").update(r.done ? { done: false, done_by: null, done_at: null } : { done: true, done_by: 나, done_at: new Date().toISOString() }).eq("id", r.id));
@@ -63,7 +68,8 @@ export function TodosPage({ app }) {
       <div class="card td-add">
         <input class="td-title" value=${t} placeholder="새로운 할 일 (예: 54다8079 탁송 예약)" onInput=${e => setT(e.target.value)} onKeyDown=${e => { if (e.key === "Enter" && !e.isComposing) add(); }} />
         <div class="td-opts">
-          <label class="small muted">기한 <input type="date" value=${due} onInput=${e => setDue(e.target.value)} /></label>
+          <label class="small muted">언제 <input type="date" value=${due} onInput=${e => setDue(e.target.value)} /></label>
+          <label class="small muted" title="시각을 넣으면 10분 전에 담당자에게 알림이 가고 일정에도 보입니다">몇 시 <input type="time" value=${tm} onInput=${e => setTm(e.target.value)} /></label>
           <label class="small muted">담당 <select value=${who || ""} onChange=${e => setWho(e.target.value || null)}>
             <option value="">아무나</option>${members.map(m => html`<option value=${m.user_id}>${m.user_id === me ? `나 (${m.name})` : m.name}</option>`)}</select></label>
           <span class="grow"></span><button class="btn primary" onClick=${add}>${who && who !== me ? "📤 요청하기" : "저장"}</button></div>
@@ -73,7 +79,7 @@ export function TodosPage({ app }) {
           ${목록.map(r => html`<div key=${r.id} class=${"td-row" + (r.id === sel ? " on" : "") + (r.done ? " done" : "")} onClick=${() => setSel(r.id === sel ? null : r.id)}>
             <button class=${"td-chk" + (r.done ? " on" : "")} title=${r.done ? "다시 열기" : "완료"} onClick=${e => { e.stopPropagation(); 체크(r); }}>${r.done ? "✔" : ""}</button>
             <div class="bx"><div class="t">${r.title}</div>
-              <div class="m">${r.due && html`<span class=${기한색(r.due, r.done)}>기한 ${기한글(r.due)}</span> · `}담당 ${r.assignee_id ? 이름(r.assignee_id) || r.assignee : r.assignee || "아무나"}${r.created_by && r.created_by !== r.assignee_id ? ` · 요청 ${r.author_name}` : ""}${r.done ? ` · ✔ ${r.done_by} ${언제(r.done_at)}` : ""}</div></div>
+              <div class="m">${r.due && html`<span class=${기한색(r.due, r.done)}>${r.due_time ? html`⏰ <b>${언제글(r.due, r.due_time)}</b>` : `기한 ${언제글(r.due)}`}</span> · `}담당 ${r.assignee_id ? 이름(r.assignee_id) || r.assignee : r.assignee || "아무나"}${r.created_by && r.created_by !== r.assignee_id ? ` · 요청 ${r.author_name}` : ""}${r.done ? ` · ✔ ${r.done_by} ${언제(r.done_at)}` : ""}</div></div>
             ${r.assignee_id && html`<${Avatar} name=${이름(r.assignee_id) || r.assignee} size=${28} />`}</div>`)}</div>`}</div>
         ${고른 && html`<${상세} app=${app} r=${고른} members=${members} onClose=${() => setSel(null)} onChange=${load} />`}
       </div>
@@ -87,10 +93,11 @@ function 상세({ app, r, members, onClose, onChange }) {
   const set = (k, v) => setF(x => ({ ...x, [k]: v }));
   const save = () => run(async () => {
     const 바뀐담당 = (f.assignee_id || null) !== (r.assignee_id || null);
-    await q(app.db.from("todos").update({ title: f.title.trim() || r.title, memo: f.memo || null, due: f.due || null,
+    if (f.due_time && !f.due) throw new Error("시각을 넣으려면 날짜도 골라 주세요");
+    await q(app.db.from("todos").update({ title: f.title.trim() || r.title, memo: f.memo || null, due: f.due || null, due_time: f.due_time || null,
       assignee_id: f.assignee_id || null, assignee: f.assignee_id ? 이름표(members, f.assignee_id) : null }).eq("id", r.id));
     if (바뀐담당 && f.assignee_id && f.assignee_id !== me)
-      await 알림(app, { title: `📋 할 일 요청: ${f.title}`, body: `${나}${f.due ? " · 기한 " + 기한글(f.due) : ""}`, url: "/office/#/todos", tag: "todo-" + r.id, to_users: [f.assignee_id], pref: "todo" });
+      await 알림(app, { title: `📋 할 일 요청: ${f.title}`, body: `${나}${f.due ? " · " + 언제글(f.due, f.due_time) : ""}`, url: "/office/#/todos", tag: "todo-" + r.id, to_users: [f.assignee_id], pref: "todo" });
     onChange();
   }, "저장했습니다");
   const del = () => ask(`'${r.title}' 을(를) 지울까요?`) && run(async () => { await q(app.db.from("todos").delete().eq("id", r.id)); onClose(); onChange(); }, "지웠습니다");
@@ -98,7 +105,9 @@ function 상세({ app, r, members, onClose, onChange }) {
     <div class="bar"><b>상세</b><span class="grow"></span><button class="btn sm ghost" onClick=${onClose}>닫기 ✕</button></div>
     <label class="field wide"><span class="lab">할 일</span><input value=${f.title} onInput=${e => set("title", e.target.value)} /></label>
     <div class="fgrid">
-      <label class="field"><span class="lab">기한</span><input type="date" value=${f.due || ""} onInput=${e => set("due", e.target.value)} /></label>
+      <label class="field"><span class="lab">언제</span><input type="date" value=${f.due || ""} onInput=${e => set("due", e.target.value)} /></label>
+      <label class="field"><span class="lab">몇 시 (선택)</span><input type="time" value=${(f.due_time || "").slice(0, 5)} onInput=${e => set("due_time", e.target.value)} />
+        <small class="hint">넣으면 10분 전에 담당자 폰으로 알림 · 일정에도 보임</small></label>
       <label class="field"><span class="lab">담당</span><select value=${f.assignee_id || ""} onChange=${e => set("assignee_id", e.target.value || null)}>
         <option value="">아무나</option>${members.map(m => html`<option value=${m.user_id}>${m.user_id === me ? `나 (${m.name})` : m.name}</option>`)}</select></label>
     </div>

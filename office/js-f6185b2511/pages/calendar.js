@@ -37,15 +37,18 @@ export function CalendarPage({ app }) {
 
   const load = () => run(async () => {
     const [from, to] = 범위;
-    const [e, loans, res, m, w] = await Promise.all([
+    const [e, loans, res, m, w, tds] = await Promise.all([
       q(app.db.from("calendar_events").select("*").lte("d", to).or(`d_end.gte.${from},and(d_end.is.null,d.gte.${from})`).order("d").order("start_time", { nullsFirst: true })),
       q(app.db.from("car_loans").select("*, cars(plate, car_name)").eq("status", "진행중")),
       // 엔카 광고장 예약 내역 (직접 한 예약 포함 — 사무실 PC 가 엔카 '예약조회'를 10분마다 읽어 넣는다)
       q(app.db.from("encar_reservations").select("*").is("gone_at", null).gte("res_date", from).lte("res_date", to).order("res_time")),
       구성원(app),
       q(app.db.from("encar_reserve_worker").select("sync_at, sync_msg, seen_at")),
+      // 시각을 넣은 할 일 → 담당자 줄에 (누르면 할 일 화면)
+      q(app.db.from("todos").select("id, title, due, due_time, assignee_id, created_by").eq("done", false).not("due_time", "is", null).gte("due", from).lte("due", to)),
     ]);
-    setEv(e); setMembers(m); set동기(w[0] || null);
+    setEv([...e, ...tds.map(t => ({ id: "todo-" + t.id, d: t.due, start_time: t.due_time, title: t.title, owner_id: t.assignee_id || t.created_by, color: "blue", auto: "할 일", href: "#/todos" }))]);
+    setMembers(m); set동기(w[0] || null);
     const a = [];
     for (const l of loans) {
       const 만기 = 대출상태(l, today()).만기;
@@ -76,7 +79,7 @@ export function CalendarPage({ app }) {
   const 제목 = view === "월간" ? `${at.slice(0, 4)}. ${+at.slice(5, 7)}` : `${+범위[0].slice(5, 7)}.${+범위[0].slice(8)} - ${+범위[1].slice(5, 7)}.${+범위[1].slice(8)}`;
   const 모두 = [...(ev || []), ...auto];
   const Chip = (e, 이름도) => html`<div class="cal-ev" style=${`border-left-color:${색값[e.color] || 색값.blue}`} title=${e.title} onClick=${x => { x.stopPropagation(); 열기(e); }}>
-    ${e.start_time && html`<b>${시간(e.start_time)}${e.end_time ? "~" + 시간(e.end_time) : ""}</b>`}${이름도 && e.owner_id ? `${이름표(members, e.owner_id).slice(0, 3)} · ` : ""}${e.auto ? (e.auto === "재고금융" ? "🏦 " : "📣 ") : ""}${e.title}</div>`;
+    ${e.start_time && html`<b>${시간(e.start_time)}${e.end_time ? "~" + 시간(e.end_time) : ""}</b>`}${이름도 && e.owner_id ? `${이름표(members, e.owner_id).slice(0, 3)} · ` : ""}${e.auto ? (e.auto === "재고금융" ? "🏦 " : e.auto === "할 일" ? "📋 " : "📣 ") : ""}${e.title}</div>`;
 
   return html`<div class="bd">
     <aside class="bd-side">

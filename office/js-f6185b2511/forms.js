@@ -120,6 +120,22 @@ export function 송금글(f, memo = "") {
   ].filter(x => x !== false && x != null).join("\n").trim();
 }
 
+/** 송금 기한 글 → 시각(ISO). "10/19 10:30 탁송 출발" · "10월 19일 10시 30분" · "14:00"(오늘) · "10/20 9시".
+ *  시각이 없으면 null (날짜만으로는 알림 시각을 못 정한다). now 는 시험용 */
+export function 기한시각(text, now = new Date()) {
+  const s = String(text ?? "");
+  const t = s.match(/(\d{1,2})\s*:\s*(\d{2})/) || s.match(/(\d{1,2})\s*시\s*(?:(\d{1,2})\s*분|반)?/);
+  if (!t) return null;
+  const h = +t[1], mi = t[2] ? +t[2] : /반/.test(t[0]) ? 30 : 0;
+  if (h > 23 || mi > 59) return null;
+  const k = new Date(now.getTime() + 9 * 3600e3);
+  let y = k.getUTCFullYear(), m = k.getUTCMonth() + 1, d = k.getUTCDate();
+  const dm = s.match(/(\d{1,2})\s*[/.월]\s*(\d{1,2})\s*일?/);
+  if (dm && dm.index < t.index) { m = +dm[1]; d = +dm[2]; if (m < k.getUTCMonth() + 1 - 6) y++; }
+  else if (/내일/.test(s)) d++;
+  return new Date(Date.UTC(y, m - 1, d, h - 9, mi)).toISOString();
+}
+
 /** 매도정보 글('항목: 값' 줄, 옮겨 온 웍스 양식) → 칸 */
 export function 매도읽기(text, { title = "" } = {}) {
   const s = String(text ?? "");
