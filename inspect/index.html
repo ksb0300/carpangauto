@@ -434,14 +434,18 @@ function drawP1(c) {
 
 /* ── 2026-10-20 새 양식 (카온사이트식) ──
    1쪽 'd1': 도면 한 장(위: 외판 펼친 모습·골격 판 / 아래: 앞범퍼·뒷범퍼 — tools/make_diagram.py 로 만든 diag.jpg)에 펜으로 기호를 쓴다.
-   2쪽 'd2': 점검표는 '이상' 한 칸 — 비워 두면 양호 (사용자: 양호·주의·불량 120칸이 너무 많다).
+   2쪽 'd2': 점검표는 양호·이상 두 칸 (사용자: 양호·주의·불량 120칸이 너무 많다 → '이상' 하나 → 양호도 있어야 함).
    예전 검수지(p1·p2)는 저장된 선 위치가 그 양식에 맞으니 예전 그림 그대로 보인다. */
-const DIAG = new Image(); DIAG.src = "diag.jpg";
-const diagReady = DIAG.decode().catch(() => {});
-/** '이상' 한 칸짜리 점검표 */
-function checklist1(c, x0, y0, w, groups, RH, itemSize = 17, label = "이상") {
-  const cx = x0 + w - 56, n = groups.reduce((s, g) => s + g[1].length, 0);
-  c.font = `700 14px ${F}`; c.textAlign = "center"; c.fillStyle = "#dc2626"; c.fillText(label, cx + 23, y0 - 8); c.textAlign = "left";
+const DIAG = new Image();
+// decode() 는 화면이 가려져 있으면 안 끝나는 일이 있어 load 로 기다린다 (5초 넘으면 그림 없이라도 그린다)
+const diagReady = new Promise(ok => { DIAG.onload = DIAG.onerror = ok; setTimeout(ok, 5000); });
+DIAG.src = "diag.jpg";
+/** 칸 적은 점검표 — labels 예: ["양호", "이상"] / ["있음"]. 마지막 칸 자리는 늘 같다(오른쪽 끝 −56) — 이미 쓴 검수지의 '이상' 표시가 어긋나지 않게 */
+function checklist1(c, x0, y0, w, groups, RH, itemSize = 17, labels = ["양호", "이상"]) {
+  const cols = labels.map((_, i) => x0 + w - 56 - (labels.length - 1 - i) * 46), n = groups.reduce((s, g) => s + g[1].length, 0);
+  c.font = `700 14px ${F}`; c.textAlign = "center";
+  labels.forEach((t, i) => { c.fillStyle = t === "양호" ? "#15803d" : "#dc2626"; c.fillText(t, cols[i] + 23, y0 - 8); });
+  c.textAlign = "left";
   c.lineWidth = 1.6; c.strokeStyle = "#2a2a30"; c.strokeRect(x0, y0, w, RH * n);
   let y = y0;
   for (const [g, items] of groups) {
@@ -449,7 +453,7 @@ function checklist1(c, x0, y0, w, groups, RH, itemSize = 17, label = "이상") {
     items.forEach((t, i) => {
       if (i) { c.lineWidth = 1; c.strokeStyle = "#dadae0"; c.beginPath(); c.moveTo(x0 + 58, y); c.lineTo(x0 + w, y); c.stroke(); }
       c.fillStyle = "#1d1d22"; c.font = `500 ${itemSize}px ${F}`; c.fillText(t, x0 + 70, y + RH / 2 + itemSize * 0.36);
-      check(c, cx + 12, y + (RH - 22) / 2, 22);
+      cols.forEach(cx => check(c, cx + 12, y + (RH - 22) / 2, 22));
       y += RH;
     });
     if (g) { c.fillStyle = INK; c.font = `800 15px ${F}`; c.textAlign = "center"; c.fillText(g, x0 + 29, gy + (y - gy) / 2 + 5); c.textAlign = "left"; }
@@ -473,7 +477,7 @@ function drawD1(c) {
   c.fillStyle = "#2a2a30"; c.fillRect(40, by, 920, 2);
   // 판별 단서(이상만) + 사고 판단 + 외판 메모
   title(c, "판별 단서", 40, by + 30, 17);
-  const yy = checklist1(c, 40, by + 42, 450, [["", ["볼트 공구 자국", "실러 재작업", "단차·도장 색 차이", "유리 생산연도", "램프류 (헤드·테일)"]]], 28, 15, "있음");
+  const yy = checklist1(c, 40, by + 42, 450, [["", ["볼트 공구 자국", "실러 재작업", "단차·도장 색 차이", "유리 생산연도", "램프류 (헤드·테일)"]]], 28, 15, ["있음"]);
   title(c, "사고 판단", 510, by + 30, 17);
   [["무사고", 600], ["단순교환", 705], ["사고", 835]].forEach(([t, x]) => { check(c, x, by + 11, 24); c.fillStyle = "#1d1d22"; c.font = `600 16px ${F}`; c.fillText(t, x + 32, by + 30); });
   box(c, 510, by + 42, 450, Math.max(yy, 1386) - (by + 42), "외판 메모");
@@ -482,7 +486,7 @@ function drawD1(c) {
 function drawD2(c) {
   head(c, "② 기능 점검");
   box(c, 660, 110, 300, 62, "차량번호");
-  c.fillStyle = SUB; c.font = `500 15px ${F}`; c.fillText("이상 있는 항목만 체크하세요 (비워 두면 양호). 내용은 아래 메모에.", 40, 146);
+  c.fillStyle = SUB; c.font = `500 15px ${F}`; c.fillText("양호·이상 중 하나에 체크하세요. 이상은 내용을 아래 메모에.", 40, 146);
   const L = [["엔진룸", ["시동", "공회전·떨림", "엔진오일 양·오염", "엔진 누유", "냉각수·누수", "벨트·풀리 소음", "배기 연기", "미션 누유", "배터리", "엔진 마운트"]],
     ["하체", ["브레이크 패드·디스크", "쇼크업소버 누유", "등속 부트", "하체 부식", "조향 장치·유격"]],
     ["서류", ["차대번호 일치", "압류·저당", "보험 이력", "정비 이력"]]];
