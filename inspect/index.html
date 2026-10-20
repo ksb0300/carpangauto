@@ -475,12 +475,31 @@ function drawD1(c) {
   c.fillText("앞범퍼", dx + dw * 0.27, dy + dh * 0.70); c.fillText("뒷범퍼", dx + dw * 0.66, dy + dh * 0.70);
   const by = Math.min(dy + dh + 8, 1180);
   c.fillStyle = "#2a2a30"; c.fillRect(40, by, 920, 2);
-  // 판별 단서(이상만) + 사고 판단 + 외판 메모
-  title(c, "판별 단서", 40, by + 30, 17);
-  const yy = checklist1(c, 40, by + 42, 450, [["", ["볼트 공구 자국", "실러 재작업", "단차·도장 색 차이", "유리 생산연도", "램프류 (헤드·테일)"]]], 28, 15, ["있음"]);
+  // 상품화 계획 (외판·휠·타이어 — 나머지는 메모) + 사고 판단 + 메모  (사용자 2026-10-20: 판별 단서는 뺌)
+  title(c, "상품화 계획", 40, by + 30, 17);
+  c.fillStyle = SUB; c.font = `italic 500 12px ${F}`; c.fillText("Reconditioning Plan", 140, by + 29);
+  // 칸마다 숫자만: 외판 몇 판 · 휠 몇 개 · 타이어 몇 개 + 예상 금액 (사용자: "숫자 적으면 되고")
+  const tx = 40, tw = 450, hy = by + 42, HR = 24, RR = (1386 - hy - HR) / 4;
+  const cQty = tx + 90, cAmt = tx + 230;                        // 수량 칸 · 예상 금액 칸 시작
+  c.lineWidth = 1.6; c.strokeStyle = "#2a2a30"; c.strokeRect(tx, hy, tw, 1386 - hy);
+  c.fillStyle = "#f4f4f7"; c.fillRect(tx + 1, hy + 1, tw - 2, HR - 1);
+  c.fillStyle = SUB; c.font = `700 13px ${F}`; c.textAlign = "center";
+  c.fillText("부위", (tx + cQty) / 2, hy + 17); c.fillText("수량", (cQty + cAmt) / 2, hy + 17); c.fillText("예상 금액", (cAmt + tx + tw) / 2, hy + 17); c.textAlign = "left";
+  c.lineWidth = 1; c.strokeStyle = "#2a2a30"; c.beginPath(); c.moveTo(tx, hy + HR); c.lineTo(tx + tw, hy + HR); c.stroke();
+  [["외판", "판"], ["휠", "개"], ["타이어", "개"], ["합계", ""]].forEach(([t, u], i) => {
+    const ry = hy + HR + RR * i;
+    if (i) { c.lineWidth = i === 3 ? 1.6 : 1; c.strokeStyle = i === 3 ? "#2a2a30" : "#dadae0"; c.beginPath(); c.moveTo(tx, ry); c.lineTo(tx + tw, ry); c.stroke(); }
+    c.fillStyle = INK; c.font = `${i === 3 ? 800 : 700} 16px ${F}`; c.textAlign = "center"; c.fillText(t, (tx + cQty) / 2, ry + RR / 2 + 6);
+    c.fillStyle = SUB; c.font = `600 13px ${F}`; c.textAlign = "right";
+    if (u) c.fillText(u, cAmt - 10, ry + RR - 8);
+    c.fillText("만원", tx + tw - 10, ry + RR - 8); c.textAlign = "left";
+  });
+  c.lineWidth = 1; c.strokeStyle = "#2a2a30";
+  [cQty, cAmt].forEach(x => { c.beginPath(); c.moveTo(x, hy); c.lineTo(x, 1386); c.stroke(); });
+  c.fillStyle = "#e9e9ee"; c.fillRect(cQty + 1, hy + HR + RR * 3 + 1, cAmt - cQty - 2, RR - 2);   // 합계 줄은 금액만
   title(c, "사고 판단", 510, by + 30, 17);
   [["무사고", 600], ["단순교환", 705], ["사고", 835]].forEach(([t, x]) => { check(c, x, by + 11, 24); c.fillStyle = "#1d1d22"; c.font = `600 16px ${F}`; c.fillText(t, x + 32, by + 30); });
-  box(c, 510, by + 42, 450, Math.max(yy, 1386) - (by + 42), "외판 메모");
+  box(c, 510, by + 42, 450, 1386 - (by + 42), "메모 (그 밖의 상품화 · 특이사항)");
   foot(c, 1);
 }
 function drawD2(c) {
