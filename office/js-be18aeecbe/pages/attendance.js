@@ -96,7 +96,7 @@ function 오늘({ app, d, load }) {
       <div class="att-line">
         ${r?.in_at ? html`출근 <b>${시각(r.in_at)}</b> ${장소(r.in_place)}` : html`<span class="muted">아직 출근 전 · 기준 ${s.start_time.slice(0, 5)}</span>`}
         ${r?.out_at && html` · 퇴근 <b>${시각(r.out_at)}</b> ${장소(r.out_place)}`}
-        ${r?.in_at && html` · 근무 <b>${시간글(근무)}</b>${r.out_at ? "" : " (지금까지)"}`}
+        ${r?.in_at && html` · 근무 <b>${근무 ? 시간글(근무) : "0분"}</b>${r.out_at ? "" : " (지금까지)"}`}
         ${p.tags.map(t => html` <${Badge} tone=${/지각|조퇴|안 찍음/.test(t) ? "red" : "blue"}>${t}<//>`)}
       </div>
       ${s.office_lat == null && html`<p class="note small">사무실 위치가 아직 없어 '위치 없음'으로 찍힙니다. 대표가 사무실에서 근태 → 관리 → [지금 위치를 사무실로]를 한 번 눌러 주세요.</p>`}
