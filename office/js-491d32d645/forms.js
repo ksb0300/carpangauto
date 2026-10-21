@@ -111,11 +111,13 @@ export function 송금읽기(text, { title = "", author = "" } = {}) {
 export function 송금글(f, memo = "") {
   return [
     `종류: ${f.kind || "-"}${f.route ? ` (${f.route})` : ""}`,
-    f.plate && `차량: ${f.plate}`,
+    (f.plate || f.car_name) && `차량: ${[f.plate, f.car_name].filter(Boolean).join(" ")}`,
     `받는 곳: ${[f.bank, f.account, f.payee].filter(Boolean).join(" ") || "-"}`,
+    f.payee_type && `받는 쪽: ${f.payee_type}${(f.payee_type === "법인" || f.payee_type === "사업자") ? ` · 계산서 ${f.invoice || "확인 안 함"}` : ""}`,
     `금액: ${f.amount ? 원(f.amount) : "-"}`,
     f.due && `기한: ${f.due}`,
     f.customer && `고객: ${f.customer}`,
+    f.handler === "대표" && "담당: 김상혁 대표",
     memo && "", memo,
   ].filter(x => x !== false && x != null).join("\n").trim();
 }

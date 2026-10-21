@@ -128,6 +128,7 @@ function List({ app }) {
               ${p.publish_at && Date.parse(p.publish_at) > Date.now() && html`<${Badge} tone="blue">🕒 예약 ${날짜시각(p.publish_at).slice(6)}<//>`}
               ${p.category === "송금요청" && (p.done_at ? html`<${Badge} tone="green">✔ 완료<//>` : html`<${Badge} tone="amber">⏳ 대기<//>`)}
               ${p.category === "송금요청" && p.form?.kind === "매입대금" && !p.done_at && (p.ack_at ? html`<${Badge}>👀 확인<//>` : html`<${Badge} tone="red">🔔 미확인<//>`)}
+              ${p.category === "송금요청" && !p.done_at && 대표담당(p.form) && html`<${Badge}>대표님 담당<//>`}
               ${p.category === "매도정보" && (p.done_at ? html`<${Badge} tone="green">✔ 잔금 완료<//>` : html`<${Badge} tone="amber">⏳ ${p.form?.deposit > 0 ? "잔금 대기" : "입금 대기"}<//>`)}
               ${!게시판 && html`<span class="muted small" style="font-weight:400">${아이콘[p.category]} ${이름[p.category]}</span>`}</div>
             <div class="m">${p.author_name || "-"} · 읽음 ${d.readN[p.id] || 0}${d.cmt[p.id] ? ` · 💬 ${d.cmt[p.id]}` : ""}${p.plate ? ` · ${p.plate}${p.car_id ? " ✓" : ""}` : ""}${p.form?.amount && p.category === "송금요청" ? ` · ${원(p.form.amount)}` : ""}${p.form?.amount && p.category === "매도정보" ? ` · ${p.form.type ? p.form.type + " " : ""}${원(p.form.amount)}` : ""}</div>
@@ -138,16 +139,44 @@ function List({ app }) {
 }
 
 /* ───────── 양식 칸 (글쓰기·고치기 같이 씀) ───────── */
+// 송금요청 받는 쪽 (사용자 2026-10-21): 개인·법인·사업자, 법인·사업자면 계산서 발행 되는지 꼭 체크
+const 받는쪽들 = ["개인", "법인", "사업자"], 계산서들 = ["발행 가능", "발행 안 됨", "확인 필요"];
+const 사업자 = t => t === "법인" || t === "사업자";
+/** 고른 값, 안 골랐으면 예금주 이름으로 짐작 ((주)·주식회사 → 법인, 그 밖엔 개인) */
+const 받는쪽 = f => f.payee_type || (/\(주\)|㈜|주식회사|\(유\)|유한회사|법인/.test(f.payee || "") ? "법인" : f.payee ? "개인" : "");
+/** 송금요청 칸 확인 — 문제 있으면 알림 문구. 매입대금은 차량번호·차량명·예금주 필수(입금되면 재고로 올릴 때 씀), 수수료·업무비는 자유 */
+const 송금확인 = form => !form.amount ? "송금할 금액을 입력하세요"
+  : form.kind === "매입대금" && !form.plate ? "매입대금은 차량번호를 넣어 주세요"
+  : form.kind === "매입대금" && !form.car_name ? "매입대금은 차량명을 넣어 주세요 (대충이라도)"
+  : form.kind === "매입대금" && !form.payee ? "매입대금은 예금주를 넣어 주세요"
+  : !form.payee_type ? "받는 쪽(개인·법인·사업자)을 고르세요"
+  : 사업자(form.payee_type) && !form.invoice ? "법인·사업자는 계산서 발행이 되는지 골라 주세요" : null;
+// 담당 (사용자 2026-10-21): 사무장(기본) / 김상혁 대표 — 대표면 시간 상관없이 대표에게만 재촉·조르기
+const 담당들 = ["사무장", "김상혁 대표"];
+const 대표담당 = f => f?.handler === "대표";
+/** 담당이 대표면 그 계정 id 를 form 에 (tick·조르기가 이 사람에게만 보낸다) */
+async function 담당정리(app, form) {
+  if (!form) return form;
+  form.handler_id = 대표담당(form) ? (await 구성원(app)).find(m => m.role === "admin" && m.name === "김상혁")?.user_id || null : null;
+  return form;
+}
 function 송금칸({ f, set }) {
   const a = 금액(f.amountText ?? "") ?? (Number(String(f.amountText || "").replace(/[^\d]/g, "")) || null);
+  const 차 = f.kind === "매입대금", 대표 = f.handler === "대표";
   return html`<div class="fgrid">
-    <${Field} label="종류" hint=${f.kind === "매입대금" ? "차대금 — 사무장님이 [확인] 누를 때까지 재촉 알림 (사무장 근무시간 평일 8:30~17:00)" : "알림 한 번"}><${Seg} value=${f.kind} onChange=${v => set("kind", v)} options=${송금종류} /><//>
+    <${Field} label="담당" hint=${대표 ? "대표님 담당 — 시간 상관없이 대표님께만 알림·재촉" : "사무장 — 근무시간(평일 8:30~17:00)에 알림·재촉"}>
+      <${Seg} value=${대표 ? "김상혁 대표" : "사무장"} onChange=${v => set("handler", v === "김상혁 대표" ? "대표" : "사무장")} options=${담당들} /><//>
+    <${Field} label="종류" hint=${차 ? `차대금 — ${대표 ? "대표님" : "사무장님"}이 [확인] 누를 때까지 재촉 알림` : "알림 한 번"}><${Seg} value=${f.kind} onChange=${v => set("kind", v)} options=${송금종류} /><//>
     ${f.kind !== "업무비" && html`<${Field} label="매입경로"><${Seg} value=${f.route || ""} onChange=${v => set("route", v)} options=${경로들} /><//>`}
-    <${Field} label="차량번호" hint=${f.kind === "업무비" ? "차에 쓴 돈이면 적어 주세요 (선택)" : ""}><input value=${f.plate || ""} placeholder="예: 54다8079" onInput=${e => set("plate", e.target.value)} /><//>
+    <${Field} label="차량번호" req=${차} hint=${f.kind === "업무비" ? "차에 쓴 돈이면 적어 주세요 (선택)" : ""}><input value=${f.plate || ""} placeholder="예: 54다8079" onInput=${e => set("plate", e.target.value)} /><//>
+    <${Field} label="차량명" req=${차} hint=${차 ? "입금되면 재고로 올릴 때 씁니다 (대충이라도)" : ""}><input value=${f.car_name || ""} placeholder="예: 그랜저 IG 2.5" onInput=${e => set("car_name", e.target.value)} /><//>
     <${Field} label="금액" req hint=${a ? "= " + 원(a) : "1311만 · 13,110,000 · 15000원 다 됩니다"}><input value=${f.amountText ?? ""} onInput=${e => set("amountText", e.target.value)} /><//>
     <${Field} label="은행"><input value=${f.bank || ""} placeholder="우리은행" onInput=${e => set("bank", e.target.value)} /><//>
     <${Field} label="계좌번호"><input inputmode="numeric" value=${f.account || ""} onInput=${e => set("account", e.target.value)} /><//>
     <${Field} label="예금주" req hint="금액 + 예금주가 맞는 출금이 통장에 들어오면 자동으로 완료됩니다"><input value=${f.payee || ""} placeholder="(주)피알앤디컴퍼니 / 엔카닷컴 / 홍길동" onInput=${e => set("payee", e.target.value)} /><//>
+    <${Field} label="받는 쪽" req><${Seg} value=${받는쪽(f)} onChange=${v => set("payee_type", v)} options=${받는쪽들} /><//>
+    ${사업자(받는쪽(f)) && html`<${Field} label="계산서 발행" req hint="세금계산서·계산서를 받을 수 있는지 (부가세 공제·증빙)">
+      <${Seg} value=${f.invoice || ""} onChange=${v => set("invoice", v)} options=${계산서들} /><//>`}
     <${Field} label="기한"><input value=${f.due || ""} placeholder="예: 10/19 10:30 탁송 출발" onInput=${e => set("due", e.target.value)} /><//>
     ${f.kind === "매입대금" && html`<${Field} label="고객 성함·주민번호"><input value=${f.customer || ""} onInput=${e => set("customer", e.target.value)} /><//>`}
   </div>`;
@@ -176,7 +205,9 @@ function 양식정리(cat, f) {
   if (cat === "송금요청") {
     const amount = 금액(f.amountText ?? "") ?? (Number(String(f.amountText || "").replace(/[^\d]/g, "")) || null);
     return { kind: f.kind || "업무비", route: f.kind === "업무비" ? null : f.route || null, plate: 번호판(f.plate) || 번호(f.plate) || null, bank: f.bank || null,
-      account: f.account || null, payee: (f.payee || "").trim() || null, amount, due: f.due || null, customer: f.customer || null, memo: f.memo || null, paste: f.paste || null };
+      account: f.account || null, payee: (f.payee || "").trim() || null, payee_type: 받는쪽(f) || null, invoice: 사업자(받는쪽(f)) ? f.invoice || null : null,
+      car_name: (f.car_name || "").trim() || null, handler: f.handler === "대표" ? "대표" : "사무장", handler_id: f.handler_id || null,
+      amount, due: f.due || null, customer: f.customer || null, memo: f.memo || null, paste: f.paste || null };
   }
   if (cat === "매도정보") {
     const amount = 매도금액(f.amountText);
@@ -225,7 +256,7 @@ function Write({ app }) {
   const save = async () => {
     if (busy) return;
     const form = 양식정리(cat, { ...f, memo: t.body.trim() || null });
-    if (cat === "송금요청" && !form.amount) return toast("송금할 금액을 입력하세요", "err");
+    if (cat === "송금요청" && 송금확인(form)) return toast(송금확인(form), "err");
     if (cat === "송금요청" && !form.payee) { if (!ask("예금주가 비어 있으면 통장에서 자동으로 찾지 못합니다. 그래도 올릴까요?")) return; }
     if (cat === "매도정보" && !form.plate) return toast("차량번호를 입력하세요", "err");
     if (cat === "매도정보" && !form.car_name) return toast("차명을 입력하세요 (대충이라도)", "err");
@@ -233,7 +264,7 @@ function Write({ app }) {
     if (cat === "매도정보" && form.fee_included == null) return toast("매도비 별도·포함을 고르세요", "err");
     const plate = 양식 ? form.plate : 번호판(t.plate) || 번호(t.plate);     // '33우4535말리부' 처럼 차명을 붙여 써도 번호판만
     if (등록증 && !plate) return toast("등록증은 차량번호를 입력하세요", "err");
-    const title = cat === "매도정보" ? 매도제목(form) : t.title.trim() || (cat === "송금요청" ? `${form.plate || ""} ${form.kind}${form.route ? `(${form.route})` : ""} ${form.amount % 10000 === 0 ? form.amount / 10000 + "만원" : 원(form.amount)}`.trim()
+    const title = cat === "매도정보" ? 매도제목(form) : t.title.trim() || (cat === "송금요청" ? `${form.plate || ""}${form.car_name ? " " + form.car_name : ""} ${form.kind}${form.route ? `(${form.route})` : ""} ${form.amount % 10000 === 0 ? form.amount / 10000 + "만원" : 원(form.amount)}`.trim()
       : 등록증 ? `${plate} ${이름[cat]}` : "");
     if (!title) return toast("제목을 입력하세요", "err");
     const body = cat === "송금요청" ? (form.paste || 송금글(form, form.memo || "")) : cat === "매도정보" ? 매도글(form, form.memo || "") : t.body;
@@ -245,6 +276,7 @@ function Write({ app }) {
       const 올릴 = await 모두줄이기(files);
       if (올릴.some(x => x.size > MAX)) throw new Error("20MB 넘는 파일은 올릴 수 없습니다.");
       const car = plate ? await 차찾기(app, plate) : null;
+      if (cat === "송금요청") await 담당정리(app, form);
       const [p] = await q(app.db.from("board_posts").insert({ category: cat, title, body, plate: plate || null, car_id: car?.id || null,
         pinned: !!t.pinned, author_name: app.profile.name, form, publish_at: 예약,
         notified_at: 예약 || 차 ? null : new Date().toISOString(), due_at: cat === "송금요청" ? 기한시각(form.due) : null }).select("id"));
@@ -315,6 +347,7 @@ function 송금카드({ f, p }) {
     <div class="f"><b>금액</b><div><span class="big">${f.amount ? 원(f.amount) : "-"}</span></div></div>
     <div class="f"><b>받는 곳</b><div>${[f.bank, f.account, f.payee].filter(Boolean).join(" · ") || "-"}
       ${f.account && html`<button class="btn sm ghost" onClick=${복사}>계좌 복사</button>`}</div></div>
+    ${f.payee_type && html`<div class="f"><b>받는 쪽</b><div>${f.payee_type}${사업자(f.payee_type) && html` · 계산서 <span class=${"badge " + (f.invoice === "발행 가능" ? "green" : f.invoice === "발행 안 됨" ? "red" : "amber")}>${f.invoice || "확인 안 함"}</span>`}</div></div>`}
     ${f.plate && html`<div class="f"><b>차량</b><div>${f.plate} ${p.car_id && html`<a href=${"#/car/" + p.car_id}>차 보기 →</a>`}</div></div>`}
     ${f.due && html`<div class="f"><b>기한</b><div>${f.due}</div></div>`}
     ${f.customer && html`<div class="f"><b>고객</b><div>${f.customer}</div></div>`}
@@ -417,6 +450,8 @@ function Post({ app, id }) {
   const i = x.ids.indexOf(id), 앞 = i > 0 ? x.ids[i - 1] : null, 뒤 = i >= 0 && i < x.ids.length - 1 ? x.ids[i + 1] : null;
   const 읽은 = x.reads.filter(r => !r.seed);
   const 안읽은 = x.members.filter(m => m.user_id !== p.created_by && !x.reads.some(r => r.user_id === m.user_id));
+  // 조르기 받을 사람: 대표 담당이면 그 대표, 아니면 사무장(staff). 나 자신은 빼고
+  const 조를사람 = (대표담당(p.form) ? x.members.filter(m => m.user_id === p.form.handler_id) : x.members.filter(m => m.role === "staff")).filter(m => m.user_id !== me);
 
   const addC = () => run(async () => {
     const body = c.trim();
@@ -433,6 +468,24 @@ function Post({ app, id }) {
     load();
   }, v ? "완료로 표시했습니다" : "완료를 취소했습니다");
   const 확인 = () => run(async () => { await q(app.db.rpc("board_ack", { p_id: id })); load(); }, "확인했습니다 — 재촉 알림이 멈춥니다");
+  // 🔔 조르기 (사용자 2026-10-21): 사무장님 폰으로 바로 알림 + 댓글로 남김. 3분 안 다시 누르면 안 보냄, 근무시간 밖이면 한 번 묻기
+  const 조르기 = () => run(async () => {
+    const 최근 = x.cs.filter(k => /^🔔 조르기/.test(k.body)).map(k => Date.parse(k.created_at)).sort().pop();
+    if (최근 && Date.now() - 최근 < 3 * 60e3) throw new Error("방금 졸랐습니다. 3분 뒤에 다시 눌러 주세요");
+    const 받을 = 조를사람;
+    if (!받을.length) throw new Error("알림 받을 담당자가 없습니다");
+    if (!대표담당(p.form)) {  // 대표 담당이면 시간 상관없이
+      const 시간 = await q(app.db.from("att_people").select("user_id,start_time,end_time").in("user_id", 받을.map(m => m.user_id)));
+      const k = new Date(Date.now() + 9 * 3600e3), hm = k.toISOString().slice(11, 16), 평일 = k.getUTCDay() >= 1 && k.getUTCDay() <= 5;
+      const 근무중 = 받을.some(m => { const s = 시간.find(t => t.user_id === m.user_id); return 평일 && hm >= (s?.start_time || "09:00").slice(0, 5) && hm < (s?.end_time || "19:00").slice(0, 5); });
+      if (!근무중 && !ask("사무장님 근무시간이 아닙니다. 그래도 알림을 보낼까요?")) return;
+    }
+    const f = p.form || {};
+    await 알림(app, { title: `💸 ${대표담당(f) ? "대표님" : "사무장님"} 송금해주세요~`, body: `${p.title}${f.amount ? " · " + 원(f.amount) : ""}${f.payee ? " → " + f.payee : ""} (${app.profile.name})`,
+      url, tag: "nudge-" + id + "-" + Date.now(), to_users: 받을.map(m => m.user_id), pref: "board:송금요청" });
+    await q(app.db.from("board_comments").insert({ post_id: id, body: `🔔 조르기 — ${받을.map(m => m.name).join(", ")}님께 알림`, author_name: app.profile.name }));
+    load(); toast(`${받을.map(m => m.name).join(", ")}님께 알림을 보냈습니다`);
+  });
   const 별 = () => run(async () => {
     if (x.star) await q(app.db.from("board_stars").delete().eq("post_id", id).eq("user_id", me));
     else await q(app.db.from("board_stars").insert({ post_id: id }));
@@ -448,6 +501,8 @@ function Post({ app, id }) {
     const 양식 = 송금 || p.category === "매도정보";
     const form = 양식 ? 양식정리(p.category, { ...edit.f, memo: edit.f.memo || null }) : p.form;
     if (매도 && (!form.plate || !form.car_name || !form.amount || form.fee_included == null)) throw new Error("차량번호·차명·매도 금액·매도비(별도/포함)는 꼭 넣어 주세요");
+    if (송금 && 송금확인(form)) throw new Error(송금확인(form));
+    if (송금) await 담당정리(app, form);
     const body = 송금 ? (form.paste || 송금글(form, form.memo || "")) : p.category === "매도정보" ? 매도글(form, form.memo || "") : edit.body;
     const 기한 = 송금 ? 기한시각(form.due) : null;
     await q(app.db.from("board_posts").update({ title: p.category === "매도정보" ? 매도제목(form) : edit.title.trim() || p.title, body, form, plate: 양식 ? form.plate : p.plate, updated_at: new Date().toISOString(),
@@ -487,10 +542,13 @@ function Post({ app, id }) {
         <span class="muted small">(${x.tx.match_kind})</span><span class="grow"></span><a href="#/bank">자금관리 →</a></div>`
       : p.done_at ? html`<div class="bank-ok">✔ <b>송금 완료</b> <span class="muted small">${p.done_by || ""} · ${날짜시각(p.done_at)}</span><span class="grow"></span>
         <button class="btn sm ghost" onClick=${() => ask("송금 완료를 취소할까요?") && 완료(false)}>완료 취소</button></div>`
-      : html`<div class="bank-ok bank-wait">⏳ <b>송금 대기</b> <span class="muted small">금액·예금주가 맞는 출금이 통장에 들어오면 자동으로 완료 · 댓글 '입완'으로도 완료</span><span class="grow"></span>
+      : html`<div class="bank-ok bank-wait">⏳ <b>송금 대기</b>${대표담당(p.form) && html` <${Badge}>대표님 담당<//>`} <span class="muted small">금액·예금주가 맞는 출금이 통장에 들어오면 자동으로 완료 · 댓글 '입완'으로도 완료</span><span class="grow"></span>
+        ${조를사람.length > 0 && html`<button class="btn sm" title=${(대표담당(p.form) ? "대표님" : "사무장님") + " 폰으로 바로 알림"} onClick=${조르기}>🔔 조르기</button>`}
         <button class="btn sm primary" onClick=${() => 완료(true)}>✔ 송금 완료</button></div>`)}
     ${송금 && p.form?.kind === "매입대금" && !p.done_at && html`<div class=${"bank-ok" + (p.ack_at ? "" : " bank-wait")}>${p.ack_at
       ? html`👀 <b>${p.ack_by || ""} 확인</b> <span class="muted small">${날짜시각(p.ack_at)} · 재촉 끝</span>`
+      : 대표담당(p.form) ? html`🔔 <b>대표님 확인 전</b> <span class="muted small">[확인]을 누를 때까지 대표님께 재촉합니다 (시간 상관없이, 최대 3번)</span><span class="grow"></span>
+        <button class="btn sm primary" onClick=${확인}>👀 확인했어요</button>`
       : html`🔔 <b>사무장 확인 전</b> <span class="muted small">[확인]을 누를 때까지 사무장 근무시간(평일 8:30~17:00)에 재촉합니다 (최대 3번)</span><span class="grow"></span>
         <button class="btn sm primary" onClick=${확인}>👀 확인했어요</button>`}</div>`}
     ${p.publish_at && Date.parse(p.publish_at) > Date.now() && html`<p class="note">🕒 ${날짜시각(p.publish_at)}에 올라가고 그때 알림이 갑니다. 지금은 쓴 사람과 대표만 보입니다.</p>`}

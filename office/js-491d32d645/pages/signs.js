@@ -2,7 +2,7 @@
 //   비사업용 사실확인서 (차를 파는 고객, 주민번호는 가린 값 — 대표만 원문을 넣어 인쇄)
 //   3일 환불 약정서 (차를 사 가는 고객, /sign/refund — 약관 원문은 서명 때 그대로 terms 에)
 // 목록 → 서류 보기·인쇄(PDF 저장).
-import { html, useState, useEffect, Loading, Empty, Badge, run, toast, go, won, Money, Field } from "../ui.js";
+import { html, useState, useEffect, Loading, Empty, Badge, run, toast, go, won, Money, Field, Seg } from "../ui.js";
 import { q } from "../db.js";
 import { 주행공제 } from "../calc.js";
 import { A4Preview, A4PDF저장 } from "../a4.js";
@@ -126,12 +126,23 @@ const 출발글 = d => { const [y, m, n] = d.split("-").map(Number); return `${y
 const 출발기한 = d => { const [y, m, n] = d.split("-").map(Number); return new Date(Date.UTC(y, m - 1, n + 2, 18 - 9)).toISOString(); };
 const 오늘 = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
 
+/** 환불 때 기본 상품화 비용 (사용자 2026-10-21: 국산 10만원, 수입 15만원 — 약관 제3조 ② 2호) */
+const 기본상품화비 = { 국산: 100000, 수입: 150000 };
+/** 국산·수입 짐작 (브랜드, 없으면 차명) — 모르면 빈칸(직접 고름) */
+function 원산지(car) {
+  const 국산 = /현대|기아|제네시스|르노|삼성|쉐보레|한국GM|GM대우|대우|KG|쌍용|모빌리티/;
+  const s = car.brand || car.car_name || "";
+  if (국산.test(s)) return "국산";
+  if (car.brand) return "수입";
+  return /벤츠|BMW|아우디|폭스바겐|테슬라|볼보|렉서스|토요타|혼다|포르쉐|미니|MINI|랜드로버|재규어|지프|포드|링컨|캐딜락|푸조|닛산|인피니티|마세라티|벤틀리|폴스타|BYD/i.test(s) ? "수입" : "";
+}
+
 /** 인도 때 안내 사항 표 — 고객 페이지(/sign/refund 의 고지html)와 같은 내용 */
 function 고지표({ p }) {
   const costs = (p.costs || []).filter(c => Number(c[1]) > 0), sum = costs.reduce((a, c) => a + Number(c[1]), 0);
   const TR = (k, v) => html`<tr><th>${k}</th><td>${v}</td></tr>`;
   return html`<table>${p.depart && TR("차량 출발일", 출발글(p.depart))}${TR("판매금액", won(p.price) + "원")}${TR("성능·상태점검기록부", "교부함")}${TR("압류·저당", p.lien || "없음")}
-      ${TR("성능보험", Number(p.insurance) > 0 ? `가입 (보험료 ${won(p.insurance)}원)` : "미가입")}${TR("차량 키", `${p.keys || 0}개`)}${(p.dest || p.move_km) && TR("인도 장소까지", [p.dest, p.move_km ? `${Number(p.move_km).toLocaleString()}km (TMAP 기준)` : ""].filter(Boolean).join(" · "))}${p.note && TR("특약", p.note)}</table>
+      ${TR("성능보험", Number(p.insurance) > 0 ? `가입 (보험료 ${won(p.insurance)}원)` : "미가입")}${TR("차량 키", `${p.keys || 0}개`)}${p.base_fee && TR("환불 때 기본 상품화 비용", `${p.origin || ""}차 ${won(p.base_fee)}원`)}${(p.dest || p.move_km) && TR("인도 장소까지", [p.dest, p.move_km ? `${Number(p.move_km).toLocaleString()}km (TMAP 기준)` : ""].filter(Boolean).join(" · "))}${p.note && TR("특약", p.note)}</table>
     ${costs.length > 0 && html`<div class="sec">환불 때 돌려받지 못하는 비용 (예상)</div>
       <table>${costs.map(c => TR(c[0], won(c[1]) + "원"))}${TR(html`<b>합계</b>`, html`<b>${won(sum)}원</b>`)}</table>`}`;
 }
@@ -141,7 +152,10 @@ function 환불계산({ r }) {
   const [반납, set반납] = useState("");
   const km = Number(String(반납).replace(/[^\d]/g, "")) || 0;
   const x = km ? 주행공제({ 차량대금: p.price, 인도전: r.mileage, 반납: km, 이동: p.move_km, 기준: r.terms?.km_limit || 300 }) : null;
+  const 기본 = Number(p.base_fee) || 0;                       // 약관 제3조 ② 기본 상품화 비용 (국산 10만·수입 15만, 2026-10-21 약관부터)
   return html`<div class="card no-print"><b>환불 계산</b> <span class="muted small">반납 때 계기판 주행거리를 넣으면 약관 제3조 주행거리 초과분 공제가 나옵니다</span>
+    ${기본 > 0 && html`<div class="small" style="margin-top:6px">기본 상품화 비용 <b>${won(기본)}원</b> (${p.origin}차)${x ? html` + 주행 공제 ${won(x.공제)}원 = <b class="red">공제 합계 ${won(기본 + x.공제)}원</b>` : ""}
+      <span class="muted"> · 외관 손상 상품화비·탁송료·과태료 등은 따로</span></div>`}
     <div class="row" style="margin-top:8px;gap:8px;flex-wrap:wrap;align-items:center">
       <input inputmode="numeric" placeholder="반납 때 주행거리 (km)" value=${반납} onInput=${e => set반납(e.target.value)} style="width:180px" />
       ${x && html`<span>인도 후 주행 <b>${won(x.주행)}km</b> (${won(km)} − 인도 전 ${won(r.mileage)}${p.move_km ? ` − 이동 ${won(p.move_km)}` : ""})
@@ -193,7 +207,7 @@ export function RefundPrep({ app, car, sale, shareLink, onClose }) {
       q(app.db.from("car_loans").select("id").eq("car_id", car.id).eq("status", "진행중")),
       q(app.db.from("car_inspections").select("insur_price,recept_date").eq("car_id", car.id).order("recept_date", { ascending: false }).limit(1))]);
     const price = Number(sale?.sale_amount || car.ad_price || car.list_price || 0), insurance = Number(ins[0]?.insur_price || 0);
-    setF({ price, mileage: car.mileage ?? "", keys: 2, insurance, note: "", dest: "", move_km: "", depart: 오늘(),
+    setF({ price, mileage: car.mileage ?? "", keys: 2, insurance, note: "", dest: "", move_km: "", depart: 오늘(), origin: 원산지(car),
       lien: loans.length ? "재고금융 저당 있음 — 고객이 차량 인수를 확정하면 이전등록과 함께 해지" : "없음",
     });
   }); }, [car.id]);
@@ -203,9 +217,10 @@ export function RefundPrep({ app, car, sale, shareLink, onClose }) {
     if (f.mileage === "" || f.mileage == null) throw new Error("인도 전 주행거리를 넣어 주세요");
     if (!/^\d{4}-\d{2}-\d{2}$/.test(f.depart || "")) throw new Error("차량 출발일을 정해 주세요");
     if (Date.parse(출발기한(f.depart)) < Date.now()) throw new Error("이 출발일이면 환불 기한이 이미 지났습니다. 출발일을 확인해 주세요");
+    if (!f.origin) throw new Error("국산차인지 수입차인지 골라 주세요 (환불 때 기본 상품화 비용)");
     const token = crypto.randomUUID().replace(/-/g, "");
     const prepared = { price: f.price, keys: Number(f.keys) || 0, lien: f.lien.trim() || "없음", insurance: Number(f.insurance) || 0, note: f.note.trim(), dest: f.dest.trim(), move_km: Number(f.move_km) || 0,
-      depart: f.depart, costs: [] };
+      depart: f.depart, origin: f.origin, base_fee: 기본상품화비[f.origin], costs: [] };
     await q(app.db.from("sign_docs").insert({ kind: "3일환불", car_id: car.id, car_no: car.plate, car_name: car.car_name, mileage: Number(String(f.mileage).replace(/[^\d]/g, "")),
       prepared, token, prepared_by: app.user.id, signed_at: null, agreed: false }));
     load();
@@ -222,6 +237,8 @@ export function RefundPrep({ app, car, sale, shareLink, onClose }) {
         : html`<button class="btn sm" onClick=${() => shareLink(url(d.token), `${car.plate} 3일 환불 약정서`)}>링크 다시 보내기</button>`}</td></tr>`)}</tbody></table>`}
     ${!f ? html`<${Loading} />` : html`<div class="fgrid">
       <${Field} label="차량 출발일" hint=${/^\d{4}-\d{2}-\d{2}$/.test(f.depart || "") ? `이 날이 1일째 → 환불 기한 ${기한글(출발기한(f.depart))}까지` : "매장에서 차가 출발하는 날 (이 날이 환불 1일째)"}><input type="date" value=${f.depart} onInput=${e => set("depart", e.target.value)} /><//>
+      <${Field} label="국산 / 수입" hint=${f.origin ? `환불하면 기본 상품화 비용 ${won(기본상품화비[f.origin])}원 공제` : "골라 주세요 — 환불 때 기본 상품화 비용 (국산 10만·수입 15만)"}>
+        <${Seg} value=${f.origin || ""} onChange=${v => set("origin", v)} options=${["국산", "수입"]} /><//>
       <${Field} label="판매금액 (차량대금)"><${Money} value=${f.price} onInput=${v => set("price", v)} /><//>
       <${Field} label="인도 전 주행거리 (km)" hint="매장에서 출발하기 전 계기판"><input inputmode="numeric" value=${f.mileage} onInput=${e => set("mileage", e.target.value.replace(/[^\d]/g, ""))} /><//>
       <${Field} label="인도 장소 (있으면)"><input value=${f.dest} placeholder="예: 고객 자택 (부산 해운대구)" onInput=${e => set("dest", e.target.value)} /><//>

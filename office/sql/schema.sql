@@ -2403,3 +2403,55 @@ select '3일환불제서류',
   from sign_docs d
  where d.kind = '3일환불' and d.signature_path is not null
    and not exists (select 1 from board_posts b where b.src = 'sign:' || d.id);
+
+
+-- 20261021000001_bank_dup_check.sql
+-- 이중 이체 감지 (사용자 2026-10-21) — 출금 문자가 들어올 때 bank-in 이 부른다. 의심이면 이유 문장, 아니면 null.
+--   같은 예금주(_이름키) + 같은 금액 출금을 센다.
+--   · 그 출금에 맞는 송금요청(최근 7일, 예금주·금액 같음)이 있으면: 요청 수보다 출금이 많을 때만 의심
+--     → 수수료처럼 같은 사람에게 같은 금액을 여러 번 보내도, 요청을 따로 올렸으면(차·계좌가 달라도 한 건씩) 안 울린다.
+--       이미 완료된 요청과 같은 출금이 또 오면 출금 수 > 요청 수 라서 울린다.
+--   · 요청이 없으면(대표가 직접 보낸 돈 등): 10만원 이상이고 1시간 안에 같은 출금이 또 있을 때만 의심
+--     (지난 출금에 돌려 보니 주유 1만원·1만4천원 두 번 같은 소액 정상 거래가 걸렸다).
+--   잔액까지 같은 줄은 같은 거래 문자가 두 번 온 것이라 한 번으로 센다.
+--   은행 문자에는 받는 계좌번호가 없어서, 계좌는 송금요청 쪽(요청 한 건 = 보낼 돈 한 건)으로만 가린다.
+create or replace function bank_dup_check(p_tx uuid) returns text
+language plpgsql security definer set search_path = public as $$
+declare t record; k text; ts timestamptz; r int; r_from timestamptz; w int; n60 int;
+begin
+  if coalesce(auth.role(), '') <> 'service_role' then raise exception '권한이 없습니다'; end if;
+  select x.* into t from bank_txs x where x.id = p_tx;
+  if t.id is null or coalesce(t.withdraw, 0) <= 0 then return null; end if;
+  k := _이름키(coalesce(t.counterparty, t.remark));
+  if length(k) < 2 then return null; end if;
+  ts := (t.tx_date + coalesce(nullif(t.tx_time, '')::time, '00:00'::time)) at time zone 'Asia/Seoul';
+
+  select count(*), min(bp.created_at) into r, r_from from board_posts bp
+   where bp.category = '송금요청' and coalesce(bp.form->>'amount', '') ~ '^[0-9]+$'
+     and (bp.form->>'amount')::bigint = t.withdraw
+     and length(_이름키(bp.form->>'payee')) >= 2
+     and (starts_with(_이름키(bp.form->>'payee'), k) or starts_with(k, _이름키(bp.form->>'payee')))
+     and bp.created_at between ts - interval '7 days' and ts + interval '1 hour';
+
+  if r > 0 then
+    select count(distinct coalesce(x.balance::text, x.id::text)) into w from bank_txs x
+     where x.withdraw = t.withdraw and _이름키(coalesce(x.counterparty, x.remark)) = k
+       and (x.tx_date + coalesce(nullif(x.tx_time, '')::time, '00:00'::time)) at time zone 'Asia/Seoul'
+           between r_from - interval '2 hours' and ts + interval '1 minute';
+    if w > r then return format('송금요청 %s건인데 같은 출금이 %s번', r, w); end if;
+    return null;
+  end if;
+
+  if t.withdraw < 100000 then return null; end if;
+  select count(*) into n60 from bank_txs x
+   where x.id <> t.id and x.balance is distinct from t.balance and x.withdraw = t.withdraw and _이름키(coalesce(x.counterparty, x.remark)) = k
+     and abs(extract(epoch from (x.tx_date + coalesce(nullif(x.tx_time, '')::time, '00:00'::time)) at time zone 'Asia/Seoul' - ts)) <= 3600;
+  if n60 > 0 then return '같은 예금주·금액 출금이 1시간 안에 또 있음'; end if;
+  return null;
+end $$;
+revoke all on function bank_dup_check(uuid) from public, anon, authenticated;
+do $$ begin   -- 데모(PGlite)·테스트엔 service_role 이 없다
+  if exists (select 1 from pg_roles where rolname = 'service_role') then
+    grant execute on function bank_dup_check(uuid) to service_role;
+  end if;
+end $$;
