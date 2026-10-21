@@ -155,6 +155,7 @@ function 고지html(p) {
   var rows = p.depart ? [["차량 출발일", 출발글(p.depart)]] : [];
   rows = rows.concat([["판매금액", won(p.price)], ["성능·상태점검기록부", "교부함"], ["압류·저당", p.lien || "없음"],
     ["성능보험", Number(p.insurance) > 0 ? "가입 (보험료 " + won(p.insurance) + ")" : "미가입"], ["차량 키", (p.keys || 0) + "개"]]);
+  if (p.base_fee) rows.push(["환불 때 기본 상품화 비용", (p.origin || "") + "차 " + won(p.base_fee)]);
   if (p.dest || p.move_km) rows.push(["인도 장소까지", [p.dest, p.move_km ? Number(p.move_km).toLocaleString() + "km (TMAP 기준)" : ""].filter(Boolean).join(" · ")]);
   if (p.note) rows.push(["특약", p.note]);
   var costs = (p.costs || []).filter(function (c) { return Number(c[1]) > 0; });
