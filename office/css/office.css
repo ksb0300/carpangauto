@@ -587,6 +587,7 @@ svg.drawing .pnl { pointer-events: none; }
 .rx button.on { background: #eef2ff; border-color: #c7d2fe; color: var(--pri); font-weight: 600; }
 .cmt { display: flex; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--line2); }
 .cmt .bx { flex: 1; min-width: 0; } .cmt .hd { font-size: 13px; } .cmt .hd b { margin-right: 6px; } .cmt .hd span { color: var(--sub); }
+.cmt > .btn { align-self: flex-start; }
 .cmt-files { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; margin-top: 8px; }
 .cmt-files img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 10px; border: 1px solid var(--line); display: block; }
 .cmt-files > div.small { grid-column: 1 / -1; }
