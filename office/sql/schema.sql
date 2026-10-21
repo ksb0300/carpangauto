@@ -2455,3 +2455,79 @@ do $$ begin   -- 데모(PGlite)·테스트엔 service_role 이 없다
     grant execute on function bank_dup_check(uuid) to service_role;
   end if;
 end $$;
+
+
+-- 20261021000002_board_paid_car.sql
+-- 차대금 송금 완료 → 재고(리스트)에 차를 바로 올린다 (사용자 2026-10-21)
+--   송금요청 '매입대금' 글이 완료되면(통장 확인이든 [송금 완료]·'입완'이든) 그 번호판 차가 없을 때 하나 만든다.
+--   · 누구 차: 송금요청 한 사람 (profiles.dealer_id, 웍스에서 옮긴 글은 이름으로) · 매입비 0 (다 대표)
+--   · 취득세: 모름(acq_tax_unknown) → 대시보드 '취등록세 수정 필요'에서 사무장이 확인
+--   · 증빙: 받는 쪽 개인 → 의제매입 / 법인·사업자이고 계산서 '발행 가능' → 세금계산서 / 그 밖 → 의제매입
+--           헤이딜러·엔카로 보낸 돈은 받는 곳(피알앤디·엔카닷컴)이 중개라 판 사람은 개인 → 의제매입
+--   · 같은 번호판 재고 차가 있으면(손으로 먼저 등록했거나 나눠 보낸 차대금) 그 차에 잇는다.
+--     이 장치가 만든 차면 나눠 보낸 금액을 매입가에 더한다. 손으로 등록한 차는 건드리지 않는다.
+--   · 완료를 취소하면 이 장치가 만든 차는 그 금액만큼 빼고, 그 글 하나로 만든 차면 지운다(휴지통).
+alter table cars add column if not exists auto_post_id uuid;   -- 송금요청 글에서 자동으로 만든 차면 그 글
+
+create or replace function _board_paid_car() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare f jsonb := new.form; amt bigint; c record; uid uuid; did uuid; route text; ev text; st text; nm text; d date; cid uuid;
+begin
+  if new.category <> '송금요청' or coalesce(f->>'kind', '') <> '매입대금' then return new; end if;
+  if coalesce(f->>'amount', '') !~ '^[0-9]+$' or coalesce(new.plate, f->>'plate', '') = '' then return new; end if;
+  amt := (f->>'amount')::bigint;
+
+  -- 완료 취소
+  if old.done_at is not null and new.done_at is null then
+    select * into c from cars where id = new.car_id and auto_post_id is not null and deleted_at is null and status = '재고';
+    if c.id is not null then
+      if c.purchase_amount > amt then update cars set purchase_amount = purchase_amount - amt where id = c.id;
+      else update cars set deleted_at = now() where id = c.id; new.car_id := null; end if;
+    end if;
+    return new;
+  end if;
+  if not (old.done_at is null and new.done_at is not null) then return new; end if;
+
+  d := (new.done_at at time zone 'Asia/Seoul')::date;
+  select * into c from cars x where x.deleted_at is null and replace(x.plate, ' ', '') = replace(coalesce(new.plate, f->>'plate'), ' ', '')
+    and (x.status = '재고' or x.purchase_date >= (new.created_at at time zone 'Asia/Seoul')::date - 30)
+   order by (x.status = '재고') desc, x.purchase_date desc nulls last limit 1;
+  if c.id is not null then
+    if c.auto_post_id is not null and c.auto_post_id <> new.id and new.car_id is distinct from c.id and c.status = '재고' then
+      update cars set purchase_amount = purchase_amount + amt where id = c.id;   -- 나눠 보낸 차대금
+    end if;
+    cid := c.id;
+  else
+    uid := coalesce(new.created_by, (select p.user_id from profiles p where p.name = new.author_name and p.role in ('admin', 'staff') limit 1));
+    did := (select p.dealer_id from profiles p where p.user_id = uid);
+    route := f->>'route';
+    if route in ('헤이딜러', '엔카') or coalesce(f->>'payee_type', '개인') = '개인' then ev := '의제매입'; st := '개인';
+    elsif f->>'invoice' = '발행 가능' then ev := '세금계산서'; st := case when f->>'payee_type' = '법인' then '법인' else '개인' end;
+    else ev := '의제매입'; st := case when f->>'payee_type' = '법인' then '법인' else '개인' end; end if;
+    nm := coalesce(substring(coalesce(f->>'customer', '') from '^\s*([가-힣]{2,5})'),
+                   case when route is distinct from '헤이딜러' and route is distinct from '엔카' then nullif(f->>'payee', '') end);
+    insert into cars (dealer_id, car_name, plate, plate_before, purchase_date, purchase_amount, purchase_fee, acq_tax, acq_tax_unknown,
+                      evidence, seller_type, seller_name, purchase_channel, memo, created_by, auto_post_id)
+    values (did, coalesce(nullif(f->>'car_name', ''), new.title), replace(coalesce(new.plate, f->>'plate'), ' ', ''), replace(coalesce(new.plate, f->>'plate'), ' ', ''),
+            d, amt, 0, 0, true, ev, st, nm, case when route = '엔카' then '엔카' end,
+            concat_ws(' · ', '게시판 송금요청에서 자동 등록', case when route = '헤이딜러' then '헤이딜러 제로/셀프 고르기' end,
+                      case when f->>'invoice' = '확인 필요' then '계산서 발행 확인 필요' end),
+            uid, new.id)
+    returning id into cid;
+    insert into board_comments (post_id, body, author_name)
+    values (new.id, format('🚗 재고에 올렸습니다 — %s 차 · 매입가 %s원 · %s · 취득세는 사무장 확인 필요',
+                           coalesce((select name from dealers where id = did), '담당 없음'), to_char(amt, 'FM999,999,999,999'), ev),
+            '업무관리');
+  end if;
+  new.car_id := cid;
+  update bank_txs set car_id = cid where post_id = new.id and car_id is null;
+  return new;
+end $$;
+
+drop trigger if exists board_paid_car on board_posts;
+create trigger board_paid_car before update of done_at on board_posts
+  for each row when (new.category = '송금요청') execute function _board_paid_car();
+
+-- 댓글에도 사진·파일 (말소서류에 사무장이 계산서 올리기 — 사용자 2026-10-21)
+alter table board_files add column if not exists comment_id uuid references board_comments(id) on delete cascade;
+create index if not exists board_files_comment on board_files (comment_id) where comment_id is not null;
