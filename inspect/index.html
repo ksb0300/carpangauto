@@ -545,6 +545,11 @@ function drawP2Bottom(c, y, 새양식 = false) {
   c.fillStyle = INK; c.font = `800 17px ${F}`; c.fillText("스마트키", 600 + kx, y + 22);
   c.lineWidth = 1.6; c.strokeStyle = "#2a2a30"; c.strokeRect(690 + kx, y - 2, 70, 34); c.fillStyle = "#1d1d22"; c.font = `500 16px ${F}`; c.fillText("개", 768 + kx, y + 22);
   c.fillStyle = INK; c.font = `800 17px ${F}`; c.fillText("키 번호", 810 + kx, y + 22); c.strokeRect(880 + kx, y - 2, 80, 34);
+  if (새양식) {     // 비품 — 있으면 체크 (사용자 2026-10-21: 타이어 키트·소화기). 연료 칸이 빠진 오른쪽 빈자리
+    c.fillStyle = INK; c.font = `800 17px ${F}`; c.fillText("비품", 470, y + 22);
+    c.font = `500 16px ${F}`;
+    [["타이어 키트", 540], ["소화기", 720]].forEach(([t, x]) => { check(c, x, y + 4, 22); c.fillStyle = "#1d1d22"; c.fillText(t, x + 30, y + 22); });
+  }
   y += 52;
   if (새양식) {     // 옵션·장착품 — 있는 것에 체크
     c.fillStyle = INK; c.font = `800 17px ${F}`; c.fillText("옵션", 40, y + 22);
