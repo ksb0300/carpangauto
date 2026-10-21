@@ -113,6 +113,7 @@ export function 송금글(f, memo = "") {
     `종류: ${f.kind || "-"}${f.route ? ` (${f.route})` : ""}`,
     f.plate && `차량: ${f.plate}`,
     `받는 곳: ${[f.bank, f.account, f.payee].filter(Boolean).join(" ") || "-"}`,
+    f.payee_type && `받는 쪽: ${f.payee_type}${(f.payee_type === "법인" || f.payee_type === "사업자") ? ` · 계산서 ${f.invoice || "확인 안 함"}` : ""}`,
     `금액: ${f.amount ? 원(f.amount) : "-"}`,
     f.due && `기한: ${f.due}`,
     f.customer && `고객: ${f.customer}`,

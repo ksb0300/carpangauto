@@ -15,7 +15,8 @@ import { 송금읽기, 송금글, 매도읽기, 매도글, 금액, 원, 송금�
 const BOARDS = [
   ["공지", "공지", "📌", null],
   ["매입등록증", "매입 등록증", "🚗", "매입·매도 업무"], ["매도등록증", "매도 등록증", "🔑", "매입·매도 업무"],
-  ["송금요청", "송금요청", "💸", "매입·매도 업무"], ["매도정보", "매도정보", "🤝", "매입·매도 업무"], ["말소서류", "말소서류", "📄", "매입·매도 업무"],
+  ["송금요청", "송금요청", "💸", "매입·매도 업무"], ["매도정보", "매도정보", "🤝", "매입·매도 업무"], ["3일환불제서류", "3일환불제 서류", "🧾", "매입·매도 업무"],
+  ["말소서류", "말소서류", "📄", "매입·매도 업무"],
   ["자료", "자료·매뉴얼", "📚", null], ["자유", "자유", "💬", null],
 ];
 const 이름 = Object.fromEntries(BOARDS.map(b => [b[0], b[1]]));
@@ -137,6 +138,14 @@ function List({ app }) {
 }
 
 /* ───────── 양식 칸 (글쓰기·고치기 같이 씀) ───────── */
+// 송금요청 받는 쪽 (사용자 2026-10-21): 개인·법인·사업자, 법인·사업자면 계산서 발행 되는지 꼭 체크
+const 받는쪽들 = ["개인", "법인", "사업자"], 계산서들 = ["발행 가능", "발행 안 됨", "확인 필요"];
+const 사업자 = t => t === "법인" || t === "사업자";
+/** 고른 값, 안 골랐으면 예금주 이름으로 짐작 ((주)·주식회사 → 법인, 그 밖엔 개인) */
+const 받는쪽 = f => f.payee_type || (/\(주\)|㈜|주식회사|\(유\)|유한회사|법인/.test(f.payee || "") ? "법인" : f.payee ? "개인" : "");
+/** 송금요청 칸 확인 — 문제 있으면 알림 문구 */
+const 송금확인 = form => !form.amount ? "송금할 금액을 입력하세요" : !form.payee_type ? "받는 쪽(개인·법인·사업자)을 고르세요"
+  : 사업자(form.payee_type) && !form.invoice ? "법인·사업자는 계산서 발행이 되는지 골라 주세요" : null;
 function 송금칸({ f, set }) {
   const a = 금액(f.amountText ?? "") ?? (Number(String(f.amountText || "").replace(/[^\d]/g, "")) || null);
   return html`<div class="fgrid">
@@ -147,6 +156,9 @@ function 송금칸({ f, set }) {
     <${Field} label="은행"><input value=${f.bank || ""} placeholder="우리은행" onInput=${e => set("bank", e.target.value)} /><//>
     <${Field} label="계좌번호"><input inputmode="numeric" value=${f.account || ""} onInput=${e => set("account", e.target.value)} /><//>
     <${Field} label="예금주" req hint="금액 + 예금주가 맞는 출금이 통장에 들어오면 자동으로 완료됩니다"><input value=${f.payee || ""} placeholder="(주)피알앤디컴퍼니 / 엔카닷컴 / 홍길동" onInput=${e => set("payee", e.target.value)} /><//>
+    <${Field} label="받는 쪽" req><${Seg} value=${받는쪽(f)} onChange=${v => set("payee_type", v)} options=${받는쪽들} /><//>
+    ${사업자(받는쪽(f)) && html`<${Field} label="계산서 발행" req hint="세금계산서·계산서를 받을 수 있는지 (부가세 공제·증빙)">
+      <${Seg} value=${f.invoice || ""} onChange=${v => set("invoice", v)} options=${계산서들} /><//>`}
     <${Field} label="기한"><input value=${f.due || ""} placeholder="예: 10/19 10:30 탁송 출발" onInput=${e => set("due", e.target.value)} /><//>
     ${f.kind === "매입대금" && html`<${Field} label="고객 성함·주민번호"><input value=${f.customer || ""} onInput=${e => set("customer", e.target.value)} /><//>`}
   </div>`;
@@ -175,7 +187,8 @@ function 양식정리(cat, f) {
   if (cat === "송금요청") {
     const amount = 금액(f.amountText ?? "") ?? (Number(String(f.amountText || "").replace(/[^\d]/g, "")) || null);
     return { kind: f.kind || "업무비", route: f.kind === "업무비" ? null : f.route || null, plate: 번호판(f.plate) || 번호(f.plate) || null, bank: f.bank || null,
-      account: f.account || null, payee: (f.payee || "").trim() || null, amount, due: f.due || null, customer: f.customer || null, memo: f.memo || null, paste: f.paste || null };
+      account: f.account || null, payee: (f.payee || "").trim() || null, payee_type: 받는쪽(f) || null, invoice: 사업자(받는쪽(f)) ? f.invoice || null : null,
+      amount, due: f.due || null, customer: f.customer || null, memo: f.memo || null, paste: f.paste || null };
   }
   if (cat === "매도정보") {
     const amount = 매도금액(f.amountText);
@@ -224,7 +237,7 @@ function Write({ app }) {
   const save = async () => {
     if (busy) return;
     const form = 양식정리(cat, { ...f, memo: t.body.trim() || null });
-    if (cat === "송금요청" && !form.amount) return toast("송금할 금액을 입력하세요", "err");
+    if (cat === "송금요청" && 송금확인(form)) return toast(송금확인(form), "err");
     if (cat === "송금요청" && !form.payee) { if (!ask("예금주가 비어 있으면 통장에서 자동으로 찾지 못합니다. 그래도 올릴까요?")) return; }
     if (cat === "매도정보" && !form.plate) return toast("차량번호를 입력하세요", "err");
     if (cat === "매도정보" && !form.car_name) return toast("차명을 입력하세요 (대충이라도)", "err");
@@ -314,6 +327,7 @@ function 송금카드({ f, p }) {
     <div class="f"><b>금액</b><div><span class="big">${f.amount ? 원(f.amount) : "-"}</span></div></div>
     <div class="f"><b>받는 곳</b><div>${[f.bank, f.account, f.payee].filter(Boolean).join(" · ") || "-"}
       ${f.account && html`<button class="btn sm ghost" onClick=${복사}>계좌 복사</button>`}</div></div>
+    ${f.payee_type && html`<div class="f"><b>받는 쪽</b><div>${f.payee_type}${사업자(f.payee_type) && html` · 계산서 <span class=${"badge " + (f.invoice === "발행 가능" ? "green" : f.invoice === "발행 안 됨" ? "red" : "amber")}>${f.invoice || "확인 안 함"}</span>`}</div></div>`}
     ${f.plate && html`<div class="f"><b>차량</b><div>${f.plate} ${p.car_id && html`<a href=${"#/car/" + p.car_id}>차 보기 →</a>`}</div></div>`}
     ${f.due && html`<div class="f"><b>기한</b><div>${f.due}</div></div>`}
     ${f.customer && html`<div class="f"><b>고객</b><div>${f.customer}</div></div>`}
@@ -447,6 +461,7 @@ function Post({ app, id }) {
     const 양식 = 송금 || p.category === "매도정보";
     const form = 양식 ? 양식정리(p.category, { ...edit.f, memo: edit.f.memo || null }) : p.form;
     if (매도 && (!form.plate || !form.car_name || !form.amount || form.fee_included == null)) throw new Error("차량번호·차명·매도 금액·매도비(별도/포함)는 꼭 넣어 주세요");
+    if (송금 && 송금확인(form)) throw new Error(송금확인(form));
     const body = 송금 ? (form.paste || 송금글(form, form.memo || "")) : p.category === "매도정보" ? 매도글(form, form.memo || "") : edit.body;
     const 기한 = 송금 ? 기한시각(form.due) : null;
     await q(app.db.from("board_posts").update({ title: p.category === "매도정보" ? 매도제목(form) : edit.title.trim() || p.title, body, form, plate: 양식 ? form.plate : p.plate, updated_at: new Date().toISOString(),
@@ -504,6 +519,7 @@ function Post({ app, id }) {
         <div class="bar"><span class="grow"></span><button class="btn ghost" onClick=${() => setEdit(null)}>취소</button><button class="btn primary" onClick=${saveEdit}>저장</button></div></div>`
       : html`${양식 && (송금 ? html`<${송금카드} f=${p.form} p=${p} />` : html`<${매도카드} f=${p.form} p=${p} />`)}
         ${양식 ? (p.body && html`<details><summary class="small muted">원문 보기</summary><div class="bd-body">${p.body}</div></details>`) : p.body && html`<div class="bd-body">${p.body}</div>`}`}
+    ${(m => m && html`<p><a class="btn primary sm" href=${"#/signs/" + m[1]}>📄 약정서 보기 (서명본)</a></p>`)(p.category === "3일환불제서류" && (p.body || "").match(/#\/signs\/([0-9a-f-]{36})/))}
     ${!양식 && p.plate && html`<p class="small">차량번호 <b>${p.plate}</b> ${p.car_id ? html`· <a href=${"#/car/" + p.car_id + "/files"}>차 첨부서류 보기 →</a>` : html`<span class="muted">· 업무관리에 없는 차</span>`}</p>`}
     ${imgs.length > 0 && html`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:12px">
       ${imgs.map(f => html`<div><a href=${x.urls[f.id]} target="_blank" rel="noopener"><img src=${x.urls[f.id]} alt=${f.name} style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;border:1px solid var(--line)" /></a>
