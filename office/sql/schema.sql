@@ -2639,3 +2639,10 @@ begin
 end $$;
 revoke execute on function att_fix_decide(uuid, boolean) from public, anon;
 grant execute on function att_fix_decide(uuid, boolean) to authenticated;
+
+
+-- 20261022000002_sale_am_fm.sql
+-- 매도 판매유형에 FM·AM, AM수익 칸 (사용자 2026-10-22) — AM수익은 할부수익처럼 마진(차량 손익)에 더한다
+alter table car_sales drop constraint car_sales_sale_type_check;
+alter table car_sales add constraint car_sales_sale_type_check check (sale_type in ('내수판매', '수출', '엔카믿고', '알선판매', 'FM', 'AM'));
+alter table car_sales add column if not exists am_income bigint not null default 0;
