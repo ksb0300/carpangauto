@@ -128,6 +128,7 @@ function List({ app }) {
               ${p.publish_at && Date.parse(p.publish_at) > Date.now() && html`<${Badge} tone="blue">🕒 예약 ${날짜시각(p.publish_at).slice(6)}<//>`}
               ${p.category === "송금요청" && (p.done_at ? html`<${Badge} tone="green">✔ 완료<//>` : html`<${Badge} tone="amber">⏳ 대기<//>`)}
               ${p.category === "송금요청" && p.form?.kind === "매입대금" && !p.done_at && (p.ack_at ? html`<${Badge}>👀 확인<//>` : html`<${Badge} tone="red">🔔 미확인<//>`)}
+              ${p.category === "송금요청" && !p.done_at && 대표담당(p.form) && html`<${Badge}>대표님 담당<//>`}
               ${p.category === "매도정보" && (p.done_at ? html`<${Badge} tone="green">✔ 잔금 완료<//>` : html`<${Badge} tone="amber">⏳ ${p.form?.deposit > 0 ? "잔금 대기" : "입금 대기"}<//>`)}
               ${!게시판 && html`<span class="muted small" style="font-weight:400">${아이콘[p.category]} ${이름[p.category]}</span>`}</div>
             <div class="m">${p.author_name || "-"} · 읽음 ${d.readN[p.id] || 0}${d.cmt[p.id] ? ` · 💬 ${d.cmt[p.id]}` : ""}${p.plate ? ` · ${p.plate}${p.car_id ? " ✓" : ""}` : ""}${p.form?.amount && p.category === "송금요청" ? ` · ${원(p.form.amount)}` : ""}${p.form?.amount && p.category === "매도정보" ? ` · ${p.form.type ? p.form.type + " " : ""}${원(p.form.amount)}` : ""}</div>
@@ -143,15 +144,32 @@ const 받는쪽들 = ["개인", "법인", "사업자"], 계산서들 = ["발행 
 const 사업자 = t => t === "법인" || t === "사업자";
 /** 고른 값, 안 골랐으면 예금주 이름으로 짐작 ((주)·주식회사 → 법인, 그 밖엔 개인) */
 const 받는쪽 = f => f.payee_type || (/\(주\)|㈜|주식회사|\(유\)|유한회사|법인/.test(f.payee || "") ? "법인" : f.payee ? "개인" : "");
-/** 송금요청 칸 확인 — 문제 있으면 알림 문구 */
-const 송금확인 = form => !form.amount ? "송금할 금액을 입력하세요" : !form.payee_type ? "받는 쪽(개인·법인·사업자)을 고르세요"
+/** 송금요청 칸 확인 — 문제 있으면 알림 문구. 매입대금은 차량번호·차량명·예금주 필수(입금되면 재고로 올릴 때 씀), 수수료·업무비는 자유 */
+const 송금확인 = form => !form.amount ? "송금할 금액을 입력하세요"
+  : form.kind === "매입대금" && !form.plate ? "매입대금은 차량번호를 넣어 주세요"
+  : form.kind === "매입대금" && !form.car_name ? "매입대금은 차량명을 넣어 주세요 (대충이라도)"
+  : form.kind === "매입대금" && !form.payee ? "매입대금은 예금주를 넣어 주세요"
+  : !form.payee_type ? "받는 쪽(개인·법인·사업자)을 고르세요"
   : 사업자(form.payee_type) && !form.invoice ? "법인·사업자는 계산서 발행이 되는지 골라 주세요" : null;
+// 담당 (사용자 2026-10-21): 사무장(기본) / 김상혁 대표 — 대표면 시간 상관없이 대표에게만 재촉·조르기
+const 담당들 = ["사무장", "김상혁 대표"];
+const 대표담당 = f => f?.handler === "대표";
+/** 담당이 대표면 그 계정 id 를 form 에 (tick·조르기가 이 사람에게만 보낸다) */
+async function 담당정리(app, form) {
+  if (!form) return form;
+  form.handler_id = 대표담당(form) ? (await 구성원(app)).find(m => m.role === "admin" && m.name === "김상혁")?.user_id || null : null;
+  return form;
+}
 function 송금칸({ f, set }) {
   const a = 금액(f.amountText ?? "") ?? (Number(String(f.amountText || "").replace(/[^\d]/g, "")) || null);
+  const 차 = f.kind === "매입대금", 대표 = f.handler === "대표";
   return html`<div class="fgrid">
-    <${Field} label="종류" hint=${f.kind === "매입대금" ? "차대금 — 사무장님이 [확인] 누를 때까지 재촉 알림 (사무장 근무시간 평일 8:30~17:00)" : "알림 한 번"}><${Seg} value=${f.kind} onChange=${v => set("kind", v)} options=${송금종류} /><//>
+    <${Field} label="담당" hint=${대표 ? "대표님 담당 — 시간 상관없이 대표님께만 알림·재촉" : "사무장 — 근무시간(평일 8:30~17:00)에 알림·재촉"}>
+      <${Seg} value=${대표 ? "김상혁 대표" : "사무장"} onChange=${v => set("handler", v === "김상혁 대표" ? "대표" : "사무장")} options=${담당들} /><//>
+    <${Field} label="종류" hint=${차 ? `차대금 — ${대표 ? "대표님" : "사무장님"}이 [확인] 누를 때까지 재촉 알림` : "알림 한 번"}><${Seg} value=${f.kind} onChange=${v => set("kind", v)} options=${송금종류} /><//>
     ${f.kind !== "업무비" && html`<${Field} label="매입경로"><${Seg} value=${f.route || ""} onChange=${v => set("route", v)} options=${경로들} /><//>`}
-    <${Field} label="차량번호" hint=${f.kind === "업무비" ? "차에 쓴 돈이면 적어 주세요 (선택)" : ""}><input value=${f.plate || ""} placeholder="예: 54다8079" onInput=${e => set("plate", e.target.value)} /><//>
+    <${Field} label="차량번호" req=${차} hint=${f.kind === "업무비" ? "차에 쓴 돈이면 적어 주세요 (선택)" : ""}><input value=${f.plate || ""} placeholder="예: 54다8079" onInput=${e => set("plate", e.target.value)} /><//>
+    <${Field} label="차량명" req=${차} hint=${차 ? "입금되면 재고로 올릴 때 씁니다 (대충이라도)" : ""}><input value=${f.car_name || ""} placeholder="예: 그랜저 IG 2.5" onInput=${e => set("car_name", e.target.value)} /><//>
     <${Field} label="금액" req hint=${a ? "= " + 원(a) : "1311만 · 13,110,000 · 15000원 다 됩니다"}><input value=${f.amountText ?? ""} onInput=${e => set("amountText", e.target.value)} /><//>
     <${Field} label="은행"><input value=${f.bank || ""} placeholder="우리은행" onInput=${e => set("bank", e.target.value)} /><//>
     <${Field} label="계좌번호"><input inputmode="numeric" value=${f.account || ""} onInput=${e => set("account", e.target.value)} /><//>
@@ -188,6 +206,7 @@ function 양식정리(cat, f) {
     const amount = 금액(f.amountText ?? "") ?? (Number(String(f.amountText || "").replace(/[^\d]/g, "")) || null);
     return { kind: f.kind || "업무비", route: f.kind === "업무비" ? null : f.route || null, plate: 번호판(f.plate) || 번호(f.plate) || null, bank: f.bank || null,
       account: f.account || null, payee: (f.payee || "").trim() || null, payee_type: 받는쪽(f) || null, invoice: 사업자(받는쪽(f)) ? f.invoice || null : null,
+      car_name: (f.car_name || "").trim() || null, handler: f.handler === "대표" ? "대표" : "사무장", handler_id: f.handler_id || null,
       amount, due: f.due || null, customer: f.customer || null, memo: f.memo || null, paste: f.paste || null };
   }
   if (cat === "매도정보") {
@@ -245,7 +264,7 @@ function Write({ app }) {
     if (cat === "매도정보" && form.fee_included == null) return toast("매도비 별도·포함을 고르세요", "err");
     const plate = 양식 ? form.plate : 번호판(t.plate) || 번호(t.plate);     // '33우4535말리부' 처럼 차명을 붙여 써도 번호판만
     if (등록증 && !plate) return toast("등록증은 차량번호를 입력하세요", "err");
-    const title = cat === "매도정보" ? 매도제목(form) : t.title.trim() || (cat === "송금요청" ? `${form.plate || ""} ${form.kind}${form.route ? `(${form.route})` : ""} ${form.amount % 10000 === 0 ? form.amount / 10000 + "만원" : 원(form.amount)}`.trim()
+    const title = cat === "매도정보" ? 매도제목(form) : t.title.trim() || (cat === "송금요청" ? `${form.plate || ""}${form.car_name ? " " + form.car_name : ""} ${form.kind}${form.route ? `(${form.route})` : ""} ${form.amount % 10000 === 0 ? form.amount / 10000 + "만원" : 원(form.amount)}`.trim()
       : 등록증 ? `${plate} ${이름[cat]}` : "");
     if (!title) return toast("제목을 입력하세요", "err");
     const body = cat === "송금요청" ? (form.paste || 송금글(form, form.memo || "")) : cat === "매도정보" ? 매도글(form, form.memo || "") : t.body;
@@ -257,6 +276,7 @@ function Write({ app }) {
       const 올릴 = await 모두줄이기(files);
       if (올릴.some(x => x.size > MAX)) throw new Error("20MB 넘는 파일은 올릴 수 없습니다.");
       const car = plate ? await 차찾기(app, plate) : null;
+      if (cat === "송금요청") await 담당정리(app, form);
       const [p] = await q(app.db.from("board_posts").insert({ category: cat, title, body, plate: plate || null, car_id: car?.id || null,
         pinned: !!t.pinned, author_name: app.profile.name, form, publish_at: 예약,
         notified_at: 예약 || 차 ? null : new Date().toISOString(), due_at: cat === "송금요청" ? 기한시각(form.due) : null }).select("id"));
@@ -388,6 +408,7 @@ function Post({ app, id }) {
   const [p, setP] = useState(undefined);
   const [x, setX] = useState({ files: [], urls: {}, cs: [], reads: [], rx: [], star: false, tx: null, ids: [], members: [] });
   const [c, setC] = useState("");
+  const [cf, setCf] = useState([]);        // 댓글에 붙일 사진·파일 (말소서류에 계산서 등)
   const [edit, setEdit] = useState(null);
   const [readers, setReaders] = useState(false);
   const load = () => run(async () => {
@@ -425,20 +446,32 @@ function Post({ app, id }) {
 
   const 송금 = p.category === "송금요청";
   const 매도 = p.category === "매도정보", 완료이름 = 매도 ? "잔금 완료" : "송금 완료";
-  const 관계자 = () => [p.created_by, ...x.cs.map(k => k.created_by)].filter(Boolean);
+  // 글쓴이·댓글 단 사람 — 웍스에서 옮긴 글·댓글은 계정(created_by)이 비어 있어 이름으로 찾는다
+  const 계정 = (uid, name) => uid || x.members.find(m => m.name === name)?.user_id || null;
+  const 관계자 = () => [계정(p.created_by, p.author_name), ...x.cs.map(k => 계정(k.created_by, k.author_name))].filter(Boolean);
   const url = "/office/#/board/" + id;
   const i = x.ids.indexOf(id), 앞 = i > 0 ? x.ids[i - 1] : null, 뒤 = i >= 0 && i < x.ids.length - 1 ? x.ids[i + 1] : null;
   const 읽은 = x.reads.filter(r => !r.seed);
   const 안읽은 = x.members.filter(m => m.user_id !== p.created_by && !x.reads.some(r => r.user_id === m.user_id));
+  // 조르기 받을 사람: 대표 담당이면 그 대표, 아니면 사무장(staff). 나 자신은 빼고
+  const 조를사람 = (대표담당(p.form) ? x.members.filter(m => m.user_id === p.form.handler_id) : x.members.filter(m => m.role === "staff")).filter(m => m.user_id !== me);
 
   const addC = () => run(async () => {
-    const body = c.trim();
+    const body = c.trim() || (cf.length ? `📎 ${cf.map(f => f.name).join(", ")}` : "");
     if (!body) return;
-    await q(app.db.from("board_comments").insert({ post_id: id, body, author_name: app.profile.name }));
+    const 올릴 = await 모두줄이기(cf);
+    if (올릴.some(f => f.size > MAX)) throw new Error("20MB 넘는 파일은 올릴 수 없습니다.");
+    const [cm] = await q(app.db.from("board_comments").insert({ post_id: id, body, author_name: app.profile.name }).select("id"));
+    for (const f of 올릴) {
+      const path = `board/${id}/${저장이름(f.name)}`;
+      const { error } = await bucket(app).upload(path, f, { contentType: f.type, upsert: false });
+      if (error) throw new Error(error.message);
+      await q(app.db.from("board_files").insert({ post_id: id, comment_id: cm.id, name: f.name, path, size: f.size, mime: f.type || null }));
+    }
     const 완료됨 = (송금 || 매도) && !p.done_at && 완료말.test(body);
     if (완료됨) await q(app.db.rpc("board_mark_done", { p_id: id, p_done: true }));
     await 알림(app, { title: 완료됨 ? `✔ ${완료이름}: ${p.title}` : `💬 ${p.title}`, body: `${app.profile.name}: ${body.slice(0, 100)}`, url, tag: "board-c-" + id, to_users: 관계자() });
-    setC(""); load();
+    setC(""); setCf([]); load();
   });
   const 완료 = v => run(async () => {
     await q(app.db.rpc("board_mark_done", { p_id: id, p_done: v }));
@@ -450,13 +483,16 @@ function Post({ app, id }) {
   const 조르기 = () => run(async () => {
     const 최근 = x.cs.filter(k => /^🔔 조르기/.test(k.body)).map(k => Date.parse(k.created_at)).sort().pop();
     if (최근 && Date.now() - 최근 < 3 * 60e3) throw new Error("방금 졸랐습니다. 3분 뒤에 다시 눌러 주세요");
-    const 받을 = x.members.filter(m => m.role === "staff" && m.user_id !== me);
-    const 시간 = await q(app.db.from("att_people").select("user_id,start_time,end_time").in("user_id", 받을.map(m => m.user_id)));
-    const k = new Date(Date.now() + 9 * 3600e3), hm = k.toISOString().slice(11, 16), 평일 = k.getUTCDay() >= 1 && k.getUTCDay() <= 5;
-    const 근무중 = 받을.some(m => { const s = 시간.find(t => t.user_id === m.user_id); return 평일 && hm >= (s?.start_time || "09:00").slice(0, 5) && hm < (s?.end_time || "19:00").slice(0, 5); });
-    if (!근무중 && !ask("사무장님 근무시간이 아닙니다. 그래도 알림을 보낼까요?")) return;
+    const 받을 = 조를사람;
+    if (!받을.length) throw new Error("알림 받을 담당자가 없습니다");
+    if (!대표담당(p.form)) {  // 대표 담당이면 시간 상관없이
+      const 시간 = await q(app.db.from("att_people").select("user_id,start_time,end_time").in("user_id", 받을.map(m => m.user_id)));
+      const k = new Date(Date.now() + 9 * 3600e3), hm = k.toISOString().slice(11, 16), 평일 = k.getUTCDay() >= 1 && k.getUTCDay() <= 5;
+      const 근무중 = 받을.some(m => { const s = 시간.find(t => t.user_id === m.user_id); return 평일 && hm >= (s?.start_time || "09:00").slice(0, 5) && hm < (s?.end_time || "19:00").slice(0, 5); });
+      if (!근무중 && !ask("사무장님 근무시간이 아닙니다. 그래도 알림을 보낼까요?")) return;
+    }
     const f = p.form || {};
-    await 알림(app, { title: "💸 사무장님 송금해주세요~", body: `${p.title}${f.amount ? " · " + 원(f.amount) : ""}${f.payee ? " → " + f.payee : ""} (${app.profile.name})`,
+    await 알림(app, { title: `💸 ${대표담당(f) ? "대표님" : "사무장님"} 송금해주세요~`, body: `${p.title}${f.amount ? " · " + 원(f.amount) : ""}${f.payee ? " → " + f.payee : ""} (${app.profile.name})`,
       url, tag: "nudge-" + id + "-" + Date.now(), to_users: 받을.map(m => m.user_id), pref: "board:송금요청" });
     await q(app.db.from("board_comments").insert({ post_id: id, body: `🔔 조르기 — ${받을.map(m => m.name).join(", ")}님께 알림`, author_name: app.profile.name }));
     load(); toast(`${받을.map(m => m.name).join(", ")}님께 알림을 보냈습니다`);
@@ -471,12 +507,17 @@ function Post({ app, id }) {
     else await q(app.db.from("board_reactions").insert({ post_id: id, emoji: e, name: app.profile.name }));
     load();
   });
-  const delC = k => ask("이 댓글을 지울까요?") && run(async () => { await q(app.db.from("board_comments").delete().eq("id", k.id)); load(); });
+  const delC = k => ask("이 댓글을 지울까요?") && run(async () => {
+    const paths = x.files.filter(f => f.comment_id === k.id).map(f => f.path);
+    if (paths.length) await bucket(app).remove(paths);
+    await q(app.db.from("board_comments").delete().eq("id", k.id)); load();
+  });
   const saveEdit = () => run(async () => {
     const 양식 = 송금 || p.category === "매도정보";
     const form = 양식 ? 양식정리(p.category, { ...edit.f, memo: edit.f.memo || null }) : p.form;
     if (매도 && (!form.plate || !form.car_name || !form.amount || form.fee_included == null)) throw new Error("차량번호·차명·매도 금액·매도비(별도/포함)는 꼭 넣어 주세요");
     if (송금 && 송금확인(form)) throw new Error(송금확인(form));
+    if (송금) await 담당정리(app, form);
     const body = 송금 ? (form.paste || 송금글(form, form.memo || "")) : p.category === "매도정보" ? 매도글(form, form.memo || "") : edit.body;
     const 기한 = 송금 ? 기한시각(form.due) : null;
     await q(app.db.from("board_posts").update({ title: p.category === "매도정보" ? 매도제목(form) : edit.title.trim() || p.title, body, form, plate: 양식 ? form.plate : p.plate, updated_at: new Date().toISOString(),
@@ -491,7 +532,8 @@ function Post({ app, id }) {
     await q(app.db.from("board_posts").delete().eq("id", id));
     go("/board");
   }, "지웠습니다");
-  const imgs = x.files.filter(f => /^image\//.test(f.mime || "") && x.urls[f.id]), etc = x.files.filter(f => !imgs.includes(f));
+  const 글첨부 = x.files.filter(f => !f.comment_id);
+  const imgs = 글첨부.filter(f => /^image\//.test(f.mime || "") && x.urls[f.id]), etc = 글첨부.filter(f => !imgs.includes(f));
   const 양식 = (송금 || p.category === "매도정보") && p.form;
 
   return html`<div class="card bd-post">
@@ -516,13 +558,16 @@ function Post({ app, id }) {
         <span class="muted small">(${x.tx.match_kind})</span><span class="grow"></span><a href="#/bank">자금관리 →</a></div>`
       : p.done_at ? html`<div class="bank-ok">✔ <b>송금 완료</b> <span class="muted small">${p.done_by || ""} · ${날짜시각(p.done_at)}</span><span class="grow"></span>
         <button class="btn sm ghost" onClick=${() => ask("송금 완료를 취소할까요?") && 완료(false)}>완료 취소</button></div>`
-      : html`<div class="bank-ok bank-wait">⏳ <b>송금 대기</b> <span class="muted small">금액·예금주가 맞는 출금이 통장에 들어오면 자동으로 완료 · 댓글 '입완'으로도 완료</span><span class="grow"></span>
-        ${x.members.some(m => m.role === "staff" && m.user_id !== me) && html`<button class="btn sm" title="사무장님 폰으로 바로 알림" onClick=${조르기}>🔔 조르기</button>`}
+      : html`<div class="bank-ok bank-wait">⏳ <b>송금 대기</b>${대표담당(p.form) && html` <${Badge}>대표님 담당<//>`} <span class="muted small">금액·예금주가 맞는 출금이 통장에 들어오면 자동으로 완료 · 댓글 '입완'으로도 완료</span><span class="grow"></span>
+        ${조를사람.length > 0 && html`<button class="btn sm" title=${(대표담당(p.form) ? "대표님" : "사무장님") + " 폰으로 바로 알림"} onClick=${조르기}>🔔 조르기</button>`}
         <button class="btn sm primary" onClick=${() => 완료(true)}>✔ 송금 완료</button></div>`)}
     ${송금 && p.form?.kind === "매입대금" && !p.done_at && html`<div class=${"bank-ok" + (p.ack_at ? "" : " bank-wait")}>${p.ack_at
       ? html`👀 <b>${p.ack_by || ""} 확인</b> <span class="muted small">${날짜시각(p.ack_at)} · 재촉 끝</span>`
+      : 대표담당(p.form) ? html`🔔 <b>대표님 확인 전</b> <span class="muted small">[확인]을 누를 때까지 대표님께 재촉합니다 (시간 상관없이, 최대 3번)</span><span class="grow"></span>
+        <button class="btn sm primary" onClick=${확인}>👀 확인했어요</button>`
       : html`🔔 <b>사무장 확인 전</b> <span class="muted small">[확인]을 누를 때까지 사무장 근무시간(평일 8:30~17:00)에 재촉합니다 (최대 3번)</span><span class="grow"></span>
         <button class="btn sm primary" onClick=${확인}>👀 확인했어요</button>`}</div>`}
+    ${송금 && p.car_id && html`<p class="small" style="margin-top:8px">🚗 <a href=${"#/car/" + p.car_id}>재고 차 보기 →</a> <span class="muted">차대금 송금이 끝나면 리스트에 자동으로 올라갑니다 (취득세는 사무장 확인)</span></p>`}
     ${p.publish_at && Date.parse(p.publish_at) > Date.now() && html`<p class="note">🕒 ${날짜시각(p.publish_at)}에 올라가고 그때 알림이 갑니다. 지금은 쓴 사람과 대표만 보입니다.</p>`}
     ${매도 && p.form?.amount && html`<${잔금줄} p=${p} ins=${x.ins || []} 완료=${완료} />`}
 
@@ -542,15 +587,22 @@ function Post({ app, id }) {
         <${첨부버튼} f=${f} url=${x.urls[f.id]} /></div>`)}</div>`}
     ${etc.length > 0 && html`<ul class="todo" style="margin-top:10px">${etc.map(f => html`<li style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">📎 ${x.urls[f.id] ? html`<a href=${x.urls[f.id]} target="_blank" rel="noopener">${f.name}</a>` : f.name}
       <${첨부버튼} f=${f} url=${x.urls[f.id]} /></li>`)}</ul>`}
-    ${x.files.length > 1 && 공유됨 && html`<div class="bar" style="margin-top:8px"><button class="btn sm" onClick=${() => 첨부공유(x.files.filter(f => x.urls[f.id]).map(f => [f, x.urls[f.id]]), p.title)}>📤 첨부 ${x.files.length}개 한꺼번에 공유</button></div>`}
+    ${글첨부.length > 1 && 공유됨 && html`<div class="bar" style="margin-top:8px"><button class="btn sm" onClick=${() => 첨부공유(글첨부.filter(f => x.urls[f.id]).map(f => [f, x.urls[f.id]]), p.title)}>📤 첨부 ${글첨부.length}개 한꺼번에 공유</button></div>`}
 
     <div class="rx">${EMOJIS.map(e => { const who = x.rx.filter(r => r.emoji === e); const 나 = who.some(r => r.user_id === me);
       return html`<button class=${나 ? "on" : ""} title=${who.map(r => r.name).join(", ")} onClick=${() => 리액션(e)}>${e}${who.length ? " " + who.length : ""}</button>`; })}
       <span class="grow"></span><span class="muted small">💬 ${x.cs.length}</span></div>
     ${x.cs.map(k => html`<div class="cmt" key=${k.id}><${Avatar} name=${k.author_name} size=${32} />
-      <div class="bx"><div class="hd"><b>${k.author_name}</b><span>${날짜시각(k.created_at)}</span></div><div class="tx">${k.body}</div></div>
+      <div class="bx"><div class="hd"><b>${k.author_name}</b><span>${날짜시각(k.created_at)}</span></div><div class="tx">${k.body}</div>
+        ${(fs => fs.length > 0 && html`<div class="cmt-files">${fs.map(f => /^image\//.test(f.mime || "") && x.urls[f.id]
+          ? html`<div><a href=${x.urls[f.id]} target="_blank" rel="noopener"><img src=${x.urls[f.id]} alt=${f.name} /></a><${첨부버튼} f=${f} url=${x.urls[f.id]} /></div>`
+          : html`<div class="small">📎 ${x.urls[f.id] ? html`<a href=${x.urls[f.id]} target="_blank" rel="noopener">${f.name}</a>` : f.name} <${첨부버튼} f=${f} url=${x.urls[f.id]} /></div>`)}</div>`)(x.files.filter(f => f.comment_id === k.id))}</div>
       ${내것(app, k) && html`<button class="btn sm ghost" onClick=${() => delC(k)}>✕</button>`}</div>`)}
-    <div class="row" style="margin-top:12px"><input value=${c} placeholder=${송금 && !p.done_at ? "댓글 쓰기 ('입완' 이라고 쓰면 송금 완료)" : 매도 && !p.done_at ? "댓글 쓰기 ('입완' 이라고 쓰면 잔금 완료)" : "댓글 쓰기"} onInput=${e => setC(e.target.value)}
+    ${cf.length > 0 && html`<div class="chips" style="margin-top:10px">${cf.map((f, i) => html`<span class="chip" key=${i + f.name}>📎 ${f.name}
+      <button type="button" title="빼기" style="border:0;background:none;cursor:pointer;padding:0 0 0 4px;font:inherit" onClick=${() => setCf(cf.filter((_, j) => j !== i))}>✕</button></span>`)}</div>`}
+    <div class="row" style="margin-top:12px"><label class="btn" title="사진·파일 붙이기 (계산서 등)">📎<input type="file" hidden multiple accept="image/*,.pdf,.hwp,.xlsx,.xls,.doc,.docx"
+        onChange=${e => { setCf([...cf, ...e.target.files]); e.target.value = ""; }} /></label><input value=${c}
+      onPaste=${e => { const fs = [...(e.clipboardData?.files || [])]; if (fs.length) { e.preventDefault(); setCf([...cf, ...fs]); } }} placeholder=${송금 && !p.done_at ? "댓글 쓰기 ('입완' 이라고 쓰면 송금 완료)" : 매도 && !p.done_at ? "댓글 쓰기 ('입완' 이라고 쓰면 잔금 완료)" : "댓글 쓰기"} onInput=${e => setC(e.target.value)}
       onKeyDown=${e => { if (e.key === "Enter" && !e.isComposing) addC(); }} /><button class="btn" onClick=${addC}>등록</button></div>
   </div>`;
 }

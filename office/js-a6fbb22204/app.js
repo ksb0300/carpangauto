@@ -18,7 +18,6 @@ import { LenderEdit } from "./pages/lenders.js";
 import { StatsPage } from "./pages/stats.js";
 import { SignsPage } from "./pages/signs.js";
 import { ReservePage } from "./pages/reserve.js";
-import { KtxPage } from "./pages/ktx.js";
 import { ChecksPage, CheckEdit } from "./pages/checks.js";
 import { BoardPage } from "./pages/board.js";
 import { ContactsPage } from "./pages/contacts.js";
@@ -106,14 +105,15 @@ function Shell({ app, children, path }) {
   const office = profile.role !== "dealer";
   const nav = office
     ? [["/purchases", "리스트"], ["/sales", "매도차량"], ["/loans", "재고금융"],
-       ["/bank", "자금관리"], ["/board", "게시판"], ["/reports", "종합업무현황"], ["/stats", "통계"], ["/settings", "환경설정"]]
+       ["/bank", "자금관리"], ["/board", "게시판"]]
     : [["/purchases", "내 제시차량"], ["/sales", "매도차량"], ["/settlements", "정산내역"], ["/brokerage", "알선"], ["/reports", "내 실적"]];
   // 펼침 메뉴 (화면은 그대로 있고 메뉴줄에서만 묶는다)
   //   업무: 웍스 대신 쓰는 것 (2026-10-20 테스트 → 정식, 게시판은 맨 위 메뉴로) / 기타: 지금 잘 안 쓰는 것 (사용자 2026-10-05)
   const groups = office ? [
     ["업무", [["/todos", "할 일"], ["/calendar", "일정"], ["/attendance", "근태 (시험)"], ["/contacts", "연락처"], ["/checks", "차량검수"]]],
     // 정산내역·매출관리·서류·타상사알선은 메뉴에서만 숨김 (사용자 2026-10-20) — 주소로는 그대로 열리고, 서류는 대시보드 '새 서류'·차 화면에서 들어간다
-    ["기타", [["/reserve", "광고장 예약"], ["/ktx", "KTX 예매"]]],
+    // 종합업무현황·통계·환경설정도 기타로 (사용자 2026-10-22)
+    ["기타", [["/reserve", "광고장 예약"], ["/reports", "종합업무현황"], ["/stats", "통계"], ["/settings", "환경설정"]]],
   ] : [];
   const 켜짐 = p => path.startsWith(p) || (p === "/checks" && path.startsWith("/check/"));
   const [menu, setMenu] = useState(null);         // 펼친 메뉴 { name, left, top } (메뉴줄이 가로 스크롤이라 밖에 띄운다)
@@ -146,7 +146,7 @@ function Router({ app }) {
   const path = useHash();
   const [, a, b, c] = path.split("?")[0].split("/");
   const office = app.profile.role !== "dealer";
-  const officeOnly = ["settings", "dashboard", "issue", "bank", "ledger", "signs", "reserve", "ktx", "board", "contacts", "todos", "calendar", "attendance"];
+  const officeOnly = ["settings", "dashboard", "issue", "bank", "ledger", "signs", "reserve", "board", "contacts", "todos", "calendar", "attendance"];
   let page;
   if (!office && (officeOnly.includes(a) || (a === "cars" && b === "new") || c === "edit")) page = html`<div class="card empty">딜러 계정은 볼 수 없는 화면입니다. <a href="#/cars">차량 목록으로</a></div>`;
   else if (a === "cars" && b === "new") page = html`<${CarForm} app=${app} />`;
@@ -158,7 +158,6 @@ function Router({ app }) {
   else if (a === "checks") page = html`<${ChecksPage} app=${app} />`;
   else if (a === "check") page = html`<${CheckEdit} app=${app} id=${b} />`;
   else if (a === "reserve") page = html`<${ReservePage} app=${app} />`;
-  else if (a === "ktx") page = html`<${KtxPage} app=${app} />`;
   else if (a === "board") page = html`<${BoardPage} app=${app} id=${b} />`;
   else if (a === "contacts") page = html`<${ContactsPage} app=${app} />`;
   else if (a === "todos") page = html`<${TodosPage} app=${app} />`;
