@@ -24,6 +24,7 @@ import { ContactsPage } from "./pages/contacts.js";
 import { TodosPage } from "./pages/todos.js";
 import { CalendarPage } from "./pages/calendar.js";
 import { AttendancePage } from "./pages/attendance.js";
+import { AttWorksPage } from "./pages/att-works.js";
 import { MyPage } from "./pages/me.js";
 import { Avatar, 사진기억, 구성원 } from "./people.js";
 import { startSync } from "./check-store.js";
@@ -111,7 +112,7 @@ function Shell({ app, children, path }) {
   // 펼침 메뉴 (화면은 그대로 있고 메뉴줄에서만 묶는다)
   //   업무: 웍스 대신 쓰는 것 (2026-10-20 테스트 → 정식, 게시판은 맨 위 메뉴로) / 기타: 지금 잘 안 쓰는 것 (사용자 2026-10-05)
   const groups = office ? [
-    ["업무", [["/todos", "할 일"], ["/calendar", "일정"], ["/attendance", "근태 (시험)"], ["/contacts", "연락처"], ["/checks", "차량검수"]]],
+    ["업무", [["/todos", "할 일"], ["/calendar", "일정"], ["/attendance", "근태 (시험)"], ["/att-works", "근태(웍스테스트)"], ["/contacts", "연락처"], ["/checks", "차량검수"]]],
     // 정산내역·매출관리·서류·타상사알선은 메뉴에서만 숨김 (사용자 2026-10-20) — 주소로는 그대로 열리고, 서류는 대시보드 '새 서류'·차 화면에서 들어간다
     // 종합업무현황·통계·환경설정도 기타로 (사용자 2026-10-22)
     ["기타", [["/reserve", "광고장 예약"], ["/reports", "종합업무현황"], ["/stats", "통계"], ["/settings", "환경설정"]]],
@@ -147,7 +148,7 @@ function Router({ app }) {
   const path = useHash();
   const [, a, b, c] = path.split("?")[0].split("/");
   const office = app.profile.role !== "dealer";
-  const officeOnly = ["settings", "dashboard", "issue", "bank", "ledger", "signs", "reserve", "board", "contacts", "todos", "calendar", "attendance"];
+  const officeOnly = ["settings", "dashboard", "issue", "bank", "ledger", "signs", "reserve", "board", "contacts", "todos", "calendar", "attendance", "att-works"];
   let page;
   if (!office && (officeOnly.includes(a) || (a === "cars" && b === "new") || c === "edit")) page = html`<div class="card empty">딜러 계정은 볼 수 없는 화면입니다. <a href="#/cars">차량 목록으로</a></div>`;
   else if (a === "cars" && b === "new") page = html`<${CarForm} app=${app} />`;
@@ -164,6 +165,7 @@ function Router({ app }) {
   else if (a === "todos") page = html`<${TodosPage} app=${app} />`;
   else if (a === "calendar") page = html`<${CalendarPage} app=${app} />`;
   else if (a === "attendance") page = html`<${AttendancePage} app=${app} />`;
+  else if (a === "att-works") page = html`<${AttWorksPage} app=${app} tab=${b} />`;
   else if (a === "stats") page = html`<${StatsPage} app=${app} />`;
   else if (a === "loans" && b === "lender") page = html`<${LenderEdit} app=${app} id=${c} />`;
   else if (a === "loans") page = html`<${LoansPage} app=${app} tab=${b || "lenders"} />`;

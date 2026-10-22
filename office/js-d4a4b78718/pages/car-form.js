@@ -1,4 +1,4 @@
-import { html, useState, useEffect, Money, Field, Select, Seg, Loading, run, go, today, won, toast } from "../ui.js";
+import { html, useState, useEffect, Money, Field, Select, Seg, Loading, run, go, today, won, toast, 검색정리 } from "../ui.js";
 import { q } from "../db.js";
 import { 부가세분리, 예상취득세 } from "../calc.js";
 
@@ -25,7 +25,11 @@ function KeyPicker({ app, f, onPick, onText }) {
     const words = text.trim().split(/\s+/).filter(w => w.length >= 1);
     if (!words.length) return setList(null);
     let qy = app.db.from("car_keys").select("car_type,key,brand,model,fuel,grade,trim,stock_now");
-    for (const w of words.slice(0, 4)) qy = qy.ilike("key", `%${w}%`);
+    for (const w of words.slice(0, 4)) {
+      // 통합키는 'E-클래스' 모양 — E클래스·eclass·이클래스도 찾게 (CLE-클래스는 안 걸리게 모델 이름 맨 앞만)
+      const m = 검색정리(w).match(/^([a-z0-9]+)클래스(.*)$/);
+      qy = m ? qy.or(`key.ilike.${m[1]}-클래스*${m[2]}*,key.ilike.* ${m[1]}-클래스*${m[2]}*`) : qy.ilike("key", `%${w}%`);
+    }
     const { data } = await qy.order("stock_now", { ascending: false }).limit(30);
     if (my === keySeq) setList(data || []);
   };
