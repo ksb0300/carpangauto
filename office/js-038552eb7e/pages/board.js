@@ -408,6 +408,7 @@ function Post({ app, id }) {
   const [p, setP] = useState(undefined);
   const [x, setX] = useState({ files: [], urls: {}, cs: [], reads: [], rx: [], star: false, tx: null, ids: [], members: [] });
   const [c, setC] = useState("");
+  const [cf, setCf] = useState([]);        // 댓글에 붙일 사진·파일 (말소서류에 계산서 등)
   const [edit, setEdit] = useState(null);
   const [readers, setReaders] = useState(false);
   const load = () => run(async () => {
@@ -445,7 +446,9 @@ function Post({ app, id }) {
 
   const 송금 = p.category === "송금요청";
   const 매도 = p.category === "매도정보", 완료이름 = 매도 ? "잔금 완료" : "송금 완료";
-  const 관계자 = () => [p.created_by, ...x.cs.map(k => k.created_by)].filter(Boolean);
+  // 글쓴이·댓글 단 사람 — 웍스에서 옮긴 글·댓글은 계정(created_by)이 비어 있어 이름으로 찾는다
+  const 계정 = (uid, name) => uid || x.members.find(m => m.name === name)?.user_id || null;
+  const 관계자 = () => [계정(p.created_by, p.author_name), ...x.cs.map(k => 계정(k.created_by, k.author_name))].filter(Boolean);
   const url = "/office/#/board/" + id;
   const i = x.ids.indexOf(id), 앞 = i > 0 ? x.ids[i - 1] : null, 뒤 = i >= 0 && i < x.ids.length - 1 ? x.ids[i + 1] : null;
   const 읽은 = x.reads.filter(r => !r.seed);
@@ -454,13 +457,21 @@ function Post({ app, id }) {
   const 조를사람 = (대표담당(p.form) ? x.members.filter(m => m.user_id === p.form.handler_id) : x.members.filter(m => m.role === "staff")).filter(m => m.user_id !== me);
 
   const addC = () => run(async () => {
-    const body = c.trim();
+    const body = c.trim() || (cf.length ? `📎 ${cf.map(f => f.name).join(", ")}` : "");
     if (!body) return;
-    await q(app.db.from("board_comments").insert({ post_id: id, body, author_name: app.profile.name }));
+    const 올릴 = await 모두줄이기(cf);
+    if (올릴.some(f => f.size > MAX)) throw new Error("20MB 넘는 파일은 올릴 수 없습니다.");
+    const [cm] = await q(app.db.from("board_comments").insert({ post_id: id, body, author_name: app.profile.name }).select("id"));
+    for (const f of 올릴) {
+      const path = `board/${id}/${저장이름(f.name)}`;
+      const { error } = await bucket(app).upload(path, f, { contentType: f.type, upsert: false });
+      if (error) throw new Error(error.message);
+      await q(app.db.from("board_files").insert({ post_id: id, comment_id: cm.id, name: f.name, path, size: f.size, mime: f.type || null }));
+    }
     const 완료됨 = (송금 || 매도) && !p.done_at && 완료말.test(body);
     if (완료됨) await q(app.db.rpc("board_mark_done", { p_id: id, p_done: true }));
     await 알림(app, { title: 완료됨 ? `✔ ${완료이름}: ${p.title}` : `💬 ${p.title}`, body: `${app.profile.name}: ${body.slice(0, 100)}`, url, tag: "board-c-" + id, to_users: 관계자() });
-    setC(""); load();
+    setC(""); setCf([]); load();
   });
   const 완료 = v => run(async () => {
     await q(app.db.rpc("board_mark_done", { p_id: id, p_done: v }));
@@ -496,7 +507,11 @@ function Post({ app, id }) {
     else await q(app.db.from("board_reactions").insert({ post_id: id, emoji: e, name: app.profile.name }));
     load();
   });
-  const delC = k => ask("이 댓글을 지울까요?") && run(async () => { await q(app.db.from("board_comments").delete().eq("id", k.id)); load(); });
+  const delC = k => ask("이 댓글을 지울까요?") && run(async () => {
+    const paths = x.files.filter(f => f.comment_id === k.id).map(f => f.path);
+    if (paths.length) await bucket(app).remove(paths);
+    await q(app.db.from("board_comments").delete().eq("id", k.id)); load();
+  });
   const saveEdit = () => run(async () => {
     const 양식 = 송금 || p.category === "매도정보";
     const form = 양식 ? 양식정리(p.category, { ...edit.f, memo: edit.f.memo || null }) : p.form;
@@ -517,7 +532,8 @@ function Post({ app, id }) {
     await q(app.db.from("board_posts").delete().eq("id", id));
     go("/board");
   }, "지웠습니다");
-  const imgs = x.files.filter(f => /^image\//.test(f.mime || "") && x.urls[f.id]), etc = x.files.filter(f => !imgs.includes(f));
+  const 글첨부 = x.files.filter(f => !f.comment_id);
+  const imgs = 글첨부.filter(f => /^image\//.test(f.mime || "") && x.urls[f.id]), etc = 글첨부.filter(f => !imgs.includes(f));
   const 양식 = (송금 || p.category === "매도정보") && p.form;
 
   return html`<div class="card bd-post">
@@ -551,6 +567,7 @@ function Post({ app, id }) {
         <button class="btn sm primary" onClick=${확인}>👀 확인했어요</button>`
       : html`🔔 <b>사무장 확인 전</b> <span class="muted small">[확인]을 누를 때까지 사무장 근무시간(평일 8:30~17:00)에 재촉합니다 (최대 3번)</span><span class="grow"></span>
         <button class="btn sm primary" onClick=${확인}>👀 확인했어요</button>`}</div>`}
+    ${송금 && p.car_id && html`<p class="small" style="margin-top:8px">🚗 <a href=${"#/car/" + p.car_id}>재고 차 보기 →</a> <span class="muted">차대금 송금이 끝나면 리스트에 자동으로 올라갑니다 (취득세는 사무장 확인)</span></p>`}
     ${p.publish_at && Date.parse(p.publish_at) > Date.now() && html`<p class="note">🕒 ${날짜시각(p.publish_at)}에 올라가고 그때 알림이 갑니다. 지금은 쓴 사람과 대표만 보입니다.</p>`}
     ${매도 && p.form?.amount && html`<${잔금줄} p=${p} ins=${x.ins || []} 완료=${완료} />`}
 
@@ -570,15 +587,22 @@ function Post({ app, id }) {
         <${첨부버튼} f=${f} url=${x.urls[f.id]} /></div>`)}</div>`}
     ${etc.length > 0 && html`<ul class="todo" style="margin-top:10px">${etc.map(f => html`<li style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">📎 ${x.urls[f.id] ? html`<a href=${x.urls[f.id]} target="_blank" rel="noopener">${f.name}</a>` : f.name}
       <${첨부버튼} f=${f} url=${x.urls[f.id]} /></li>`)}</ul>`}
-    ${x.files.length > 1 && 공유됨 && html`<div class="bar" style="margin-top:8px"><button class="btn sm" onClick=${() => 첨부공유(x.files.filter(f => x.urls[f.id]).map(f => [f, x.urls[f.id]]), p.title)}>📤 첨부 ${x.files.length}개 한꺼번에 공유</button></div>`}
+    ${글첨부.length > 1 && 공유됨 && html`<div class="bar" style="margin-top:8px"><button class="btn sm" onClick=${() => 첨부공유(글첨부.filter(f => x.urls[f.id]).map(f => [f, x.urls[f.id]]), p.title)}>📤 첨부 ${글첨부.length}개 한꺼번에 공유</button></div>`}
 
     <div class="rx">${EMOJIS.map(e => { const who = x.rx.filter(r => r.emoji === e); const 나 = who.some(r => r.user_id === me);
       return html`<button class=${나 ? "on" : ""} title=${who.map(r => r.name).join(", ")} onClick=${() => 리액션(e)}>${e}${who.length ? " " + who.length : ""}</button>`; })}
       <span class="grow"></span><span class="muted small">💬 ${x.cs.length}</span></div>
     ${x.cs.map(k => html`<div class="cmt" key=${k.id}><${Avatar} name=${k.author_name} size=${32} />
-      <div class="bx"><div class="hd"><b>${k.author_name}</b><span>${날짜시각(k.created_at)}</span></div><div class="tx">${k.body}</div></div>
+      <div class="bx"><div class="hd"><b>${k.author_name}</b><span>${날짜시각(k.created_at)}</span></div><div class="tx">${k.body}</div>
+        ${(fs => fs.length > 0 && html`<div class="cmt-files">${fs.map(f => /^image\//.test(f.mime || "") && x.urls[f.id]
+          ? html`<div><a href=${x.urls[f.id]} target="_blank" rel="noopener"><img src=${x.urls[f.id]} alt=${f.name} /></a><${첨부버튼} f=${f} url=${x.urls[f.id]} /></div>`
+          : html`<div class="small">📎 ${x.urls[f.id] ? html`<a href=${x.urls[f.id]} target="_blank" rel="noopener">${f.name}</a>` : f.name} <${첨부버튼} f=${f} url=${x.urls[f.id]} /></div>`)}</div>`)(x.files.filter(f => f.comment_id === k.id))}</div>
       ${내것(app, k) && html`<button class="btn sm ghost" onClick=${() => delC(k)}>✕</button>`}</div>`)}
-    <div class="row" style="margin-top:12px"><input value=${c} placeholder=${송금 && !p.done_at ? "댓글 쓰기 ('입완' 이라고 쓰면 송금 완료)" : 매도 && !p.done_at ? "댓글 쓰기 ('입완' 이라고 쓰면 잔금 완료)" : "댓글 쓰기"} onInput=${e => setC(e.target.value)}
+    ${cf.length > 0 && html`<div class="chips" style="margin-top:10px">${cf.map((f, i) => html`<span class="chip" key=${i + f.name}>📎 ${f.name}
+      <button type="button" title="빼기" style="border:0;background:none;cursor:pointer;padding:0 0 0 4px;font:inherit" onClick=${() => setCf(cf.filter((_, j) => j !== i))}>✕</button></span>`)}</div>`}
+    <div class="row" style="margin-top:12px"><label class="btn" title="사진·파일 붙이기 (계산서 등)">📎<input type="file" hidden multiple accept="image/*,.pdf,.hwp,.xlsx,.xls,.doc,.docx"
+        onChange=${e => { setCf([...cf, ...e.target.files]); e.target.value = ""; }} /></label><input value=${c}
+      onPaste=${e => { const fs = [...(e.clipboardData?.files || [])]; if (fs.length) { e.preventDefault(); setCf([...cf, ...fs]); } }} placeholder=${송금 && !p.done_at ? "댓글 쓰기 ('입완' 이라고 쓰면 송금 완료)" : 매도 && !p.done_at ? "댓글 쓰기 ('입완' 이라고 쓰면 잔금 완료)" : "댓글 쓰기"} onInput=${e => setC(e.target.value)}
       onKeyDown=${e => { if (e.key === "Enter" && !e.isComposing) addC(); }} /><button class="btn" onClick=${addC}>등록</button></div>
   </div>`;
 }
