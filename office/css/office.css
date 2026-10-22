@@ -659,3 +659,73 @@ svg.drawing .pnl { pointer-events: none; }
 .att-line { margin-top: 14px; font-size: 14px; line-height: 1.9; }
 .grid tbody tr.on td { background: #eef2ff; }
 @media (max-width: 760px) { .att-btn { flex: 1; min-width: 0; } }
+
+/* 근태(웍스테스트) — 웍스 근태 화면처럼 왼쪽 메뉴 + 본문 (폰에서는 메뉴가 위 가로줄) */
+.aw { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 18px; align-items: start; }
+.aw-lnb { position: sticky; top: 64px; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 8px; display: flex; flex-direction: column; gap: 1px; }
+.aw-logo { font-weight: 800; font-size: 16px; padding: 4px 10px 8px; }
+.aw-grp { font-size: 12px; color: var(--sub); font-weight: 700; padding: 10px 10px 4px; }
+.aw-lnb a { color: var(--ink); padding: 6px 10px; border-radius: 8px; font-size: 14px; }
+.aw-lnb a:hover { background: #f3f4f6; } .aw-lnb a.on { background: #eaf2ff; color: var(--pri); font-weight: 700; }
+.aw-n { display: inline-block; min-width: 18px; padding: 0 5px; border-radius: 99px; background: var(--red); color: #fff; font-size: 11px; text-align: center; }
+.aw-filter { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; background: #fafbfc; border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; margin-bottom: 12px; }
+.aw-filter .aw-filter { border: 0; padding: 0; margin: 0; background: none; }
+.aw-filter select, .aw-filter input[type=month] { width: auto; }
+.aw-lab { color: var(--sub); font-size: 13px; } .aw-range { font-variant-numeric: tabular-nums; } .aw-chk { display: inline-flex; gap: 4px; align-items: center; font-size: 13px; }
+.aw-empty { padding: 40px 10px !important; text-align: center !important; }
+.grid tr.aw-hol td:first-child { color: var(--red); }
+.aw-clock { text-align: center; padding: 26px 18px; }
+.aw-time { font-size: 46px; font-weight: 800; letter-spacing: 1px; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.aw-btns { display: flex; gap: 12px; justify-content: center; margin: 20px 0 16px; flex-wrap: wrap; }
+.aw-b { width: 120px; height: 120px; border-radius: 50%; border: 0; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: #fff; font: inherit; }
+.aw-b b { font-size: 22px; letter-spacing: 1px; } .aw-b span { font-size: 13px; opacity: .95; }
+.aw-b.on { background: #16a34a; } .aw-b.pause { background: #f59e0b; } .aw-b.off { background: #2563eb; }
+.aw-b:disabled { background: #e5e7eb; color: #6b7280; cursor: default; }
+.aw-today { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; max-width: 560px; margin: 0 auto 10px; }
+.aw-today > div { background: #fafbfc; border: 1px solid var(--line2); border-radius: 8px; padding: 8px; display: flex; flex-direction: column; align-items: center; }
+.aw-today span { color: var(--sub); font-size: 12px; } .aw-today b { font-size: 18px; font-variant-numeric: tabular-nums; }
+.aw-box { border: 1px solid var(--line); border-radius: var(--radius); background: #fff; max-width: 560px; overflow: hidden; }
+.aw-boxhead { display: flex; width: 100%; gap: 6px; border: 0; background: #f1f4f9; padding: 10px 14px; font: inherit; font-weight: 700; cursor: pointer; text-align: left; }
+.aw-boxbody { padding: 12px 14px; }
+.aw-kv { display: grid; grid-template-columns: 1fr auto 1fr auto; gap: 8px 16px; font-weight: 600; }
+.aw-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.aw-card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; min-height: 120px; display: flex; flex-direction: column; gap: 10px;
+  text-align: left; font: inherit; color: var(--ink); cursor: pointer; }
+.aw-card > span { font-weight: 700; } .aw-card > b { font-size: 30px; text-align: center; margin: auto 0; } .aw-card > b small { font-size: 15px; color: var(--ink); }
+.aw-card.on, .aw-card:hover { border-color: var(--pri); }
+.aw-names { display: flex; flex-direction: column; gap: 4px; border-top: 1px solid var(--line2); padding-top: 8px; } .aw-names > div { display: flex; gap: 6px; align-items: center; }
+.aw-tl { list-style: none; margin: 0; padding: 0; } .aw-tl li { display: flex; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line2); }
+.aw-tl li > b { width: 48px; font-variant-numeric: tabular-nums; }
+.aw-cal th, .aw-cal td { padding: 6px 4px; font-size: 12px; }
+.aw-cal .aw-name { position: sticky; left: 0; background: #fff; z-index: 1; min-width: 96px; font-size: 13px; }
+.aw-cal thead .aw-name { background: #fafbfc; }
+.aw-cell { min-width: 46px; text-align: center !important; cursor: pointer; vertical-align: top; line-height: 1.35; font-variant-numeric: tabular-nums; border-left: 1px solid var(--line2); }
+.aw-cell.hol { background: #fcfcfd; } .aw-cell.today { background: #f0f6ff; } .aw-cell:hover { background: #eef2ff; }
+.aw-lv { background: #dbeafe; color: #1e40af; border-radius: 4px; font-size: 11px; padding: 0 2px; white-space: nowrap; }
+.aw-form { display: grid; grid-template-columns: 160px minmax(0, 1fr); gap: 12px 16px; align-items: center; margin-bottom: 14px; }
+.aw-fl { color: var(--sub); font-weight: 600; font-size: 13px; }
+/* 근로 시간 그래프: 일반(파랑)·연장(주황) 쌓은 막대 + 기준 근로 눈금(초록) */
+.aw-chart { padding: 14px 16px 10px; }
+.aw-legend { display: flex; gap: 14px; justify-content: flex-end; font-size: 12px; color: var(--sub); margin-bottom: 6px; }
+.aw-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+.aw-legend i.cl { height: 2px; vertical-align: 3px; }
+.aw-chart .c1 { background: #3b82f6; } .aw-chart .c2 { background: #e8833a; } .aw-chart .cl { background: #16a34a; }
+.aw-plot { position: relative; height: 220px; margin: 0 0 30px 26px; border-bottom: 1px solid var(--line); }
+.aw-gl { position: absolute; left: 0; right: 0; border-top: 1px solid var(--line2); }
+.aw-gl span { position: absolute; left: -24px; top: -8px; font-size: 11px; color: var(--sub); width: 20px; text-align: right; }
+.aw-cols { position: absolute; inset: 0; display: flex; }
+.aw-col { flex: 1; position: relative; display: flex; justify-content: center; }
+.aw-stack { position: absolute; bottom: 0; top: 0; width: min(28px, 60%); display: flex; flex-direction: column; justify-content: flex-end; gap: 2px; }
+.aw-stack i { display: block; width: 100%; border-radius: 4px 4px 0 0; } .aw-stack i + i { border-radius: 0; }
+.aw-ref { position: absolute; left: 12%; right: 12%; height: 2px; background: #16a34a; }
+.aw-x { position: absolute; bottom: -22px; font-size: 11px; color: var(--sub); white-space: nowrap; }
+.aw-x.red { color: var(--red); }
+@media (max-width: 760px) {
+  .aw { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .aw-lnb { position: static; flex-direction: row; overflow-x: auto; padding: 6px; gap: 4px; }
+  .aw-lnb a { white-space: nowrap; flex: 0 0 auto; } .aw-grp { white-space: nowrap; padding: 6px 4px 6px 8px; align-self: center; } .aw-logo { display: none; }
+  .aw-today { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .aw-b { width: 96px; height: 96px; } .aw-time { font-size: 38px; }
+  .aw-form { grid-template-columns: minmax(0, 1fr); gap: 4px; } .aw-fl { margin-top: 8px; }
+  .aw-x { font-size: 9px; } .aw-kv { grid-template-columns: 1fr auto; }
+}

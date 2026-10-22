@@ -2531,3 +2531,111 @@ create trigger board_paid_car before update of done_at on board_posts
 -- 댓글에도 사진·파일 (말소서류에 사무장이 계산서 올리기 — 사용자 2026-10-21)
 alter table board_files add column if not exists comment_id uuid references board_comments(id) on delete cascade;
 create index if not exists board_files_comment on board_files (comment_id) where comment_id is not null;
+
+
+-- 20261022000001_att_works.sql
+-- 근태(웍스테스트) (2026-10-22 사용자: 웍스 근태 체험판을 업무관리 '업무'에 그대로 만들어 넣어 보기).
+--   기존 근태 (시험) 표(att_days·att_leaves·att_settings·att_people)를 같이 쓰고, 웍스에 있는 것만 더한다.
+--   휴게(PAUSE) 버튼 / 근무 방식(휴게 시간·지각·조퇴 여유) / 부재 항목 늘림 / 연차 발생·조정 / 근무 결과 신청(출퇴근 정정) → 대표 승인
+
+-- 휴게: 휴게 중이면 brk_at, 끝나면 brk_min(분)에 더한다. 고정 휴게(점심)는 근무 방식에서 따로 뺀다
+alter table att_days add column brk_at timestamptz, add column brk_min int not null default 0 check (brk_min >= 0);
+
+-- 근무 방식 (웍스 '고정 근무제(출근/퇴근 체크)' 기본값: 휴게 12~13시). 지각·조퇴 여유는 0 = 기존 근태와 같음
+alter table att_settings
+  add column brk_start  time not null default '12:00',
+  add column brk_end    time not null default '13:00',
+  add column late_min   int  not null default 0 check (late_min between 0 and 240),    -- 근로 시작 n분 후까지 출근 안 하면 지각
+  add column early_min  int  not null default 0 check (early_min between 0 and 240);   -- 근로 종료 n분 전에 퇴근하면 조퇴
+
+-- 부재 항목: 웍스 기본 항목(출장·경조 휴가·재택 근무·보건 휴가·포상 휴가·대체 휴무)을 더한다
+alter table att_leaves drop constraint att_leaves_kind_check;
+alter table att_leaves add constraint att_leaves_kind_check check (kind in
+  ('연차', '오전반차', '오후반차', '외근', '병가', '기타', '출장', '경조 휴가', '재택 근무', '보건 휴가', '포상 휴가', '대체 휴무'));
+-- 대표는 남의 부재 일정을 바로 써 넣는다 (웍스 관리자 '부재 일정 작성')
+create policy admin_insert on att_leaves for insert to authenticated with check (my_role() = 'admin');
+
+-- 연차 (연도별 발생·조정). 사용 일수는 승인된 연차·반차에서 센다
+create table att_annual (
+  user_id   uuid not null references auth.users(id) on delete cascade,
+  yr        int  not null,
+  granted   numeric(4,1) not null default 0,    -- 연차 발생
+  adjust    numeric(4,1) not null default 0,    -- 연차 조정 (+/-)
+  memo      text,
+  primary key (user_id, yr)
+);
+alter table att_annual enable row level security;
+create policy office_read on att_annual for select to authenticated using (is_office());
+create policy admin_write on att_annual for all to authenticated using (my_role() = 'admin') with check (my_role() = 'admin');
+
+-- 근무 결과 신청 (출퇴근 정정): 본인이 신청 → 대표가 승인하면 att_days 에 들어간다
+create table att_fixes (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  d           date not null,
+  in_t        time,
+  out_t       time,
+  brk_min     int check (brk_min between 0 and 600),     -- 개인 휴게(분). 비우면 그대로
+  memo        text not null check (length(trim(memo)) > 0),
+  status      text not null default '신청' check (status in ('신청', '승인', '반려')),
+  decided_by  text,
+  decided_at  timestamptz,
+  created_at  timestamptz not null default now(),
+  check (in_t is not null or out_t is not null or brk_min is not null),
+  check (in_t is null or out_t is null or out_t > in_t)
+);
+alter table att_fixes enable row level security;
+create policy office_read on att_fixes for select to authenticated using (is_office());
+create policy own_insert on att_fixes for insert to authenticated
+  with check (is_office() and user_id = auth.uid() and status = '신청' and decided_by is null and d <= (now() at time zone 'Asia/Seoul')::date);
+create policy own_cancel on att_fixes for delete to authenticated using ((user_id = auth.uid() and status = '신청') or my_role() = 'admin');
+
+-- 휴게 시작·종료 (본인, 서버 시각). 출근 후·퇴근 전에만
+create function att_pause() returns att_days language plpgsql security definer set search_path = public as $$
+declare v_d date := (now() at time zone 'Asia/Seoul')::date; r att_days;
+begin
+  if not is_office() then raise exception '권한이 없습니다'; end if;
+  select * into r from att_days where user_id = auth.uid() and d = v_d for update;
+  if r.in_at is null then raise exception '출근부터 찍어 주세요'; end if;
+  if r.out_at is not null then raise exception '이미 퇴근했습니다'; end if;
+  if r.brk_at is null then
+    update att_days set brk_at = now() where user_id = auth.uid() and d = v_d;
+  else
+    update att_days set brk_min = brk_min + greatest(0, round(extract(epoch from now() - brk_at) / 60))::int, brk_at = null
+      where user_id = auth.uid() and d = v_d;
+  end if;
+  select * into r from att_days where user_id = auth.uid() and d = v_d;
+  return r;
+end $$;
+revoke execute on function att_pause() from public, anon;
+grant execute on function att_pause() to authenticated;
+
+-- 근무 결과 신청 승인·반려 (대표만). 승인이면 그날 기록을 신청대로 고치고 고친 사람을 남긴다
+create function att_fix_decide(p_id uuid, p_ok boolean) returns att_fixes language plpgsql security definer set search_path = public as $$
+declare f att_fixes; v_name text;
+begin
+  if my_role() is distinct from 'admin' then raise exception '권한이 없습니다'; end if;
+  select * into f from att_fixes where id = p_id for update;
+  if f.id is null or f.status <> '신청' then raise exception '처리할 신청이 없습니다'; end if;
+  select name into v_name from profiles where user_id = auth.uid();
+  update att_fixes set status = case when p_ok then '승인' else '반려' end, decided_by = v_name, decided_at = now() where id = p_id;
+  if p_ok then
+    insert into att_days (user_id, d) values (f.user_id, f.d) on conflict do nothing;
+    update att_days set
+      in_at     = coalesce((f.d + f.in_t) at time zone 'Asia/Seoul', in_at),
+      in_place  = case when f.in_t is null then in_place end,
+      in_dist   = case when f.in_t is null then in_dist end,
+      out_at    = coalesce((f.d + f.out_t) at time zone 'Asia/Seoul', out_at),
+      out_place = case when f.out_t is null then out_place end,
+      out_dist  = case when f.out_t is null then out_dist end,
+      brk_min   = coalesce(f.brk_min, brk_min),
+      brk_at    = case when f.out_t is null then brk_at end,
+      memo      = '근무 결과 신청: ' || f.memo,
+      edited_by = v_name, edited_at = now()
+    where user_id = f.user_id and d = f.d;
+  end if;
+  select * into f from att_fixes where id = p_id;
+  return f;
+end $$;
+revoke execute on function att_fix_decide(uuid, boolean) from public, anon;
+grant execute on function att_fix_decide(uuid, boolean) to authenticated;
