@@ -15,6 +15,8 @@ const addMonths = (d, m) => { const x = new Date(d + "T00:00:00Z"); if (isNaN(x)
 // 상품화비용 = 수리비 + 도색광택 + 탁송유류 (예전 항목 이름도 같이). 나머지 비용(취득세·광고비·수수료·성능비·기타)은 재반비용.
 const 상품화항목 = new Set(["수리비", "도색광택", "탁송유류", "판금도장비", "기능수리/상품화", "광택/세차", "매입탁송비", "주유대"]);
 export const 비용구분 = item => 상품화항목.has(item) ? "상품화" : "재반";
+/** 상품화비용 칸 — 0원은 아직 안 넣었다는 뜻이라 '작성필요'로 (사용자 2026-10-23) */
+const 상품화칸 = v => n(v) ? W(v) : html`<td class="r"><span class="badge amber" title="상품화비용을 아직 안 넣은 차">작성필요</span></td>`;
 
 /** 목록 공통 데이터 + 차량별 합계 */
 function useBook(app) {
@@ -129,7 +131,7 @@ export function PurchasesPage({ app }) {
     const 판매가 = c.sale ? n(c.sale.sale_amount) : 입력가 || (예상 ? n(c.ad_price) : null);
     const 매도비 = c.sale ? n(c.sale.sale_fee) : 기본매도비;
     const 입력추가 = n(price["x" + c.id] ?? c.extra_income);          // 리스트에서 넣은 추가수익 (매도 뒤에도 넣을 수 있다)
-    const 추가수익 = c.sale ? n(c.sale.installment_income) + (c.settle?.other_revenue || []).reduce((t, x) => t + n(x.금액), 0) + 입력추가 : 입력추가;
+    const 추가수익 = c.sale ? n(c.sale.installment_income) + n(c.sale.am_income) + (c.settle?.other_revenue || []).reduce((t, x) => t + n(x.금액), 0) + 입력추가 : 입력추가;
     return { 재반, 총원가, 판매가, 매도비, 추가수익, 예상, 본전가: 총원가 - 매도비 - 추가수익, 마진: 판매가 ? 판매가 + 매도비 + 추가수익 - 총원가 : null };
   };
   const rows = useMemo(() => (d?.cars || []).filter(c => (f.status === "전체" || c.status === f.status) && match(f, c, dateOf(c)))
@@ -159,9 +161,9 @@ export function PurchasesPage({ app }) {
       <tbody>${rows.map(c => { const x = calc(c); return html`<tr key=${c.id} onClick=${() => go("/car/" + c.id)}><td>${c.purchase_date}</td>
         <td><b>${c.plate}</b></td><td onClick=${e => office && e.stopPropagation()}>${office ? html`<${OwnerPick} app=${app} car=${c} onDone=${reload} />` : dealer[c.dealer_id] || "-"}</td>
         <td class="ellipsis">${c.car_name}</td>${W(c.purchase_amount)}
-        <td class="r" title=${`비용 ${won(c.재반항목 - c.해지비용)} + 저당해지비용 ${won(c.해지비용)} + 재고이자 ${won(c.재고이자)}`}>${won(x.재반)}</td>${W(c.상품화비)}<td class="r"><b>${won(x.총원가)}</b></td>
+        <td class="r" title=${`비용 ${won(c.재반항목 - c.해지비용)} + 저당해지비용 ${won(c.해지비용)} + 재고이자 ${won(c.재고이자)}`}>${won(x.재반)}</td>${상품화칸(c.상품화비)}<td class="r"><b>${won(x.총원가)}</b></td>
         <td class="r" onClick=${e => e.stopPropagation()}>${!office && c.sale ? (x.추가수익 ? won(x.추가수익) : html`<span class="muted">-</span>`)
-          : office ? html`${c.sale && x.추가수익 - n(price["x" + c.id] ?? c.extra_income) ? html`<small class="muted" title="할부수익 + 정산 기타매출">+${won(x.추가수익 - n(price["x" + c.id] ?? c.extra_income))} </small>` : ""}<${Money} value=${price["x" + c.id] ?? c.extra_income ?? ""} placeholder="" style="width:84px" onInput=${v => typeField(c, "extra_income", "x" + c.id, v)} onKeyDown=${e => e.key === "Enter" && e.target.blur()} />` : (x.추가수익 ? won(x.추가수익) : "-")}</td>
+          : office ? html`${c.sale && x.추가수익 - n(price["x" + c.id] ?? c.extra_income) ? html`<small class="muted" title="할부수익 + AM수익 + 정산 기타매출">+${won(x.추가수익 - n(price["x" + c.id] ?? c.extra_income))} </small>` : ""}<${Money} value=${price["x" + c.id] ?? c.extra_income ?? ""} placeholder="" style="width:84px" onInput=${v => typeField(c, "extra_income", "x" + c.id, v)} onKeyDown=${e => e.key === "Enter" && e.target.blur()} />` : (x.추가수익 ? won(x.추가수익) : "-")}</td>
         <td class="r" onClick=${e => e.stopPropagation()}>${c.sale ? html`<span title=${`매도금액 (매도비 ${won(x.매도비)} 별도)`}>${won(x.판매가)}</span>`
           : office ? html`<${Money} value=${x.예상 ? 0 : x.판매가 ?? 0} placeholder=${c.ad_price ? won(c.ad_price) : "입력"}
               title=${c.ad_price ? `엔카 광고가 ${won(c.ad_price)}원 (${String(c.ad_price_at || "").slice(5, 10)} 확인) — 비워 두면 이 값으로 예상마진` : "엔카 광고가 없음"}
@@ -352,7 +354,7 @@ export function SalesPage({ app }) {
   const rows = d.cars.filter(c => c.sale && match(f, c, c.sale.sale_date)).sort(sorter(f, (c, s) => ({ 매도일: c.sale.sale_date, 매도금액: n(c.sale.sale_amount), 매입일: c.purchase_date }[s])));
   // 총마진 = 매도금액 + 매도비 + 추가수익(할부수익 + 정산 기타매출) − (매입가 + 비용 전체 + 재고이자) — 차량 리스트 마진과 같은 식
   const yr = c => c.model_year ? String(c.model_year).slice(0, 4) : "";
-  const 마진 = c => n(c.sale.sale_amount) + n(c.sale.sale_fee) + n(c.sale.installment_income) + (c.settle?.other_revenue || []).reduce((t, x) => t + n(x.금액), 0) + 입력추가(c)
+  const 마진 = c => n(c.sale.sale_amount) + n(c.sale.sale_fee) + n(c.sale.installment_income) + n(c.sale.am_income) + (c.settle?.other_revenue || []).reduce((t, x) => t + n(x.금액), 0) + 입력추가(c)
     - n(c.purchase_amount) - c.상품화 - c.재고이자 - c.해지비용;
   const tot = k => rows.reduce((t, c) => t + n(k(c)), 0);
   return html`<div class="bar"><h2>매도차량 리스트</h2><span class="grow"></span>
@@ -370,7 +372,7 @@ export function SalesPage({ app }) {
       <tbody>${rows.map(c => html`<tr onClick=${() => go(`/car/${c.id}/sale`)}><td>${c.purchase_date}</td><td><b>${c.plate}</b></td>
         <td class="ellipsis" title=${c.car_name}>${c.car_name}</td><td>${yr(c) || "-"}</td><td class="r">${c.mileage != null ? won(c.mileage) : "-"}</td><td>${c.sale.sale_type}</td>
         <td>${dealer[c.sale.dealer_id || c.dealer_id] || "-"}${c.sale.broker_dealer_id ? html`<br /><span class="muted small">알선 ${dealer[c.sale.broker_dealer_id]}</span>` : ""}</td>
-        ${W(c.purchase_amount)}${W(c.재고금융전체)}${W(c.재고이자)}${W(c.상품화)}${W(c.sale.sale_amount)}${W(c.sale.sale_fee)}${W(c.sale.perf_insurance)}
+        ${W(c.purchase_amount)}${W(c.재고금융전체)}${W(c.재고이자)}${상품화칸(c.상품화)}${W(c.sale.sale_amount)}${W(c.sale.sale_fee)}${W(c.sale.perf_insurance)}
         <td>${c.sale.sale_date}</td>
         <td class=${"r " + (마진(c) < 0 ? "red" : "blue")}><b>${won(마진(c))}</b></td><td>${c.매출발행일}</td><td>${c.settle ? html`${c.settle.settle_date}${!c.settle.finalized && html` <span class="badge amber">임시</span>`}` : ""}</td></tr>`)}</tbody></table></div>`}`;
 }

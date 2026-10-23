@@ -151,7 +151,7 @@ function 기간({ rng, setRng, 제외, set제외, 월만 }) {
   const 옮김 = n => setRng(rng.mode === "월" ? 월범위(달옮김(rng.from, n)) : 주범위(더하기(rng.from, 7 * n)));
   return html`<div class="aw-filter">
     <span class="aw-lab">기간</span>
-    ${!월만 && html`<select value=${rng.mode} onChange=${e => setRng(e.target.value === "월" ? 월범위(rng.from) : 주범위(rng.from))}><option selected=${rng.mode === "1주"}>1주</option><option selected=${rng.mode === "월"}>월</option></select>`}
+    ${!월만 && html`<select value=${rng.mode} onChange=${e => setRng(e.target.value === "월" ? 월범위(rng.from) : 주범위(rng.from))}><option value="1주" selected=${rng.mode === "1주"}>1주</option><option value="월" selected=${rng.mode === "월"}>월</option></select>`}
     <button class="btn sm ghost" title="이전" onClick=${() => 옮김(-1)}>◀</button>
     <b class="aw-range">${rng.mode === "월" ? `${rng.from.slice(0, 4)}년 ${+rng.from.slice(5, 7)}월` : `${rng.from.replace(/-/g, ".")} ~ ${rng.to.replace(/-/g, ".")}`}</b>
     <button class="btn sm ghost" title="다음" onClick=${() => 옮김(1)}>▶</button>
@@ -222,7 +222,7 @@ function 나의부재({ app, D, load }) {
     ${쓰기 && html`<${부재쓰기} app=${app} D=${D} load=${load} onClose=${() => set쓰기(false)} />`}
     <div class="aw-filter">
       <span class="aw-lab">연도</span><select value=${yr} onChange=${e => setYr(+e.target.value)}>${[1, 0, -1].map(n => +today().slice(0, 4) + n).map(y => html`<option value=${y} selected=${y === yr}>${y}</option>`)}</select>
-      <span class="aw-lab">부재 항목</span><select value=${kind} onChange=${e => setKind(e.target.value)}><option value="">전체</option>${부재항목.map(([k]) => html`<option selected=${k === kind}>${k}</option>`)}</select>
+      <span class="aw-lab">부재 항목</span><select value=${kind} onChange=${e => setKind(e.target.value)}><option value="">전체</option>${부재항목.map(([k]) => html`<option value=${k} selected=${k === kind}>${k}</option>`)}</select>
       <label class="aw-chk"><input type="checkbox" checked=${만연차} onChange=${e => set만연차(e.target.checked)} /> 연차 내역만 보기</label>
     </div>
     <div class="table-wrap"><table class="grid"><thead><tr><th>부재 항목</th><th class="r">일수</th><th>기간</th><th>사유</th><th>상태</th><th></th></tr></thead>
@@ -248,7 +248,7 @@ function 부재쓰기({ app, D, load, onClose, 대리 }) {
   }, 대리 ? "등록했습니다" : "신청했습니다");
   return html`<div class="card"><h3>${대리 ? "부재 일정 작성" : "부재 일정 신청"}</h3><div class="fgrid">
       ${대리 && html`<${Field} label="사원"><select value=${f.user_id} onChange=${e => set("user_id", e.target.value)}>${D.members.map(m => html`<option value=${m.user_id} selected=${m.user_id === f.user_id}>${m.name}</option>`)}</select><//>`}
-      <${Field} label="부재 항목"><select value=${f.kind} onChange=${e => set("kind", e.target.value)}>${부재항목.map(([k]) => html`<option selected=${k === f.kind}>${k}</option>`)}</select><//>
+      <${Field} label="부재 항목"><select value=${f.kind} onChange=${e => set("kind", e.target.value)}>${부재항목.map(([k]) => html`<option value=${k} selected=${k === f.kind}>${k}</option>`)}</select><//>
       <${Field} label=${반일(f.kind) ? "날짜 (반일)" : "시작일"}><input type="date" value=${f.d_from} onInput=${e => set("d_from", e.target.value)} /><//>
       ${!반일(f.kind) && html`<${Field} label="종료일"><input type="date" value=${f.d_to} min=${f.d_from} onInput=${e => set("d_to", e.target.value)} /><//>`}
       <${Field} label="사유" wide><input value=${f.memo} placeholder="예: 병원 · 탁송 동행 (서울)" onInput=${e => set("memo", e.target.value)} /><//>
@@ -445,7 +445,7 @@ function 부재현황({ app, D, load }) {
   const 취소 = l => ask(`${이름표(D.members, l.user_id)} ${l.kind} (${기간글(l)})를 취소(삭제)할까요?`) && run(async () => { await q(app.db.from("att_leaves").delete().eq("id", l.id)); load(); }, "취소했습니다");
   const 엑셀 = () => downloadCsv("부재일정현황", [["이름", "부재 항목", "일수", "시작", "끝", "사유", "작성일", "상태", "처리"], ...rows.map(l => [이름표(D.members, l.user_id), l.kind, 일수(D, l), l.d_from, l.d_to, l.memo || "", 날짜시각(l.created_at), l.status, l.decided_by || ""])]);
   return html`<div class="aw-filter">
-      <span class="aw-lab">부재 항목</span><select value=${kind} onChange=${e => setKind(e.target.value)}><option value="">전체</option>${부재항목.map(([k]) => html`<option selected=${k === kind}>${k}</option>`)}</select>
+      <span class="aw-lab">부재 항목</span><select value=${kind} onChange=${e => setKind(e.target.value)}><option value="">전체</option>${부재항목.map(([k]) => html`<option value=${k} selected=${k === kind}>${k}</option>`)}</select>
       <span class="aw-lab">사원명</span><input class="search" style="max-width:140px" value=${찾기} placeholder="사원명" onInput=${e => set찾기(e.target.value)} />
       <${Seg} value=${보기} onChange=${set보기} options=${["전체", "승인 대기"]} />
       <span class="grow"></span><button class="btn primary sm" onClick=${() => set쓰기(true)}>부재 일정 작성</button><button class="btn sm" onClick=${엑셀}>다운로드</button></div>
