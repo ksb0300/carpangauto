@@ -1,5 +1,5 @@
 {
- "updated": "2026-10-23 17:52",
+ "updated": "2026-10-24 17:48",
  "count": 52,
  "cars": [
   {
@@ -170,17 +170,17 @@
    "fuel": "가솔린",
    "transmission": "오토",
    "color": "검정색",
-   "price": 6650,
+   "price": 6390,
    "diagnosis": true,
    "photos": [
     "https://ci.encar.com/carpicture08/pic4218/42184774_027.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture08/pic4218/42184774_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture08/pic4218/42184774_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture08/pic4218/42184774_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4218/42184774_022.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4218/42184774_006.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4218/42184774_009.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4218/42184774_017.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture08/pic4218/42184774_015.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4218/42184774_041.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4218/42184774_017.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4218/42184774_022.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42184774"
   },
@@ -1043,32 +1043,6 @@
    "link": "https://fem.encar.com/cars/detail/42844172"
   },
   {
-   "id": "42873315",
-   "plate": "806머7712",
-   "maker": "KG모빌리티(쌍용)",
-   "model": "렉스턴",
-   "grade": "디젤 2.2 4WD",
-   "year": "22년 08월",
-   "yearRaw": "202208",
-   "mileage": 73245,
-   "fuel": "디젤",
-   "transmission": "오토",
-   "color": "담녹색",
-   "price": 1990,
-   "diagnosis": true,
-   "photos": [
-    "https://ci.encar.com/carpicture07/pic4287/42873315_027.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4287/42873315_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4287/42873315_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4287/42873315_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4287/42873315_017.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4287/42873315_043.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4287/42873315_031.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4287/42873315_006.jpg?impolicy=widthRate&wid=800"
-   ],
-   "link": "https://fem.encar.com/cars/detail/42873315"
-  },
-  {
    "id": "42949368",
    "plate": "814머4532",
    "maker": "르노코리아(삼성)",
@@ -1275,6 +1249,32 @@
     "https://ci.encar.com/carpicture10/pic4290/42908926_015.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42908926"
+  },
+  {
+   "id": "42949480",
+   "plate": "16모1891",
+   "maker": "기아",
+   "model": "쏘렌토",
+   "grade": "디젤 2.0 2WD",
+   "year": "14년 01월",
+   "yearRaw": "201401",
+   "mileage": 179207,
+   "fuel": "디젤",
+   "transmission": "오토",
+   "color": "흰색",
+   "price": 690,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture04/pic4294/42949480_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949480_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949480_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949480_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949480_006.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949480_016.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949480_024.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949480_049.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42949480"
   },
   {
    "id": "42935053",
