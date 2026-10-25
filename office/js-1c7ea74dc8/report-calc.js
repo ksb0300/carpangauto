@@ -49,6 +49,7 @@ export function 상사매출자료(data, from, to) {
     if (c.consign === "상사매입") out.push(row(s.sale_date, "차량매도", s.sale_amount, true, ex));
     if (n(s.sale_fee)) out.push(row(s.sale_date, "상사매도비", s.sale_fee, true, ex));
     if (n(s.perf_insurance)) out.push(row(s.sale_date, "성능보험료", s.perf_insurance, false, ex));
+    if (n(s.am_income)) out.push(row(s.sale_date, "AM수익", s.am_income, false, ex));
     if (n(s.installment_income)) out.push(row(s.sale_date, "할부금융수익", s.installment_income, false, { ...ex, 비고: `할부 ${n(s.installment_amount).toLocaleString()} × ${Number(s.installment_rate)}% − 원천징수 ${n(s.installment_tax).toLocaleString()}` }));
   }
   for (const c of live(data.cars))
@@ -252,7 +253,7 @@ export function 대표차량계산(data, c, s) {
   return 대표손익({
     매도금액: n(s.sale_amount), 기타매출: [...(st?.other_revenue || []).map(x => ({ 금액: n(x.금액), 과세: x.과세 !== false })),
       ...(n(c.extra_income) ? [{ 금액: n(c.extra_income), 과세: false }] : [])],      // 차량 리스트에서 넣은 추가수익 (매도 뒤에도)
-    상사매도비: n(s.sale_fee), 할부수익: n(s.installment_income), 제시금액: n(c.purchase_amount), 제시증빙: c.evidence,
+    상사매도비: n(s.sale_fee), 할부수익: n(s.installment_income), AM수익: n(s.am_income), 제시금액: n(c.purchase_amount), 제시증빙: c.evidence,
     비용: (data.costs || []).filter(k => k.car_id === c.id).map(k => ({ 금액: n(k.amount), 과세: k.taxable, 정산반영: k.include_in_settlement })),
     // 갚은 대출은 실제 상환일까지, 아직 안 갚은 대출은 매도일까지
     캐피탈이자: 차량캐피탈이자((data.loans || []).filter(l => l.car_id === c.id), s.sale_date),

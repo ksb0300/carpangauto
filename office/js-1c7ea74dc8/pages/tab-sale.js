@@ -2,7 +2,7 @@ import { html, useState, useEffect, Money, Field, Select, run, won, today, toast
 import { q } from "../db.js";
 import { 부가세분리, 할부수수료, 엔카믿고수수료 } from "../calc.js";
 
-export const SALE_TYPES = ["내수판매", "수출", "엔카믿고", "알선판매"];
+export const SALE_TYPES = ["내수판매", "수출", "엔카믿고", "알선판매", "FM", "AM"];
 
 let tmp = 0;
 // 매수고객 입력은 조합 전산과 연동되기 전까지 숨긴다 (사용자 2026-10-04). 연동되면 true 로 — 똑순이처럼 공동명의·지분율까지 받는 코드는 그대로 있다
@@ -34,6 +34,7 @@ export function SaleTab({ app, car, sale, buyers, settlement, reload, locked, of
       <div><span>매도금액</span><b>${won(sale.sale_amount)} <small class="muted">(공급가 ${won(sale.sale_supply)} / 부가세 ${won(sale.sale_vat)})</small></b></div>
       <div><span>상사매도비</span><b>${won(sale.sale_fee)}</b></div>
       <div><span>성능보험료</span><b>${won(sale.perf_insurance)}</b></div>
+      ${Number(sale.am_income) > 0 && html`<div><span>AM수익</span><b>${won(sale.am_income)}</b></div>`}
       ${Number(sale.installment_amount) > 0 && html`<div><span>할부 (${sale.installment_company || "캐피탈사 미입력"})</span><b>${won(sale.installment_income)} <small class="muted">(할부 ${won(sale.installment_amount)} × ${Number(sale.installment_rate)}% = ${won(sale.installment_fee)} − 원천징수 ${won(sale.installment_tax)})</small></b></div>`}
       <div><span>출고 번호판</span><b>${sale.plate_out || car.plate}</b></div>
       <div><span>특이사항</span><b>${sale.memo || "-"}</b></div>
@@ -49,7 +50,7 @@ function SaleForm({ app, car, sale, buyers, onDone }) {
     sale_date: today(), dealer_id: car.dealer_id, other_dealer: false, sale_type: "내수판매",
     sale_amount: car.list_price ? Number(car.list_price) : 0,   // 리스트에 넣은 판매가(매도비 제외 차값)
     plate_out: car.plate, sale_fee: app.settings.sale_fee, perf_insurance: 0, memo: "", broker_dealer_id: null,
-    installment_company: null, installment_amount: 0, installment_rate: 0 });
+    installment_company: null, installment_amount: 0, installment_rate: 0, am_income: 0 });
   const [bs, setBs] = useState(buyers.length ? buyers.map(b => ({ ...b, ssn: "" })) : [newBuyer(100)]);
   // 새 매도: 성능보험료는 최근 성능점검(KAIWA)의 보험료를 기본값으로 (손님이 내는 돈 — 현금영수증용)
   useEffect(() => { if (!sale) run(async () => {
@@ -80,7 +81,8 @@ function SaleForm({ app, car, sale, buyers, onDone }) {
         sale_amount: f.sale_amount, plate_out: f.plate_out || null, sale_fee: f.sale_fee, perf_insurance: f.perf_insurance, memo: f.memo || null,
         broker_dealer_id: f.broker_dealer_id || null,
         installment_company: Number(f.installment_amount) > 0 ? (f.installment_company || null) : null,
-        installment_amount: Number(f.installment_amount) || 0, installment_rate: Number(f.installment_rate) || 0 };
+        installment_amount: Number(f.installment_amount) || 0, installment_rate: Number(f.installment_rate) || 0,
+        am_income: f.sale_type === "AM" ? Number(f.am_income) || 0 : 0 };
       if (sale) await q(app.db.from("car_sales").update(row).eq("car_id", car.id));
       else await q(app.db.from("car_sales").insert(row));
       if (!SHOW_BUYERS) return true;     // 매수고객 숨김 중 — 기존 기록은 건드리지 않는다
@@ -112,6 +114,7 @@ function SaleForm({ app, car, sale, buyers, onDone }) {
         <${Select} value=${f.broker_dealer_id} onChange=${set("broker_dealer_id")} empty="없음" options=${app.dealers.filter(d => d.id !== f.dealer_id).map(d => [d.id, d.name])} /><//>
       <${Field} label="판매유형" hint=${f.sale_type === "수출" ? "수출 — 성능점검비가 22,000원으로 바뀝니다" : f.sale_type === "엔카믿고" ? `엔카믿고 — 수수료 ${won(엔카믿고수수료(f.sale_amount))}원이 상품화비용으로 자동 등록됩니다 (매도비에서 엔카가 떼고 입금)` : ""}>
         <${Select} value=${f.sale_type} onChange=${pickType} options=${SALE_TYPES} /><//>
+      ${f.sale_type === "AM" && html`<${Field} label="AM수익" hint="마진(차량 손익)에 더해집니다"><${Money} value=${f.am_income || 0} onInput=${set("am_income")} /><//>`}
       <${Field} label="매도금액" req hint=${f.sale_amount ? `공급가 ${won(vat.공급가)} / 부가세 ${won(vat.부가세)}` : "부가세 포함"}><${Money} value=${f.sale_amount} onInput=${set("sale_amount")} /><//>
       <${Field} label="상사매도비" hint="상사 매출로 잡힙니다"><${Money} value=${f.sale_fee} onInput=${set("sale_fee")} /><//>
       <${Field} label="성능보험료" hint="손님이 내는 돈 — 현금영수증용, 손익에는 안 들어감"><${Money} value=${f.perf_insurance} onInput=${set("perf_insurance")} /><//>

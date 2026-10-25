@@ -121,7 +121,16 @@ export const ask = msg => window.confirm(msg);
 export const W = (n, cls = "") => html`<td class=${"r " + cls}>${Number(n) ? won(n) : html`<span class="muted">0</span>`}</td>`;
 
 // ───────── 차량 검색 (대소문자·띄어쓰기·하이픈 무시, 여러 단어는 모두 들어가야, 한글·영문 브랜드 서로 찾기) ─────────
-const 검색정리 = v => String(v ?? "").toLowerCase().replace(/[^0-9a-z가-힣]/g, "");
+// 벤츠 'E-클래스' = E클래스 = eclass = 이클래스 (사용자 2026-10-22): class→클래스, 클래스 앞 한글 알파벳 이름(이·씨·지엘이…)은 영문으로
+const 알파벳이름 = { 에이치: "h", 더블유: "w", 에이: "a", 에프: "f", 에스: "s", 아이: "i", 제이: "j", 케이: "k", 브이: "v", 엑스: "x", 와이: "y", 제트: "z",
+  비: "b", 씨: "c", 디: "d", 이: "e", 지: "g", 엘: "l", 엠: "m", 엔: "n", 오: "o", 피: "p", 큐: "q", 알: "r", 티: "t", 유: "u" };
+const 이름들 = Object.keys(알파벳이름).sort((a, b) => b.length - a.length);
+const 클래스앞 = t => t.replace(/([가-힣]+)(?=클래스)/g, pre => {
+  let out = "", rest = pre;           // 뒤에서부터 알파벳 이름을 떼어 낸다 (지엘이 → gle)
+  for (;;) { const n = 이름들.find(k => rest.endsWith(k)); if (!n) break; out = 알파벳이름[n] + out; rest = rest.slice(0, -n.length); }
+  return rest + out;
+});
+export const 검색정리 = v => 클래스앞(String(v ?? "").toLowerCase().replace(/[^0-9a-z가-힣]/g, "").replace(/class/g, "클래스"));
 const 브랜드별칭 = [["벤츠", "benz mercedes 메르세데스"], ["bmw", "비엠 비엠더블유"], ["아우디", "audi"], ["폭스바겐", "volkswagen vw"], ["포르쉐", "porsche"],
   ["테슬라", "tesla"], ["볼보", "volvo"], ["렉서스", "lexus"], ["토요타", "toyota 도요타"], ["미니", "mini"], ["랜드로버", "landrover 레인지로버"],
   ["제네시스", "genesis"], ["현대", "hyundai"], ["기아", "kia"], ["쉐보레", "chevrolet 시보레"], ["르노", "renault"], ["kg모빌리티", "kgm 쌍용 ssangyong"]];
@@ -145,9 +154,11 @@ export function 검색맞음(q, ...fields) {
   hay += "|" + fields.map(f => String(f ?? "").replace(/\D/g, "")).filter(Boolean).join("|");   // 번호판 숫자만 쳐도 (1219496 → 121라9496)
   for (const [re, more] of 모델브랜드) if (re.test(hay)) hay += "|" + more.split(" ").map(검색정리).join("|");
   for (const [k, more] of 브랜드별칭) if (hay.includes(검색정리(k)) || more.split(" ").some(m => hay.includes(검색정리(m)))) hay += "|" + 검색정리(k) + "|" + more.split(" ").map(검색정리).join("|");
-  if (words.every(w => hay.includes(w))) return 2;
+  // 'e클래스' 는 'gle클래스' 속에서 안 맞게 — 클래스 이름은 앞이 끊긴 자리에서만
+  const 있음 = w => /^[a-z0-9]+클래스/.test(w) ? new RegExp("(^|[^a-z0-9])" + w).test(hay) : hay.includes(w);   // w 는 검색정리로 글자·숫자만
+  if (words.every(있음)) return 2;
   const hs = 소리(hay);
-  return words.every(w => hs.includes(소리(w))) ? 1 : 0;
+  return words.every(w => /^[a-z0-9]+클래스/.test(w) ? new RegExp("(^|[^a-z0-9])" + 소리(w)).test(hs) : hs.includes(소리(w))) ? 1 : 0;
 }
 
 /** 차량 검색 칸: 번호판·차명을 치면 아래에 후보 (재고 먼저, 최근 매입 순). 고르면 onPick(차) */
