@@ -731,12 +731,15 @@ svg.drawing .pnl { pointer-events: none; }
 }
 
 /* 차량입력 (엑셀처럼 바로 치는 표) */
-.entry-wrap { max-height: calc(100vh - 170px); overflow: auto; }
-.grid.entry td { padding: 3px 4px; } .grid.entry th { padding: 8px 6px; }
-.grid.entry td:first-child, .grid.entry td:nth-child(2) { padding: 6px 8px; }
-.entry .cell { width: 100%; min-width: 92px; padding: 6px 8px; border: 1px solid transparent; border-radius: 6px; background: transparent; font: inherit; font-variant-numeric: tabular-nums; }
+.page:has(.entry-page) { max-width: none; }          /* 차량입력은 화면 전체 폭 */
+.entry-wrap { max-height: calc(100vh - 150px); overflow: auto; }
+.grid.entry { font-size: 16px; }
+.grid.entry td { padding: 4px 5px; } .grid.entry th { padding: 10px 8px; font-size: 14px; text-align: center; }   /* 머리줄은 가운데 (사용자) */
+.grid.entry td:first-child, .grid.entry td:nth-child(2) { padding: 8px 10px; }
+.grid.entry td:nth-child(2) b { font-size: 16px; }
+.entry .cell { width: 100%; min-width: 120px; padding: 10px 10px; font-size: 16px; border: 1px solid transparent; border-radius: 6px; background: transparent; font: inherit; font-variant-numeric: tabular-nums; }
 .entry .cell.r { text-align: right; } .entry .cell.key { min-width: 70px; }
-.entry select.cell { min-width: 110px; }
+.entry select.cell { min-width: 130px; }
 .entry .cell:hover { border-color: var(--line); } .entry .cell:focus { border-color: #2563eb; background: #fff; outline: none; box-shadow: 0 0 0 2px #dbeafe; }
 .entry .cell.need { background: #fef3c7; } .entry .cell.need::placeholder { color: #b45309; font-size: 12px; }
 .entry .sumcell { position: relative; } .entry .sumcell .cell { padding-right: 20px; }
