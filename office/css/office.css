@@ -739,7 +739,7 @@ svg.drawing .pnl { pointer-events: none; }
 .grid.entry td:nth-child(2) b { font-size: 16px; }
 .entry .cell { width: 100%; min-width: 100px; padding: 9px 10px; font-size: 16px; border: 1px solid transparent; border-radius: 6px; background: transparent; font: inherit; font-variant-numeric: tabular-nums; }
 .entry .cell.r { text-align: right; } .entry .cell.key { min-width: 70px; }
-.entry select.cell { min-width: 130px; }
+.entry select.cell { min-width: 130px; } .entry .cell.wide { min-width: 150px; }
 /* 엑셀처럼 칸마다 선 (사용자 2026-10-26) */
 .grid.entry { border-collapse: collapse; }
 .grid.entry th, .grid.entry td { border: 1px solid #d5d9e0; }

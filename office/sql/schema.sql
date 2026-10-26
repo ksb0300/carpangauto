@@ -2720,3 +2720,18 @@ update cars c set acq_tax = r.acq_tax, acq_tax_unknown = r.acq_tax_unknown
   from cars x cross join lateral 취득세규칙(x.purchase_amount) r
  where c.id = x.id and c.deleted_at is null and c.status = '재고' and coalesce(c.acq_tax, 0) = 0
    and (c.acq_tax_unknown is distinct from r.acq_tax_unknown or r.acq_tax > 0);
+
+
+-- 20261026000002_acq_tax_6002.sql
+-- 취득세 0원 처리하는 차는 6,002원을 적는다 (사용자 2026-10-26) — 2,850만 미만, 4,000만 이상인데 계산이 0 인 차
+create or replace function 취득세규칙(p_amount bigint, out acq_tax bigint, out acq_tax_unknown boolean)
+language sql immutable as $$
+  select case when coalesce(p_amount, 0) >= 28500000 and p_amount < 40000000 then 0
+              when coalesce(p_amount, 0) >= 40000000 and p_amount * 0.07 > 2000000 then (floor(p_amount * 0.07 * 0.15 / 10) * 10)::bigint
+              else 6002 end,
+         coalesce(p_amount, 0) >= 28500000 and coalesce(p_amount, 0) < 40000000
+$$;
+
+-- 지금 재고 중 취득세 0원(모름 아님)인 차 → 6,002원
+update cars set acq_tax = 6002
+ where deleted_at is null and status = '재고' and coalesce(acq_tax, 0) = 0 and not coalesce(acq_tax_unknown, false);
