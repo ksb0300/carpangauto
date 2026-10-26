@@ -2768,3 +2768,26 @@ insert into car_costs (car_id, item, paid_by, taxable, amount, paid_date, includ
 select c.id, '광고비', '딜러', true, 27500, c.purchase_date, true, '자동: 배터리 PASS 광고 (전기차)'
   from cars c where c.deleted_at is null and c.status = '재고' and c.purchase_date >= date '2026-09-03' and c.fuel = '전기'
    and not exists (select 1 from car_costs k where k.car_id = c.id and k.item = '광고비' and k.memo like '%배터리%');
+
+
+-- 20261026000004_battery_pass_ad.sql
+-- 배터리 PASS 광고(27,500)는 연료로 짐작하지 않고 엔카 매물의 view.isBatteryPass 로 (사용자 2026-10-26 — "전기차이지만 배터리패스 아닌 것도 있다")
+--   kaiwa_sync(엔카 광고가 확인, 하루 두 번)가 넣는다. 한 번 넣은 차는 cars.battery_ad_at 에 남겨서, 사람이 지워도 다시 안 넣는다.
+alter table cars add column if not exists battery_ad_at timestamptz;
+
+-- 등록 트리거는 기본 광고비(9/3 이후 246,500)만
+create or replace function cars_auto_ad() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if new.deleted_at is not null or new.purchase_date is null or new.purchase_date < date '2026-09-03' then return new; end if;
+  if not exists (select 1 from car_costs where car_id = new.id and item = '광고비') then
+    insert into car_costs (car_id, item, paid_by, taxable, amount, paid_date, include_in_settlement, memo)
+    values (new.id, '광고비', '딜러', true, 246500, new.purchase_date, true, '자동: 광고비 (9/3 이후 매입)');
+  end if;
+  return new;
+end $$;
+drop trigger if exists cars_auto_ad on cars;
+create trigger cars_auto_ad after insert on cars for each row execute function cars_auto_ad();
+
+-- 오늘 연료(전기)로 넣은 배터리 PASS 줄은 지우고, 엔카 확인 뒤 다시 넣는다 (kaiwa_sync)
+delete from car_costs where item = '광고비' and memo = '자동: 배터리 PASS 광고 (전기차)';

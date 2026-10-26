@@ -24,13 +24,14 @@ export function 예상취득세(제시금액, 차종 = "승용") {
   return Math.floor((감면세액 * 0.15) / 10) * 10;
 }
 
-/** 취득세 규칙 (사용자 2026-10-26): 매입가 2,850만 미만 0원 / 2,850만~4,000만 미만 '모름'(사무장이 확인해 넣음) / 4,000만 이상 자동계산.
- *  → cars 에 넣을 { acq_tax, acq_tax_unknown } */
+/** 취득세 규칙 (사용자 2026-10-26): 매입가 2,850만 미만 6,002원(0원 처리하는 차는 6,002원을 적는다) / 2,850만~4,000만 미만 '모름'(사무장이 확인해 넣음)
+ *  / 4,000만 이상 자동계산(그래도 0 이면 6,002원).  → cars 에 넣을 { acq_tax, acq_tax_unknown } */
+export const 취득세0원 = 6002;
 export function 취득세규칙(매입가, 차종 = "승용") {
   const p = Number(매입가) || 0;
-  if (p < 28_500_000) return { acq_tax: 0, acq_tax_unknown: false };
+  if (p < 28_500_000) return { acq_tax: 취득세0원, acq_tax_unknown: false };
   if (p < 40_000_000) return { acq_tax: 0, acq_tax_unknown: true };
-  return { acq_tax: 예상취득세(p, 차종), acq_tax_unknown: false };
+  return { acq_tax: 예상취득세(p, 차종) || 취득세0원, acq_tax_unknown: false };
 }
 
 /** 재고금융 이자. 이율은 % 단위(연). */

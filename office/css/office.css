@@ -733,13 +733,17 @@ svg.drawing .pnl { pointer-events: none; }
 /* 차량입력 (엑셀처럼 바로 치는 표) */
 .page:has(.entry-page) { max-width: none; }          /* 차량입력은 화면 전체 폭 */
 .entry-wrap { max-height: calc(100vh - 150px); overflow: auto; }
-.grid.entry { font-size: 16px; }
-.grid.entry td { padding: 4px 5px; } .grid.entry th { padding: 10px 8px; font-size: 14px; text-align: center; }   /* 머리줄은 가운데 (사용자) */
-.grid.entry td:first-child, .grid.entry td:nth-child(2) { padding: 8px 10px; }
-.grid.entry td:nth-child(2) b { font-size: 16px; }
-.entry .cell { width: 100%; min-width: 100px; padding: 9px 10px; font-size: 16px; border: 1px solid transparent; border-radius: 6px; background: transparent; font: inherit; font-variant-numeric: tabular-nums; }
+.grid.entry { font-size: var(--ef, 16px); table-layout: fixed; }      /* 글씨 크기·칸 너비는 화면에서 조절 (colgroup) */
+.grid.entry td { padding: 4px 5px; overflow: hidden; } .grid.entry th { padding: 10px 8px; font-size: .875em; text-align: center; position: relative; white-space: normal; }   /* 머리줄은 가운데 (사용자) */
+.grid.entry td:first-child, .grid.entry td.carcell, .grid.entry td.info { padding: 8px 10px; }
+.grid.entry td.carcell { white-space: nowrap; text-overflow: ellipsis; } .grid.entry td.carcell b { font-size: 1em; }
+.grid.entry td.info { color: #4b5160; }
+.grid.entry th .rz { position: absolute; top: 0; right: -4px; width: 9px; height: 100%; cursor: col-resize; z-index: 2; }
+.grid.entry th .rz:hover { background: #93c5fd; }
+.entry-font { display: inline-flex; align-items: center; gap: 4px; } .entry-font b { min-width: 22px; text-align: center; font-size: 13px; }
+.entry .cell { width: 100%; min-width: 0; padding: .55em .6em; font-size: inherit; border: 1px solid transparent; border-radius: 6px; background: transparent; font: inherit; font-variant-numeric: tabular-nums; }
 .entry .cell.r { text-align: right; } .entry .cell.key { min-width: 70px; }
-.entry select.cell { min-width: 130px; } .entry .cell.wide { min-width: 150px; }
+
 /* 엑셀처럼 칸마다 선 (사용자 2026-10-26) */
 .grid.entry { border-collapse: collapse; }
 .grid.entry th, .grid.entry td { border: 1px solid #d5d9e0; }
@@ -751,7 +755,7 @@ svg.drawing .pnl { pointer-events: none; }
 .entry .cell:hover { border-color: var(--line); } .entry .cell:focus { border-color: #2563eb; background: #fff; outline: none; box-shadow: 0 0 0 2px #dbeafe; }
 .entry .cell.need { background: #fef3c7; } .entry .cell.need::placeholder { color: #b45309; font-size: 12px; }
 .entry .sumcell { position: relative; } .entry .sumcell .cell { padding-right: 20px; }
-.entry .sumtext { display: block; min-width: 100px; padding: 9px 22px 9px 10px; text-align: right; cursor: pointer; font-variant-numeric: tabular-nums; }
+.entry .sumtext { display: block; padding: 9px 22px 9px 10px; text-align: right; cursor: pointer; font-variant-numeric: tabular-nums; }
 .entry .cell::placeholder { color: #9aa0aa; }
 .entry .mini { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); border: 0; background: none; color: var(--sub); cursor: pointer; font-size: 11px; padding: 2px; }
 .modal-back { position: fixed; inset: 0; z-index: 45; background: rgba(15, 17, 21, .45); display: flex; align-items: center; justify-content: center; padding: 16px; }
