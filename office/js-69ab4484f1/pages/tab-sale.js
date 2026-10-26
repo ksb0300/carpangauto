@@ -11,6 +11,7 @@ const newBuyer = share => ({ _new: ++tmp, name: "", ssn: "", biz_no: "", phone: 
 
 export function SaleTab({ app, car, sale, buyers, settlement, reload, locked, office }) {
   const [editing, setEditing] = useState(!sale && office);
+  const [할부, set할부] = useState(null);      // 확정된 대표 차: 할부만 바로 고치기 { company, amount, rate }
   if (!sale && !office) return html`<div class="card empty">아직 매도되지 않았습니다.</div>`;
   if (editing) return html`<${SaleForm} app=${app} car=${car} sale=${sale} buyers=${buyers} onDone=${saved => { setEditing(false); if (saved) reload(); }} />`;
   if (!sale) return html`<div class="card empty">아직 매도되지 않았습니다. <button class="btn primary" onClick=${() => setEditing(true)}>매도 처리</button></div>`;
@@ -22,8 +23,22 @@ export function SaleTab({ app, car, sale, buyers, settlement, reload, locked, of
     await run(() => q(app.db.from("car_sales").delete().eq("car_id", car.id)), "매도를 취소했습니다");
     reload();
   };
+  // 할부피는 정산 뒤에야 아는 경우가 많다 (사용자 2026-10-26) — 손익확정된 대표 차도 할부만은 확정 해제 없이 고친다.
+  //   대표 차 손익(settlements.net_income)도 늘어난 할부수익만큼 같이 고친다 (할부수익은 비과세라 손익 차이 = 수익 차이). 딜러 차는 지급이 끝난 정산이라 확정 해제를 거친다
+  const 할부바로 = office && locked && (!settlement || settlement.mode === "대표");
+  const 할부저장 = () => run(async () => {
+    const before = Number(sale.installment_income) || 0, amount = Number(할부.amount) || 0;
+    if (amount > 0 && !할부.company) throw new Error("할부 캐피탈사를 고르세요.");
+    const [s2] = await q(app.db.from("car_sales").update({ installment_company: amount > 0 ? 할부.company : null, installment_amount: amount,
+      installment_rate: Number(할부.rate) || 0 }).eq("car_id", car.id).select("installment_income"));
+    const d = (Number(s2?.installment_income) || 0) - before;
+    if (d && settlement?.finalized) await q(app.db.from("settlements").update({ net_income: (Number(settlement.net_income) || 0) + d }).eq("car_id", car.id));
+    set할부(null); reload();
+  }, "할부를 고쳤습니다");
+  const 할부미리 = 할부 ? 할부수수료(할부.amount, 할부.rate) : null;
   return html`<div class="card">
     <div class="bar"><h3>매도정보</h3><span class="grow"></span>
+      ${할부바로 && !할부 && html`<button class="btn" title="손익확정을 풀지 않고 할부만 고칩니다" onClick=${() => set할부({ company: sale.installment_company, amount: Number(sale.installment_amount) || 0, rate: Number(sale.installment_rate) || "" })}>할부 고치기</button>`}
       ${office && !locked && html`<button class="btn" onClick=${() => setEditing(true)}>수정</button><button class="btn danger" onClick=${cancel}>매도취소</button>`}
       ${office && html`<button class="btn primary" onClick=${() => go(`/car/${car.id}/settle`)}>정산하기 →</button>`}</div>
     <div class="kvgrid">
@@ -39,6 +54,15 @@ export function SaleTab({ app, car, sale, buyers, settlement, reload, locked, of
       <div><span>출고 번호판</span><b>${sale.plate_out || car.plate}</b></div>
       <div><span>특이사항</span><b>${sale.memo || "-"}</b></div>
     </div>
+    ${할부 && html`<div class="bar" style="margin-top:12px"><h3>할부 고치기</h3><span class="muted small">손익확정은 그대로 두고 할부수익·차량 손익만 다시 계산합니다</span></div>
+      <div class="fgrid">
+        <${Field} label="캐피탈사"><${Select} value=${할부.company} onChange=${v => set할부({ ...할부, company: v })} empty="선택"
+          options=${[...new Set([...(app.settings.installment_companies || []), ...(할부.company ? [할부.company] : [])])]} /><//>
+        <${Field} label="할부금액"><${Money} value=${할부.amount} onInput=${v => set할부({ ...할부, amount: v })} /><//>
+        <${Field} label="할부피(%)" hint=${할부미리?.수수료 ? `수수료 ${won(할부미리.수수료)} − 원천징수 ${won(할부미리.원천징수)} = 수익 ${won(할부미리.수익)}` : "수익 = 할부금액 × 할부피 − 원천징수 3.3%"}>
+          <input inputmode="decimal" value=${할부.rate} onInput=${e => set할부({ ...할부, rate: e.target.value })} /><//>
+      </div>
+      <div class="bar"><span class="grow"></span><button class="btn ghost" onClick=${() => set할부(null)}>취소</button><button class="btn primary" onClick=${할부저장}>저장</button></div>`}
     ${(SHOW_BUYERS || buyers.length > 0) && html`<h3>매수고객</h3>
     <div class="table-wrap"><table class="grid"><thead><tr><th>고객명</th><th>주민(법인)번호</th><th>사업자번호</th><th>연락처</th><th>주소</th><th class="r">지분율</th></tr></thead>
       <tbody>${buyers.map(b => html`<tr><td>${b.name}</td><td>${b.ssn_masked || "-"}</td><td>${b.biz_no || "-"}</td><td>${b.phone || "-"}</td><td>${b.addr || "-"}</td><td class="r">${b.share_rate}%</td></tr>`)}</tbody></table></div>`}

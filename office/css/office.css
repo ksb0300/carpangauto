@@ -740,6 +740,14 @@ svg.drawing .pnl { pointer-events: none; }
 .entry .cell { width: 100%; min-width: 100px; padding: 9px 10px; font-size: 16px; border: 1px solid transparent; border-radius: 6px; background: transparent; font: inherit; font-variant-numeric: tabular-nums; }
 .entry .cell.r { text-align: right; } .entry .cell.key { min-width: 70px; }
 .entry select.cell { min-width: 130px; }
+/* 엑셀처럼 칸마다 선 (사용자 2026-10-26) */
+.grid.entry { border-collapse: collapse; }
+.grid.entry th, .grid.entry td { border: 1px solid #d5d9e0; }
+.grid.entry thead th { background: #eef1f5; color: #3b4250; border-bottom: 2px solid #b9c0cc; }
+.grid.entry tbody tr:nth-child(even) td { background: #fafbfc; }
+.grid.entry tbody tr:hover td { background: #f2f6ff; }
+.grid.entry td:has(.cell:focus) { outline: 2px solid #2563eb; outline-offset: -2px; }
+.entry .cell { border-radius: 0; }
 .entry .cell:hover { border-color: var(--line); } .entry .cell:focus { border-color: #2563eb; background: #fff; outline: none; box-shadow: 0 0 0 2px #dbeafe; }
 .entry .cell.need { background: #fef3c7; } .entry .cell.need::placeholder { color: #b45309; font-size: 12px; }
 .entry .sumcell { position: relative; } .entry .sumcell .cell { padding-right: 20px; }
