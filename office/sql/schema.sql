@@ -2646,3 +2646,77 @@ grant execute on function att_fix_decide(uuid, boolean) to authenticated;
 alter table car_sales drop constraint car_sales_sale_type_check;
 alter table car_sales add constraint car_sales_sale_type_check check (sale_type in ('내수판매', '수출', '엔카믿고', '알선판매', 'FM', 'AM'));
 alter table car_sales add column if not exists am_income bigint not null default 0;
+
+
+-- 20261026000001_acq_tax_rule.sql
+-- 취득세 규칙 (사용자 2026-10-26): 매입가 2,850만 미만 0원 / 2,850만~4,000만 미만 '모름'(사무장이 확인해 넣음) / 4,000만 이상 자동계산
+--   자동계산 = 업무관리 calc.js 예상취득세(승용 7%의 15%, 7%가 200만 이하면 0) 와 같은 식. 화면(차 등록·차량입력)은 calc.js 취득세규칙을 쓴다.
+create or replace function 취득세규칙(p_amount bigint, out acq_tax bigint, out acq_tax_unknown boolean)
+language sql immutable as $$
+  select case when coalesce(p_amount, 0) >= 40000000 and p_amount * 0.07 > 2000000 then (floor(p_amount * 0.07 * 0.15 / 10) * 10)::bigint else 0 end,
+         coalesce(p_amount, 0) >= 28500000 and coalesce(p_amount, 0) < 40000000
+$$;
+
+-- 차대금 송금 완료 → 재고 자동 등록에도 같은 규칙
+create or replace function _board_paid_car() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare f jsonb := new.form; amt bigint; c record; uid uuid; did uuid; route text; ev text; st text; nm text; d date; cid uuid; tx record;
+begin
+  if new.category <> '송금요청' or coalesce(f->>'kind', '') <> '매입대금' then return new; end if;
+  if coalesce(f->>'amount', '') !~ '^[0-9]+$' or coalesce(new.plate, f->>'plate', '') = '' then return new; end if;
+  amt := (f->>'amount')::bigint;
+
+  -- 완료 취소
+  if old.done_at is not null and new.done_at is null then
+    select * into c from cars where id = new.car_id and auto_post_id is not null and deleted_at is null and status = '재고';
+    if c.id is not null then
+      if c.purchase_amount > amt then update cars set purchase_amount = purchase_amount - amt where id = c.id;
+      else update cars set deleted_at = now() where id = c.id; new.car_id := null; end if;
+    end if;
+    return new;
+  end if;
+  if not (old.done_at is null and new.done_at is not null) then return new; end if;
+
+  d := (new.done_at at time zone 'Asia/Seoul')::date;
+  select * into c from cars x where x.deleted_at is null and replace(x.plate, ' ', '') = replace(coalesce(new.plate, f->>'plate'), ' ', '')
+    and (x.status = '재고' or x.purchase_date >= (new.created_at at time zone 'Asia/Seoul')::date - 30)
+   order by (x.status = '재고') desc, x.purchase_date desc nulls last limit 1;
+  if c.id is not null then
+    if c.auto_post_id is not null and c.auto_post_id <> new.id and new.car_id is distinct from c.id and c.status = '재고' then
+      update cars set purchase_amount = purchase_amount + amt where id = c.id;   -- 나눠 보낸 차대금
+    end if;
+    cid := c.id;
+  else
+    uid := coalesce(new.created_by, (select p.user_id from profiles p where p.name = new.author_name and p.role in ('admin', 'staff') limit 1));
+    did := (select p.dealer_id from profiles p where p.user_id = uid);
+    route := f->>'route';
+    if route in ('헤이딜러', '엔카') or coalesce(f->>'payee_type', '개인') = '개인' then ev := '의제매입'; st := '개인';
+    elsif f->>'invoice' = '발행 가능' then ev := '세금계산서'; st := case when f->>'payee_type' = '법인' then '법인' else '개인' end;
+    else ev := '의제매입'; st := case when f->>'payee_type' = '법인' then '법인' else '개인' end; end if;
+    nm := coalesce(substring(coalesce(f->>'customer', '') from '^\s*([가-힣]{2,5})'),
+                   case when route is distinct from '헤이딜러' and route is distinct from '엔카' then nullif(f->>'payee', '') end);
+    select * into tx from 취득세규칙(amt);
+    insert into cars (dealer_id, car_name, plate, plate_before, purchase_date, purchase_amount, purchase_fee, acq_tax, acq_tax_unknown,
+                      evidence, seller_type, seller_name, purchase_channel, memo, created_by, auto_post_id)
+    values (did, coalesce(nullif(f->>'car_name', ''), new.title), replace(coalesce(new.plate, f->>'plate'), ' ', ''), replace(coalesce(new.plate, f->>'plate'), ' ', ''),
+            d, amt, 0, tx.acq_tax, tx.acq_tax_unknown, ev, st, nm, case when route = '엔카' then '엔카' end,
+            concat_ws(' · ', '게시판 송금요청에서 자동 등록', case when route = '헤이딜러' then '헤이딜러 제로/셀프 고르기' end,
+                      case when f->>'invoice' = '확인 필요' then '계산서 발행 확인 필요' end),
+            uid, new.id)
+    returning id into cid;
+    insert into board_comments (post_id, body, author_name)
+    values (new.id, format('🚗 재고에 올렸습니다 — %s 차 · 매입가 %s원 · %s · %s',
+                           coalesce((select name from dealers where id = did), '담당 없음'), to_char(amt, 'FM999,999,999,999'), ev,
+                           case when tx.acq_tax_unknown then '취득세는 사무장 확인 필요' else '취득세 ' || to_char(tx.acq_tax, 'FM999,999,990') || '원' end),
+            '업무관리');
+  end if;
+  new.car_id := cid;
+  update bank_txs set car_id = cid where post_id = new.id and car_id is null;
+  return new;
+end $$;
+
+-- 지금 재고 중 취득세를 아직 안 넣은(0원) 차에 규칙 적용 — 넣어 둔 금액은 그대로
+update cars c set acq_tax = r.acq_tax, acq_tax_unknown = r.acq_tax_unknown
+  from cars x cross join lateral 취득세규칙(x.purchase_amount) r
+ where c.id = x.id and c.deleted_at is null and c.status = '재고' and coalesce(c.acq_tax, 0) = 0
+   and (c.acq_tax_unknown is distinct from r.acq_tax_unknown or r.acq_tax > 0);
