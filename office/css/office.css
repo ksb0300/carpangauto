@@ -743,6 +743,8 @@ svg.drawing .pnl { pointer-events: none; }
 .entry .cell:hover { border-color: var(--line); } .entry .cell:focus { border-color: #2563eb; background: #fff; outline: none; box-shadow: 0 0 0 2px #dbeafe; }
 .entry .cell.need { background: #fef3c7; } .entry .cell.need::placeholder { color: #b45309; font-size: 12px; }
 .entry .sumcell { position: relative; } .entry .sumcell .cell { padding-right: 20px; }
+.entry .sumtext { display: block; min-width: 100px; padding: 9px 22px 9px 10px; text-align: right; cursor: pointer; font-variant-numeric: tabular-nums; }
+.entry .cell::placeholder { color: #9aa0aa; }
 .entry .mini { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); border: 0; background: none; color: var(--sub); cursor: pointer; font-size: 11px; padding: 2px; }
 .modal-back { position: fixed; inset: 0; z-index: 45; background: rgba(15, 17, 21, .45); display: flex; align-items: center; justify-content: center; padding: 16px; }
 .modal-back .modal { width: min(520px, 100%); max-height: 80vh; overflow: auto; margin: 0; }
