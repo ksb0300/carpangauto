@@ -1,6 +1,7 @@
 // 차량입력 (사용자 2026-10-26): 사무장이 차마다 들어가지 않고 매입매출대장처럼 한 화면에서 바로 친다.
 //   비용(도색광택·수리비·광택세차·광고비·탁송유류·기타) — 칸에 친 금액이 한 건 '더해진다'(날짜별 내역은 ▾ 에서 보고 지움)
-//   취득세(차 값 그대로 — 넣으면 '모름'이 풀리고 비용 줄은 DB 가 자동) · 재고대출(금융사·대출금 — 없으면 새로, 있으면 고침) · 키번호
+//   취득세(차 값 그대로 — 넣으면 '모름'이 풀리고 비용 줄은 DB 가 자동) · 재고대출(금융사·대출금 — 없으면 새로, 있으면 고침)
+//   키번호는 뺌 (사용자 2026-10-26 — 264대 중 쓴 차 0대). 화면은 전체 폭·큰 글씨
 //   Enter = 저장하고 아래 차로, Tab = 오른쪽 칸. '30' 처럼 1000 미만은 만원 단위(30만원).
 import { html, useState, useEffect, useMemo, useRef, Seg, Loading, Empty, run, won, today, toast, ask, go, 검색맞음, 간략차명 } from "../ui.js";
 import { q } from "../db.js";
@@ -51,10 +52,9 @@ export function CarEntryPage({ app }) {
     toast(`${c.plate} ${item} +${won(v)}원`); load();
   });
   const 취득세 = (c, v) => run(async () => {
-    await q(app.db.from("cars").update({ acq_tax: v, ...(v ? {} : { acq_tax_unknown: true }) }).eq("id", c.id));
+    await q(app.db.from("cars").update({ acq_tax: v, acq_tax_unknown: false }).eq("id", c.id));      // 0 을 치면 '0원으로 확인
     toast(`${c.plate} 취득세 ${won(v)}원`); load();
   });
-  const 키번호 = (c, v) => run(async () => { await q(app.db.from("cars").update({ key_no: v || null }).eq("id", c.id)); load(); });
   const 대출저장 = (c, patch) => run(async () => {
     const l = 대출(c.id);
     if (l) { await q(app.db.from("car_loans").update(patch).eq("id", l.id)); toast(`${c.plate} 재고대출 고침`); return load(); }
@@ -71,31 +71,29 @@ export function CarEntryPage({ app }) {
   });
   const 지우기 = k => ask(`${k.paid_date} ${k.item} ${won(k.amount)}원을 지울까요?`) && run(async () => { await q(app.db.from("car_costs").delete().eq("id", k.id)); load(); });
 
-  return html`<div class="bar"><h2>차량입력</h2><span class="muted small">칸에 금액 → Enter (아래 차로) · '30' = 30만원 · 비용은 친 만큼 더해집니다</span><span class="grow"></span>
+  return html`<div class="entry-page"><div class="bar"><h2>차량입력</h2><span class="muted small">칸에 금액 → Enter (아래 차로) · '30' = 30만원 · 비용은 친 만큼 더해집니다</span><span class="grow"></span>
       <input class="search" placeholder="차량번호·차명" value=${text} onInput=${e => setText(e.target.value)} style="max-width:200px" />
       <${Seg} value=${scope} onChange=${setScope} options=${["재고", "최근 매도"]} /></div>
     ${!rows.length ? html`<${Empty}>${scope === "재고" ? "재고 차가 없습니다." : "최근 30일 매도 차가 없습니다."}<//>` : html`
     <div class="table-wrap entry-wrap"><table class="grid entry">
       <thead><tr><th>매입일</th><th>차량</th><th class="r">취득세</th><th>재고대출 금융사</th><th class="r">대출금</th>
-        ${비용칸.map(([, l]) => html`<th class="r">${l}</th>`)}<th>키번호</th></tr></thead>
+        ${비용칸.map(([, l]) => html`<th class="r">${l}</th>`)}</tr></thead>
       <tbody>${rows.map((c, i) => { const l = 대출(c.id); return html`<tr key=${c.id}>
         <td class="muted small">${c.purchase_date?.slice(2) || ""}</td>
         <td><a href=${"#/car/" + c.id} title=${c.car_name}><b>${c.plate}</b></a><small class="muted"> ${간략차명(c)}</small></td>
-        <td><${칸} row=${i} col=${0} value=${n(c.acq_tax)} 빈칸=${c.acq_tax_unknown || !n(c.acq_tax)} onSave=${v => 취득세(c, v)} /></td>
+        <td><${칸} row=${i} col=${0} value=${n(c.acq_tax)} 빈칸=${c.acq_tax_unknown} onSave=${v => 취득세(c, v)} /></td>
         <td><select class="cell" value=${l?.lender_id || 고른[c.id] || ""} onChange=${e => e.target.value ? 대출저장(c, { lender_id: e.target.value, amount: l?.amount || 0 }) : (toast("재고대출을 지우려면 차 화면 → 재고금융에서", "err"), load())}>
           <option value="">${l ? "-" : "없음"}</option>${lenders.map(x => html`<option value=${x.id}>${x.name}</option>`)}</select></td>
         <td><${칸} row=${i} col=${1} value=${n(l?.amount)} onSave=${v => l ? 대출저장(c, { amount: v }) : 고른[c.id] ? 대출저장(c, { lender_id: 고른[c.id], amount: v }) : toast("금융사를 먼저 고르세요", "err")} /></td>
         ${비용칸.map(([item], j) => { const s = 합(c.id, item); return html`<td class="sumcell"><${칸} row=${i} col=${2 + j} value=${s} 빈칸=${item === "도색광택" && 상품화없음(c.id)} 더하기 onSave=${v => 비용더하기(c, item, v)} />
           ${s > 0 && html`<button class="mini" title="내역" onClick=${() => setOpen({ car: c, item })}>▾</button>`}</td>`; })}
-        <td><input class="cell key" value=${c.key_no || ""} data-row=${i} data-col=${2 + 비용칸.length} onKeyDown=${e => 이동(e, i, 2 + 비용칸.length)}
-          onChange=${e => 키번호(c, e.target.value.trim())} /></td>
       </tr>`; })}</tbody></table></div>`}
     ${open && html`<div class="modal-back" onClick=${() => setOpen(null)}><div class="card modal" onClick=${e => e.stopPropagation()}>
       <div class="bar"><h3>${open.car.plate} · ${open.item}</h3><span class="grow"></span><button class="btn sm ghost" onClick=${() => setOpen(null)}>닫기</button></div>
       <table class="grid"><tbody>${d.costs.filter(k => k.car_id === open.car.id && k.item === open.item).map(k => html`<tr>
         <td>${k.paid_date || ""}</td><td class="r">${won(k.amount)}</td><td class="muted small">${k.memo || ""}${k.auto_source ? " (자동)" : ""}</td>
         <td><button class="btn sm ghost" onClick=${() => 지우기(k)}>지우기</button></td></tr>`)}</tbody></table>
-      <p class="small"><a href=${"#/car/" + open.car.id + "/costs"} onClick=${() => setOpen(null)}>차 화면 비용 탭에서 자세히 →</a></p></div></div>`}`;
+      <p class="small"><a href=${"#/car/" + open.car.id + "/costs"} onClick=${() => setOpen(null)}>차 화면 비용 탭에서 자세히 →</a></p></div></div>`}</div>`;
 }
 
 /** 엑셀처럼: Enter 아래, Shift+Enter 위, 위·아래 화살표 */
@@ -118,7 +116,7 @@ function 칸({ row, col, value, 빈칸, 더하기, onSave }) {
     if (!s) return;
     const v = 읽기(s);
     if (v == null) return toast("금액을 읽지 못했습니다: " + s, "err");
-    if (!더하기 && v === value) return;
+    if (!더하기 && v === value && !빈칸) return;          // 빈칸(모름)에 0 을 치면 0원으로 확인
     onSave(v);
   };
   return html`<input class=${"cell r" + (빈칸 ? " need" : "")} inputmode="numeric" data-row=${row} data-col=${col}
