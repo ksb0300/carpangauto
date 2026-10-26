@@ -2735,3 +2735,36 @@ $$;
 -- 지금 재고 중 취득세 0원(모름 아님)인 차 → 6,002원
 update cars set acq_tax = 6002
  where deleted_at is null and status = '재고' and coalesce(acq_tax, 0) = 0 and not coalesce(acq_tax_unknown, false);
+
+
+-- 20261026000003_auto_ad_cost.sql
+-- 광고비 자동 (사용자 2026-10-26): 매입일 2026-09-03 이후 차는 광고비 246,500원, 전기차는 배터리 PASS 광고 27,500원 더.
+--   수정·삭제할 수 있게 auto_source 없이 보통 비용 줄로 넣는다 (차량입력 '246500+27500' 칸·차 화면 비용 탭에서 고침). 한 번 넣으면 다시 안 넣는다.
+--   기본 광고비: 차 등록 때 (광고비가 하나도 없으면) / 배터리 PASS: 연료가 '전기'가 될 때 (등록 때든, 성능점검·엔카가 나중에 채우든)
+create or replace function cars_auto_ad() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if new.deleted_at is not null or new.purchase_date is null or new.purchase_date < date '2026-09-03' then return new; end if;
+  if tg_op = 'INSERT' and not exists (select 1 from car_costs where car_id = new.id and item = '광고비') then
+    insert into car_costs (car_id, item, paid_by, taxable, amount, paid_date, include_in_settlement, memo)
+    values (new.id, '광고비', '딜러', true, 246500, new.purchase_date, true, '자동: 광고비 (9/3 이후 매입)');
+  end if;
+  if new.fuel = '전기' and (tg_op = 'INSERT' or old.fuel is distinct from new.fuel)
+     and not exists (select 1 from car_costs where car_id = new.id and item = '광고비' and memo like '%배터리%') then
+    insert into car_costs (car_id, item, paid_by, taxable, amount, paid_date, include_in_settlement, memo)
+    values (new.id, '광고비', '딜러', true, 27500, new.purchase_date, true, '자동: 배터리 PASS 광고 (전기차)');
+  end if;
+  return new;
+end $$;
+drop trigger if exists cars_auto_ad on cars;
+create trigger cars_auto_ad after insert or update of fuel on cars for each row execute function cars_auto_ad();
+
+-- 지금 재고 중 9/3 이후 매입: 광고비 없는 차에 246,500, 전기차엔 배터리 PASS 27,500 (이미 있는 광고비는 그대로)
+insert into car_costs (car_id, item, paid_by, taxable, amount, paid_date, include_in_settlement, memo)
+select c.id, '광고비', '딜러', true, 246500, c.purchase_date, true, '자동: 광고비 (9/3 이후 매입)'
+  from cars c where c.deleted_at is null and c.status = '재고' and c.purchase_date >= date '2026-09-03'
+   and not exists (select 1 from car_costs k where k.car_id = c.id and k.item = '광고비');
+insert into car_costs (car_id, item, paid_by, taxable, amount, paid_date, include_in_settlement, memo)
+select c.id, '광고비', '딜러', true, 27500, c.purchase_date, true, '자동: 배터리 PASS 광고 (전기차)'
+  from cars c where c.deleted_at is null and c.status = '재고' and c.purchase_date >= date '2026-09-03' and c.fuel = '전기'
+   and not exists (select 1 from car_costs k where k.car_id = c.id and k.item = '광고비' and k.memo like '%배터리%');

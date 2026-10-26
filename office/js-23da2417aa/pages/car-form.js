@@ -102,7 +102,7 @@ export function CarForm({ app, id }) {
         <${Select} value=${f.purchase_channel} onChange=${set("purchase_channel")} empty="선택" options=${(app.settings.purchase_channels || []).map(c => c.name)} /><//>
       <${Field} label="매입증빙" hint=${f.evidence === "세금계산서" ? "사업자(렌트사·법인 등)에게 사서 세금계산서를 받은 경우" : "개인에게 산 경우 (대부분)"}>
         <${Seg} value=${f.evidence} onChange=${set("evidence")} options=${["의제매입", "세금계산서"]} /><//>
-      <${Field} label="취득세" hint=${f.acq_tax_unknown ? "모름 — 2,850만~4,000만은 사무장이 확인해 넣습니다 (차량입력·대시보드 '취등록세 수정 필요')" : `2,850만 미만 0원 · 4,000만 이상 자동계산 (${won(autoTax)}원)`}>
+      <${Field} label="취득세" hint=${f.acq_tax_unknown ? "모름 — 2,850만~4,000만은 사무장이 확인해 넣습니다 (차량입력·대시보드 '취등록세 수정 필요')" : `2,850만 미만 6,002원 · 4,000만 이상 자동계산 (${won(autoTax)}원)`}>
         <div class="row"><${Money} value=${f.acq_tax} placeholder=${f.acq_tax_unknown ? "모름" : "0"}
             onInput=${v => { setTaxEdited(true); setF(p => ({ ...p, acq_tax: v, acq_tax_unknown: v > 0 ? false : p.acq_tax_unknown })); }} />
         <button type="button" class="btn sm" onClick=${() => { setTaxEdited(false); setF(p => ({ ...p, ...취득세규칙(p.purchase_amount, p.car_kind || "승용") })); }}>자동계산</button>

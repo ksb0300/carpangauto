@@ -1,21 +1,26 @@
 // 차량입력 (사용자 2026-10-26): 사무장이 차마다 들어가지 않고 매입매출대장처럼 한 화면에서 바로 친다.
-//   비용(도색광택·수리비·광택세차·광고비·탁송유류·기타) — 칸에 친 금액이 한 건 '더해진다'(날짜별 내역은 ▾ 에서 보고 지움)
+//   비용(도색광택·수리비·광택세차·광고비·탁송유류·기타) — 엑셀 수식처럼: 칸을 누르면 '300000+50000' 이 보이고, 고치거나 지우고 Enter 면
+//     그대로 맞춘다(지운 금액은 삭제, 새 금액은 한 건씩 추가 — 사용자 2026-10-26 "클릭해서 지우기 말고 그냥"). 자동으로 들어간 줄(auto_source)은 건드리지 않는다.
+//     수리비는 오른쪽 '+ 수리비' 칸으로 빨리 더하기도
 //   취득세(차 값 그대로 — 넣으면 '모름'이 풀리고 비용 줄은 DB 가 자동) · 재고대출(금융사·대출금 — 없으면 새로, 있으면 고침)
 //   키번호는 뺌 (사용자 2026-10-26 — 264대 중 쓴 차 0대). 화면은 전체 폭·큰 글씨
 //   Enter = 저장하고 아래 차로, Tab = 오른쪽 칸. '30' 처럼 1000 미만은 만원 단위(30만원).
 import { html, useState, useEffect, useMemo, useRef, Seg, Loading, Empty, run, won, today, toast, ask, go, 검색맞음, 간략차명 } from "../ui.js";
 import { q } from "../db.js";
 import { 금액 } from "../forms.js";
+import { 취득세0원 } from "../calc.js";
 import { 비용구분 } from "./lists.js";
 
 const 비용칸 = [["도색광택", "도색광택"], ["수리비", "수리비"], ["광택/세차", "광택세차"], ["광고비", "광고비"], ["탁송유류", "탁송유류"], ["기타비용", "기타"]];
 const n = v => Math.round(Number(v) || 0);
 /** '30' → 300,000 (1000 미만은 만원), '30만'·'300,000' 그대로. 못 읽으면 null */
-const 읽기 = s => { const t = String(s ?? "").trim(); if (!t) return null; const v = 금액(t); return v == null ? null : v < 1000 ? v * 10000 : v; };
+const 읽기 = s => { const t = String(s ?? "").trim(); if (!t) return null; if (/^[0,]+원?$/.test(t)) return 0; const v = 금액(t); return v == null ? null : v < 1000 ? v * 10000 : v; };
 /** '152323+233311' → [152323, 233311] (사용자 2026-10-26 — 수리비는 여러 번 나와서 + 로 이어 친다). 하나라도 못 읽으면 null */
 const 여러개 = s => { const ts = String(s ?? "").split("+").map(x => x.trim()).filter(Boolean); const vs = ts.map(읽기); return vs.length && vs.every(v => v != null) ? vs : null; };
 // 수리비는 합계 칸 오른쪽에 '+' 칸을 따로 (합계는 보기만, ▾ 로 내역)
 const 따로더하기 = new Set(["수리비"]);
+// 손으로 고칠 수 있는 줄: 직접 넣은 것 + 매입매출대장에서 옮겨 온 것('대장'). 시스템이 관리하는 자동 줄(취득세 등)은 그대로
+const 고칠수있음 = k => !k.auto_source || k.auto_source === "대장";
 
 export function CarEntryPage({ app }) {
   const [d, setD] = useState(null);
@@ -43,6 +48,8 @@ export function CarEntryPage({ app }) {
 
   const rows = useMemo(() => (d?.cars || []).filter(c => !text.trim() || 검색맞음(text, c.plate, c.car_name) > 0), [d, text]);
   if (!d) return html`<${Loading} />`;
+  const 자동합 = (car, item) => d.costs.filter(k => k.car_id === car && k.item === item && !고칠수있음(k)).reduce((t, k) => t + n(k.amount), 0);
+  const 식 = (car, item) => d.costs.filter(k => k.car_id === car && k.item === item && 고칠수있음(k)).map(k => n(k.amount)).join("+");
   const 합 = (car, item) => d.costs.filter(k => k.car_id === car && k.item === item).reduce((t, k) => t + n(k.amount), 0);
   const 대출 = car => d.loans.find(l => l.car_id === car) || null;
   // '작성필요'는 리스트와 같은 뜻으로만: 상품화비용(수리·도색·세차·탁송 등)이 하나도 없는 차의 도색광택 칸, 취득세 모르는 차
@@ -56,7 +63,8 @@ export function CarEntryPage({ app }) {
     toast(`${c.plate} ${item} +${won(vs.reduce((a, b) => a + b, 0))}원${vs.length > 1 ? ` (${vs.length}건)` : ""}`); load();
   });
   const 취득세 = (c, v) => run(async () => {
-    await q(app.db.from("cars").update({ acq_tax: v, acq_tax_unknown: false }).eq("id", c.id));      // 0 을 치면 '0원으로 확인
+    v = v || 취득세0원;                       // 0원 처리하는 차는 6,002원 (사용자 2026-10-26)
+    await q(app.db.from("cars").update({ acq_tax: v, acq_tax_unknown: false }).eq("id", c.id));
     toast(`${c.plate} 취득세 ${won(v)}원`); load();
   });
   const 대출저장 = (c, patch) => run(async () => {
@@ -73,6 +81,15 @@ export function CarEntryPage({ app }) {
     set고른(x => { const y = { ...x }; delete y[c.id]; return y; });
     toast(`${c.plate} 재고대출 등록 (${lender.name}, 실행일 = 매입일 ${c.purchase_date})`); load();
   });
+  // 수식 칸 저장: 새 금액 목록에 맞춰 손으로 넣은 줄을 지우고 더한다 (같은 금액이 있으면 그 줄은 그대로 — 날짜 유지)
+  const 비용맞추기 = (c, item, vs) => run(async () => {
+    const 남은 = d.costs.filter(k => k.car_id === c.id && k.item === item && 고칠수있음(k)), 새 = [];
+    for (const v of vs) { const i = 남은.findIndex(k => n(k.amount) === v); if (i >= 0) 남은.splice(i, 1); else 새.push(v); }
+    if (남은.length) await q(app.db.from("car_costs").delete().in("id", 남은.map(k => k.id)));
+    if (새.length) await q(app.db.from("car_costs").insert(새.map(v => ({ car_id: c.id, item, amount: v, paid_by: "딜러", taxable: true, paid_date: today(), include_in_settlement: true }))));
+    if (남은.length || 새.length) toast(`${c.plate} ${item} ${won(vs.reduce((a, b) => a + b, 0) + 자동합(c.id, item))}원`);
+    load();
+  });
   const 지우기 = k => ask(`${k.paid_date} ${k.item} ${won(k.amount)}원을 지울까요?`) && run(async () => { await q(app.db.from("car_costs").delete().eq("id", k.id)); load(); });
 
   return html`<div class="entry-page"><div class="bar"><h2>차량입력</h2><span class="muted small">칸에 금액 → Enter (아래 차로) · '30' = 30만원 · 비용은 친 만큼 더해집니다</span><span class="grow"></span>
@@ -88,18 +105,18 @@ export function CarEntryPage({ app }) {
         <td><${칸} row=${i} col=${0} value=${n(c.acq_tax)} 빈칸=${c.acq_tax_unknown} onSave=${v => 취득세(c, v)} /></td>
         <td><select class="cell" value=${l?.lender_id || 고른[c.id] || ""} onChange=${e => e.target.value ? 대출저장(c, { lender_id: e.target.value, amount: l?.amount || 0 }) : (toast("재고대출을 지우려면 차 화면 → 재고금융에서", "err"), load())}>
           <option value="">${l ? "-" : "없음"}</option>${lenders.map(x => html`<option value=${x.id}>${x.name}</option>`)}</select></td>
-        <td><${칸} row=${i} col=${1} value=${n(l?.amount)} onSave=${v => l ? 대출저장(c, { amount: v }) : 고른[c.id] ? 대출저장(c, { lender_id: 고른[c.id], amount: v }) : toast("금융사를 먼저 고르세요", "err")} /></td>
+        <td><${칸} row=${i} col=${1} value=${n(l?.amount)} wide onSave=${v => l ? 대출저장(c, { amount: v }) : 고른[c.id] ? 대출저장(c, { lender_id: 고른[c.id], amount: v }) : toast("금융사를 먼저 고르세요", "err")} /></td>
         ${비용칸.map(([item], j) => { const s = 합(c.id, item);
           const 내역 = s > 0 && html`<button class="mini" title="내역" onClick=${() => setOpen({ car: c, item })}>▾</button>`;
+          const 수식칸 = html`<td class="sumcell"><${칸} row=${i} col=${2 + j * 2} value=${s} 식=${식(c.id, item)} 빈칸=${item === "도색광택" && 상품화없음(c.id)} onSave=${v => 비용맞추기(c, item, v)} />${내역}</td>`;
           return 따로더하기.has(item)
-            ? html`<td class="sumcell"><span class="sumtext" onClick=${() => s > 0 && setOpen({ car: c, item })}>${s ? won(s) : ""}</span>${내역}</td>
-                <td><${칸} row=${i} col=${2 + j} value=${0} 더하기 placeholder="+ 금액" onSave=${v => 비용더하기(c, item, v)} /></td>`
-            : html`<td class="sumcell"><${칸} row=${i} col=${2 + j} value=${s} 빈칸=${item === "도색광택" && 상품화없음(c.id)} 더하기 onSave=${v => 비용더하기(c, item, v)} />${내역}</td>`; })}
+            ? html`${수식칸}<td><${칸} row=${i} col=${3 + j * 2} value=${0} 더하기 placeholder="+ 금액" onSave=${v => 비용더하기(c, item, v)} /></td>`
+            : 수식칸; })}
       </tr>`; })}</tbody></table></div>`}
     ${open && html`<div class="modal-back" onClick=${() => setOpen(null)}><div class="card modal" onClick=${e => e.stopPropagation()}>
       <div class="bar"><h3>${open.car.plate} · ${open.item}</h3><span class="grow"></span><button class="btn sm ghost" onClick=${() => setOpen(null)}>닫기</button></div>
       <table class="grid"><tbody>${d.costs.filter(k => k.car_id === open.car.id && k.item === open.item).map(k => html`<tr>
-        <td>${k.paid_date || ""}</td><td class="r">${won(k.amount)}</td><td class="muted small">${k.memo || ""}${k.auto_source ? " (자동)" : ""}</td>
+        <td>${k.paid_date || ""}</td><td class="r">${won(k.amount)}</td><td class="muted small">${k.memo || ""}${고칠수있음(k) ? "" : " (자동)"}</td>
         <td><button class="btn sm ghost" onClick=${() => 지우기(k)}>지우기</button></td></tr>`)}</tbody></table>
       <p class="small"><a href=${"#/car/" + open.car.id + "/costs"} onClick=${() => setOpen(null)}>차 화면 비용 탭에서 자세히 →</a></p></div></div>`}</div>`;
 }
@@ -114,13 +131,19 @@ function 이동(e, row, col) {
 }
 
 /** 금액 칸 하나. 더하기면 비어 있는 칸에 '이번에 더할 금액'을 치고(+ 로 여러 건 → onSave([금액…])), 아니면 값을 고친다(+ 는 합쳐서) */
-function 칸({ row, col, value, 빈칸, 더하기, placeholder, onSave }) {
+function 칸({ row, col, value, 빈칸, 더하기, 식, wide, placeholder, onSave }) {
   const [t, setT] = useState(null);           // 고치는 중이면 글자, 아니면 null
   const 취소 = useRef(false);
   const 저장 = () => {
     if (취소.current) { 취소.current = false; setT(null); return; }
     if (t == null) return;
     const s = t.trim(); setT(null);
+    if (식 != null) {                         // 수식 칸: 비우면 다 지우고, 고친 대로 맞춘다
+      if (s.replace(/\s/g, "") === 식) return;
+      const vs = s ? 여러개(s) : [];
+      if (!vs) return toast("금액을 읽지 못했습니다: " + s, "err");
+      return onSave(vs);
+    }
     if (!s) return;
     const vs = 여러개(s);
     if (!vs) return toast("금액을 읽지 못했습니다: " + s, "err");
@@ -129,10 +152,10 @@ function 칸({ row, col, value, 빈칸, 더하기, placeholder, onSave }) {
     if (v === value && !빈칸) return;          // 빈칸(모름)에 0 을 치면 0원으로 확인
     onSave(v);
   };
-  return html`<input class=${"cell r" + (빈칸 ? " need" : "")} inputmode="numeric" data-row=${row} data-col=${col}
-    placeholder=${빈칸 ? "작성필요" : placeholder || ""} title=${더하기 ? "친 금액이 더해집니다 ('1000+2000' 처럼 여러 건도)" : ""}
+  return html`<input class=${"cell r" + (빈칸 ? " need" : "") + (wide ? " wide" : "")} inputmode="numeric" data-row=${row} data-col=${col}
+    placeholder=${빈칸 ? "작성필요" : placeholder || ""} title=${식 != null ? "엑셀처럼: 누르면 금액들이 보입니다. 고치거나 지우고 Enter" : 더하기 ? "친 금액이 더해집니다 ('1000+2000' 처럼 여러 건도)" : ""}
     value=${t != null ? t : value ? won(value) : ""}
-    onFocus=${e => { setT(더하기 ? "" : value ? String(value) : ""); setTimeout(() => e.target.select(), 0); }}
+    onFocus=${e => { setT(식 != null ? 식 : 더하기 ? "" : value ? String(value) : ""); setTimeout(() => e.target.select(), 0); }}
     onInput=${e => setT(e.target.value)} onBlur=${저장}
     onKeyDown=${e => { if (e.key === "Escape") { 취소.current = true; e.target.blur(); } else 이동(e, row, col); }} />`;
 }
