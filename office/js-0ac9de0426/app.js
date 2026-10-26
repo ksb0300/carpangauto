@@ -15,6 +15,7 @@ import { LedgerPage } from "./pages/ledger.js";
 import { ReportsPage } from "./pages/reports.js";
 import { PurchasesPage, CostsPage, LoansPage, SalesPage } from "./pages/lists.js";
 import { LenderEdit } from "./pages/lenders.js";
+import { CarEntryPage } from "./pages/car-entry.js";
 import { StatsPage } from "./pages/stats.js";
 import { SignsPage } from "./pages/signs.js";
 import { ReservePage } from "./pages/reserve.js";
@@ -106,7 +107,7 @@ function Shell({ app, children, path }) {
   const office = profile.role !== "dealer";
   const nav = office
     // 매도차량은 메뉴에서만 뺌 — 리스트의 '매도' 보기로 들어간다 (사용자 2026-10-22). 주소(#/sales)로는 그대로 열린다
-    ? [["/purchases", "리스트"], ["/loans", "재고금융"],
+    ? [["/purchases", "리스트"], ["/entry", "차량입력"], ["/loans", "재고금융"],
        ["/bank", "자금관리"], ["/board", "게시판"]]
     : [["/purchases", "내 제시차량"], ["/sales", "매도차량"], ["/settlements", "정산내역"], ["/brokerage", "알선"], ["/reports", "내 실적"]];
   // 펼침 메뉴 (화면은 그대로 있고 메뉴줄에서만 묶는다)
@@ -148,13 +149,14 @@ function Router({ app }) {
   const path = useHash();
   const [, a, b, c] = path.split("?")[0].split("/");
   const office = app.profile.role !== "dealer";
-  const officeOnly = ["settings", "dashboard", "issue", "bank", "ledger", "signs", "reserve", "board", "contacts", "todos", "calendar", "attendance", "att-works"];
+  const officeOnly = ["settings", "dashboard", "issue", "bank", "ledger", "signs", "reserve", "board", "contacts", "todos", "calendar", "attendance", "att-works", "entry"];
   let page;
   if (!office && (officeOnly.includes(a) || (a === "cars" && b === "new") || c === "edit")) page = html`<div class="card empty">딜러 계정은 볼 수 없는 화면입니다. <a href="#/cars">차량 목록으로</a></div>`;
   else if (a === "cars" && b === "new") page = html`<${CarForm} app=${app} />`;
   else if (a === "car" && c === "edit") page = html`<${CarForm} app=${app} id=${b} />`;
   else if (a === "car") page = html`<${CarDetail} app=${app} id=${b} tab=${c || "info"} />`;
   else if (a === "purchases") page = html`<${PurchasesPage} app=${app} />`;
+  else if (a === "entry") page = html`<${CarEntryPage} app=${app} />`;
   else if (a === "costs") page = html`<${CostsPage} app=${app} tab=${b || "car"} />`;
   else if (a === "signs") page = html`<${SignsPage} app=${app} id=${b} />`;
   else if (a === "checks") page = html`<${ChecksPage} app=${app} />`;
