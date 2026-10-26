@@ -737,7 +737,7 @@ svg.drawing .pnl { pointer-events: none; }
 .grid.entry td { padding: 4px 5px; overflow: hidden; } .grid.entry th { padding: 10px 8px; font-size: .875em; text-align: center; position: relative; white-space: normal; }   /* 머리줄은 가운데 (사용자) */
 .grid.entry td:first-child, .grid.entry td.carcell, .grid.entry td.info { padding: 8px 10px; }
 .grid.entry td.carcell { white-space: nowrap; text-overflow: ellipsis; } .grid.entry td.carcell b { font-size: 1em; }
-.grid.entry td.info { color: #4b5160; }
+.grid.entry td.info { color: #4b5160; } .grid.entry td small { font-size: .82em; }
 .grid.entry th .rz { position: absolute; top: 0; right: -4px; width: 9px; height: 100%; cursor: col-resize; z-index: 2; }
 .grid.entry th .rz:hover { background: #93c5fd; }
 .entry-font { display: inline-flex; align-items: center; gap: 4px; } .entry-font b { min-width: 22px; text-align: center; font-size: 13px; }
