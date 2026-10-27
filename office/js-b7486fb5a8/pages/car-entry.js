@@ -21,6 +21,11 @@ const 여러개 = s => { const ts = String(s ?? "").split("+").map(x => x.trim()
 const 따로더하기 = new Set(["수리비"]);
 // 손으로 고칠 수 있는 줄: 직접 넣은 것 + 매입매출대장에서 옮겨 온 것('대장'). 시스템이 관리하는 자동 줄(취득세 등)은 그대로
 const 고칠수있음 = k => !k.auto_source || k.auto_source === "대장";
+// 칸 너비·글씨 크기는 보는 사람이 조절 (사용자 2026-10-26) — 이 기기에만 기억 (localStorage)
+const 기본폭 = { date: 104, car: 220, year: 64, km: 90, price: 120, tax: 110, lender: 140, loan: 140, cost: 120 };
+const 기억 = { get: (k, d) => { try { const v = JSON.parse(localStorage.getItem("entry:" + k)); return v ?? d; } catch { return d; } },
+  set: (k, v) => { try { localStorage.setItem("entry:" + k, JSON.stringify(v)); } catch {} } };
+const 만km = v => v == null || v === "" ? "" : Number(v) >= 10000 ? (Number(v) / 10000).toFixed(1).replace(/\.0$/, "") + "만" : Number(v).toLocaleString();
 
 export function CarEntryPage({ app }) {
   const [d, setD] = useState(null);
@@ -28,14 +33,25 @@ export function CarEntryPage({ app }) {
   const [text, setText] = useState("");
   const [open, setOpen] = useState(null);       // ▾ 내역 { car, item }
   const [고른, set고른] = useState({});           // 재고대출 없는 차: 금융사만 먼저 고른 것 { 차id: 금융사id } — 대출금을 치면 등록
+  const [폭, set폭] = useState(() => 기억.get("widths", {}));
+  const [글씨, set글씨] = useState(() => 기억.get("font", 16));
+  const 글씨바꾸기 = dv => set글씨(f => { const v = Math.min(24, Math.max(11, f + dv)); 기억.set("font", v); return v; });
+  // 머리줄 오른쪽 끝을 끌어서 칸 너비 바꾸기
+  const 끌기 = (key, e) => {
+    e.preventDefault();
+    const th = e.currentTarget.parentElement, x0 = e.clientX, w0 = th.getBoundingClientRect().width;
+    const move = ev => set폭(p => ({ ...p, [key]: Math.max(44, Math.round(w0 + ev.clientX - x0)) }));
+    const up = () => { removeEventListener("pointermove", move); removeEventListener("pointerup", up); set폭(p => { 기억.set("widths", p); return p; }); };
+    addEventListener("pointermove", move); addEventListener("pointerup", up);
+  };
   const load = () => run(async () => {
     const since = new Date(Date.now() - 30 * 86400e3).toISOString().slice(0, 10);
-    let cars = await q(app.db.from("cars").select("id, plate, car_name, model_year, mileage, dealer_id, purchase_date, acq_tax, acq_tax_unknown, key_no, status")
-      .is("deleted_at", null).eq("status", "재고").order("purchase_date", { ascending: false }));
+    let cars = await q(app.db.from("cars").select("id, plate, car_name, model_year, mileage, purchase_amount, dealer_id, purchase_date, acq_tax, acq_tax_unknown, status, created_at")
+      .is("deleted_at", null).eq("status", "재고").order("purchase_date", { ascending: false }).order("created_at", { ascending: false }).order("id"));
     if (scope === "최근 매도") {
       const sold = await q(app.db.from("car_sales").select("car_id").gte("sale_date", since));
-      cars = sold.length ? await q(app.db.from("cars").select("id, plate, car_name, model_year, mileage, dealer_id, purchase_date, acq_tax, acq_tax_unknown, key_no, status")
-        .is("deleted_at", null).in("id", sold.map(s => s.car_id)).order("purchase_date", { ascending: false })) : [];
+      cars = sold.length ? await q(app.db.from("cars").select("id, plate, car_name, model_year, mileage, purchase_amount, dealer_id, purchase_date, acq_tax, acq_tax_unknown, status, created_at")
+        .is("deleted_at", null).in("id", sold.map(s => s.car_id)).order("purchase_date", { ascending: false }).order("created_at", { ascending: false }).order("id")) : [];
     }
     const ids = cars.map(c => c.id);
     const [costs, loans] = ids.length ? await Promise.all([
@@ -46,6 +62,7 @@ export function CarEntryPage({ app }) {
   });
   useEffect(() => { setD(null); load(); }, [scope]);
 
+  // 순서가 저장할 때마다 바뀌면 고치던 칸이 다른 줄로 튄다 (사용자 2026-10-27 "왔다리 갔다리") — 매입일이 같은 차도 늘 같은 순서로
   const rows = useMemo(() => (d?.cars || []).filter(c => !text.trim() || 검색맞음(text, c.plate, c.car_name) > 0), [d, text]);
   if (!d) return html`<${Loading} />`;
   const 자동합 = (car, item) => d.costs.filter(k => k.car_id === car && k.item === item && !고칠수있음(k)).reduce((t, k) => t + n(k.amount), 0);
@@ -92,20 +109,29 @@ export function CarEntryPage({ app }) {
   });
   const 지우기 = k => ask(`${k.paid_date} ${k.item} ${won(k.amount)}원을 지울까요?`) && run(async () => { await q(app.db.from("car_costs").delete().eq("id", k.id)); load(); });
 
-  return html`<div class="entry-page"><div class="bar"><h2>차량입력</h2><span class="muted small">칸에 금액 → Enter (아래 차로) · '30' = 30만원 · 비용은 친 만큼 더해집니다</span><span class="grow"></span>
+  // 칸 목록 (머리줄·너비 조절·colgroup 이 같은 순서)
+  const 칸들 = [["date", "매입일"], ["car", "차량"], ["year", "연식"], ["km", "키로수"], ["price", "매입가"], ["tax", "취득세"], ["lender", "재고대출 금융사"], ["loan", "대출금"],
+    ...비용칸.flatMap(([item, l]) => 따로더하기.has(item) ? [["c:" + item, l], ["p:" + item, "+ " + l]] : [["c:" + item, l]])];
+  const 너비 = k => 폭[k] || 기본폭[k] || 기본폭.cost;
+  return html`<div class="entry-page"><div class="bar"><h2>차량입력</h2><span class="muted small">칸에 금액 → Enter (아래 차로) · '30' = 30만원 · 비용 칸은 누르면 금액들 — 고치거나 지우고 Enter · 머리줄 오른쪽 끝을 끌면 너비 조절</span><span class="grow"></span>
+      <span class="entry-font" title="글씨 크기"><button class="btn sm" onClick=${() => 글씨바꾸기(-1)}>가−</button><b>${글씨}</b><button class="btn sm" onClick=${() => 글씨바꾸기(1)}>가+</button></span>
+      ${Object.keys(폭).length > 0 && html`<button class="btn sm ghost" onClick=${() => { set폭({}); 기억.set("widths", {}); }}>너비 처음대로</button>`}
       <input class="search" placeholder="차량번호·차명" value=${text} onInput=${e => setText(e.target.value)} style="max-width:200px" />
       <${Seg} value=${scope} onChange=${setScope} options=${["재고", "최근 매도"]} /></div>
     ${!rows.length ? html`<${Empty}>${scope === "재고" ? "재고 차가 없습니다." : "최근 30일 매도 차가 없습니다."}<//>` : html`
-    <div class="table-wrap entry-wrap"><table class="grid entry">
-      <thead><tr><th>매입일</th><th>차량</th><th class="r">취득세</th><th>재고대출 금융사</th><th class="r">대출금</th>
-        ${비용칸.map(([item, l]) => 따로더하기.has(item) ? html`<th class="r">${l}</th><th title="'152323+233311' 처럼 + 로 이어 치면 한 건씩 더해집니다">+ ${l}</th>` : html`<th class="r">${l}</th>`)}</tr></thead>
+    <div class="table-wrap entry-wrap"><table class="grid entry" style=${`--ef:${글씨}px;width:${칸들.reduce((t, [k]) => t + 너비(k), 0)}px`}>
+      <colgroup>${칸들.map(([k]) => html`<col key=${k} style=${`width:${너비(k)}px`} />`)}</colgroup>
+      <thead><tr>${칸들.map(([k, l]) => html`<th key=${k} title=${k.startsWith("p:") ? "'152323+233311' 처럼 + 로 이어 치면 한 건씩 더해집니다" : ""}>${l}<span class="rz" onPointerDown=${e => 끌기(k, e)}></span></th>`)}</tr></thead>
       <tbody>${rows.map((c, i) => { const l = 대출(c.id); return html`<tr key=${c.id}>
-        <td class="muted small">${c.purchase_date?.slice(2) || ""}</td>
-        <td><a href=${"#/car/" + c.id} title=${c.car_name}><b>${c.plate}</b></a><small class="muted"> ${간략차명(c)}</small></td>
+        <td class="muted">${c.purchase_date?.slice(2) || ""}</td>
+        <td class="carcell"><a href=${"#/car/" + c.id} title=${c.car_name}><b>${c.plate}</b></a><small class="muted"> ${간략차명(c)}</small></td>
+        <td class="c info">${c.model_year ? String(c.model_year).slice(0, 4) : ""}</td>
+        <td class="r info">${만km(c.mileage)}</td>
+        <td class="r info">${n(c.purchase_amount) ? won(c.purchase_amount) : ""}</td>
         <td><${칸} row=${i} col=${0} value=${n(c.acq_tax)} 빈칸=${c.acq_tax_unknown} onSave=${v => 취득세(c, v)} /></td>
         <td><select class="cell" value=${l?.lender_id || 고른[c.id] || ""} onChange=${e => e.target.value ? 대출저장(c, { lender_id: e.target.value, amount: l?.amount || 0 }) : (toast("재고대출을 지우려면 차 화면 → 재고금융에서", "err"), load())}>
           <option value="">${l ? "-" : "없음"}</option>${lenders.map(x => html`<option value=${x.id}>${x.name}</option>`)}</select></td>
-        <td><${칸} row=${i} col=${1} value=${n(l?.amount)} wide onSave=${v => l ? 대출저장(c, { amount: v }) : 고른[c.id] ? 대출저장(c, { lender_id: 고른[c.id], amount: v }) : toast("금융사를 먼저 고르세요", "err")} /></td>
+        <td><${칸} row=${i} col=${1} value=${n(l?.amount)} onSave=${v => l ? 대출저장(c, { amount: v }) : 고른[c.id] ? 대출저장(c, { lender_id: 고른[c.id], amount: v }) : toast("금융사를 먼저 고르세요", "err")} /></td>
         ${비용칸.map(([item], j) => { const s = 합(c.id, item);
           const 내역 = s > 0 && html`<button class="mini" title="내역" onClick=${() => setOpen({ car: c, item })}>▾</button>`;
           const 수식칸 = html`<td class="sumcell"><${칸} row=${i} col=${2 + j * 2} value=${s} 식=${식(c.id, item)} 빈칸=${item === "도색광택" && 상품화없음(c.id)} onSave=${v => 비용맞추기(c, item, v)} />${내역}</td>`;
