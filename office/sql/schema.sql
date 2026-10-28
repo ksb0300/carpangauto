@@ -2791,3 +2791,27 @@ create trigger cars_auto_ad after insert on cars for each row execute function c
 
 -- 오늘 연료(전기)로 넣은 배터리 PASS 줄은 지우고, 엔카 확인 뒤 다시 넣는다 (kaiwa_sync)
 delete from car_costs where item = '광고비' and memo = '자동: 배터리 PASS 광고 (전기차)';
+
+
+-- 20261028000001_sign_link_only.sql
+-- 고객 서류는 사무실이 보낸 링크(1회용 코드)로만 (사용자 2026-10-28) — 3일 환불 약정서·비사업용 사실확인서
+--   비사업용: 업무관리가 sign_docs 에 빈 줄(kind 비사업용확인서, token)을 만들어 링크를 보내고, 고객이 서명하면 그 줄을 채운다
+drop function if exists sign_submit(jsonb, text);
+create or replace function sign_submit(p jsonb, p_ssn text, p_token text) returns uuid
+language plpgsql security definer set search_path = public, extensions as $$
+declare nid uuid; cid uuid;
+begin
+  select id into cid from cars
+   where deleted_at is null and regexp_replace(plate, '\s', '', 'g') = regexp_replace(p->>'car_no', '\s', '', 'g')
+   order by purchase_date desc limit 1;
+  update sign_docs set car_no = p->>'car_no', car_name = p->>'car_name', name = p->>'name', ssn_masked = _mask_ssn(p_ssn),
+         address = p->>'address', phone = p->>'phone', biz_no = nullif(p->>'biz_no', ''), agreed = coalesce((p->>'agreed')::boolean, false),
+         car_id = coalesce(car_id, cid), ua = left(p->>'ua', 300), ip = p->>'ip', signed_at = now()
+   where token = p_token and kind = '비사업용확인서' and signature_path is null
+  returning id into nid;
+  if nid is null then raise exception '링크가 없거나 이미 서명했습니다'; end if;
+  delete from pii_ssn where target = 'sign_doc' and target_id = nid;
+  insert into pii_ssn (target, target_id, enc) values ('sign_doc', nid, pgp_sym_encrypt(p_ssn, _ssn_key()));
+  return nid;
+end $$;
+revoke all on function sign_submit(jsonb, text, text) from public, anon, authenticated;

@@ -15,13 +15,15 @@
 
 <section class="full short" style="padding-top:calc(var(--nav) + 44px)">
   <div class="wrap">
-    <div class="doctabs"><a class="on" href="/sign/">비사업용 사실확인서</a><a href="/sign/refund/">3일 환불 약정서</a></div>
     <p class="eyebrow">Document</p>
     <h1 class="t">비사업용 사실확인서</h1>
     <p class="s">사업자등록증이 있으신 분 중, 차량을 경비처리하지 않으신 경우 작성해 주시는 서류입니다.
        휴대폰으로 바로 서명하실 수 있습니다.</p>
 
-    <div class="sf" id="form">
+    <div id="gone" class="done" hidden><div class="mark">!</div><h2>열 수 없는 링크입니다</h2><p id="goneMsg"></p>
+      <p style="margin-top:10px">문의 051-711-7818</p></div>
+
+    <div class="sf" id="form" hidden>
       <div class="err" id="err" hidden></div>
       <div class="card">
         <div class="field"><label>차량번호 <span class="req">*</span></label>
@@ -123,8 +125,20 @@ function 확인서(d, sig, at) {
     "<div class='buyer'>매수자 : " + esc(매수자) + " · " + esc(매수자주소) + "<br>전자서명 접수 : " + 접수 + " · 1·2·3항 확인 체크 완료</div>";
 }
 
+/* 사무실이 보낸 링크(?t=1회용 코드)로만 연다 (2026-10-28) — 차량번호·차명은 링크에서 채운다 */
+var TOKEN = new URLSearchParams(location.search).get("t") || "";
+function 못열기(msg) { $("form").hidden = true; $("goneMsg").textContent = msg; $("gone").hidden = false; }
+if (!TOKEN) 못열기("담당자가 보내 드린 링크로 열어 주세요. (이 서류는 링크를 받은 분만 작성할 수 있습니다)");
+else fetch(API + "?k=" + encodeURIComponent("비사업용") + "&t=" + encodeURIComponent(TOKEN)).then(function (r) { return r.json(); }).then(function (res) {
+  if (!res.ok) return 못열기(res.msg);
+  var b = res.doc || {};
+  if (b.car_no) { $("carNo").value = b.car_no; $("carNo").readOnly = true; }
+  if (b.car_name) { $("carName").value = b.car_name; $("carName").readOnly = true; }
+  $("form").hidden = false;
+}).catch(function () { 못열기("확인서를 불러오지 못했습니다. 인터넷 연결을 확인하고 새로고침해 주세요."); });
+
 $("send").onclick = function () {
-  var d = {
+  var d = { t: TOKEN,
     carNo: $("carNo").value.trim(), carName: $("carName").value.trim(), name: $("name").value.trim(),
     resident: $("rrn1").value.trim() + "-" + $("rrn2").value.trim(), address: $("address").value.trim(),
     phone: [$("tel1").value.trim(), $("tel2").value.trim(), $("tel3").value.trim()].join("-"),
