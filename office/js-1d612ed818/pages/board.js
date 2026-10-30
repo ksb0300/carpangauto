@@ -40,8 +40,21 @@ async function 전부(qb) {      // 서버는 한 번에 1000줄까지 — 끝�
 async function 차찾기(app, plate) {     // 띄어쓰기 무시, 바뀌기 전 번호도
   const p = 번호(plate), tail = p.slice(-4);
   if (!/^\d{4}$/.test(tail)) return null;
-  const rows = await q(app.db.from("cars").select("id, plate, plate_before, car_name").is("deleted_at", null).or(`plate.ilike.%${tail}%,plate_before.ilike.%${tail}%`));
+  const rows = await q(app.db.from("cars").select("id, plate, plate_before, car_name, model").is("deleted_at", null).or(`plate.ilike.%${tail}%,plate_before.ilike.%${tail}%`));
   return rows.find(c => 번호(c.plate) === p || 번호(c.plate_before) === p) || null;
+}
+/** 등록증 글 제목에 넣을 짧은 차명 (사용자 2026-10-28: '121머4531 투싼 매입') — '더 뉴 투싼 (NX4)' → '투싼', 'EQC N293' → 'EQC'.
+ *  차대 코드(N293·W213 등)는 첫 단어가 아니면 뺀다 (G80 처럼 모델 이름인 첫 단어는 남김) */
+export const 짧은차명 = s => String(s || "").replace(/\([^)]*\)/g, " ").replace(/^\s*(더\s*뉴|디\s*올\s*뉴|올\s*뉴|뉴|the\s+new|all\s+new)\s+/i, "")
+  .split(/\s+/).filter((w, i) => w && (i === 0 || !/^[A-Z]{1,3}\d{2,4}[A-Z]?$/.test(w))).slice(0, 2).join(" ").trim();
+/** 등록증 제목 차명: 차량번호 칸에 같이 쓴 것 → 업무관리에 있는 차 → 같은 번호 차대금 송금요청의 차명. 다 없으면 "" */
+async function 등록증차명(app, typed, plate, car) {
+  const 쓴것 = String(typed || "").replace(/\d{2,3}\s*[가-힣]\s*\d{4}/, " ").replace(/\s+/g, " ").trim();
+  if (쓴것) return 쓴것;
+  if (car) return 짧은차명(car.model || car.car_name);
+  const ps = await q(app.db.from("board_posts").select("form").eq("category", "송금요청").eq("plate", plate).order("created_at", { ascending: false }).limit(5));
+  const 이름 = ps.map(x => x.form?.car_name).find(Boolean);
+  return 이름 ? 짧은차명(이름) : "";
 }
 const 보기기억 = { get: () => { try { return sessionStorage.getItem("board-view") || "최신"; } catch { return "최신"; } }, set: v => { try { sessionStorage.setItem("board-view", v); } catch {} } };
 
@@ -264,8 +277,10 @@ function Write({ app }) {
     if (cat === "매도정보" && form.fee_included == null) return toast("매도비 별도·포함을 고르세요", "err");
     const plate = 양식 ? form.plate : 번호판(t.plate) || 번호(t.plate);     // '33우4535말리부' 처럼 차명을 붙여 써도 번호판만
     if (등록증 && !plate) return toast("등록증은 차량번호를 입력하세요", "err");
+    const car = plate ? await 차찾기(app, plate).catch(() => null) : null;
+    const 차명 = 등록증 && !t.title.trim() ? await 등록증차명(app, t.plate, plate, car).catch(() => "") : "";
     const title = cat === "매도정보" ? 매도제목(form) : t.title.trim() || (cat === "송금요청" ? `${form.plate || ""}${form.car_name ? " " + form.car_name : ""} ${form.kind}${form.route ? `(${form.route})` : ""} ${form.amount % 10000 === 0 ? form.amount / 10000 + "만원" : 원(form.amount)}`.trim()
-      : 등록증 ? `${plate} ${이름[cat]}` : "");
+      : 등록증 ? `${plate}${차명 ? " " + 차명 : ""} ${이름[cat]}` : "");
     if (!title) return toast("제목을 입력하세요", "err");
     const body = cat === "송금요청" ? (form.paste || 송금글(form, form.memo || "")) : cat === "매도정보" ? 매도글(form, form.memo || "") : t.body;
     const 예약 = t.publish ? new Date(t.publish).toISOString() : null;
@@ -275,7 +290,6 @@ function Write({ app }) {
     await run(async () => {
       const 올릴 = await 모두줄이기(files);
       if (올릴.some(x => x.size > MAX)) throw new Error("20MB 넘는 파일은 올릴 수 없습니다.");
-      const car = plate ? await 차찾기(app, plate) : null;
       if (cat === "송금요청") await 담당정리(app, form);
       const [p] = await q(app.db.from("board_posts").insert({ category: cat, title, body, plate: plate || null, car_id: car?.id || null,
         pinned: !!t.pinned, author_name: app.profile.name, form, publish_at: 예약,
@@ -301,7 +315,7 @@ function Write({ app }) {
         const m = (data || []).find(x => x.post_id === p.id);
         if (m) toast(m.done_now ? "통장에 이미 다 들어와 '잔금 완료'로 표시했습니다." : `통장에서 입금 ${원(m.received)}을 찾아 붙였습니다.`);
       }
-      if (등록증 && plate && !car) toast(`${plate} 차를 업무관리에서 못 찾아, 게시판에만 올렸습니다.`, "err");
+      if (등록증 && plate && !car) toast(`${plate} 차를 업무관리에서 못 찾아, 게시판에만 올렸습니다.${차명 ? "" : " (제목에 차명을 넣으려면 차량번호 칸에 '121머4531 투싼' 처럼 같이 쓰세요)"}`, "err");
       else if (car && 등록증 && 올릴.length) toast(`${car.plate} 차 첨부서류에도 붙였습니다.`);
       보기기억.set(cat); go("/board/" + p.id);
     });
@@ -325,7 +339,7 @@ function Write({ app }) {
           <textarea rows="4" value=${f.paste || ""} placeholder="[ 차대금 입금 요청 ] …" onInput=${e => 붙여넣은알림(e.target.value)}></textarea><//>
         <${송금칸} f=${f} set=${setf} /></div>`}
       ${cat === "매도정보" && html`<div class="tpl" style="max-width:none"><div class="tg">📄 템플릿 · 매도정보</div><${매도칸} f=${f} set=${setf} /></div>`}
-      ${등록증 && html`<${Field} label="차량번호" req hint="이 차의 첨부서류에도 사진이 붙습니다"><input value=${t.plate} placeholder="예: 54다8079" onInput=${e => setx("plate", e.target.value)} /><//>`}
+      ${등록증 && html`<${Field} label="차량번호" req hint="이 차의 첨부서류에도 사진이 붙습니다"><input value=${t.plate} placeholder="예: 54다8079 투싼 (차명은 제목에 들어감)" onInput=${e => setx("plate", e.target.value)} /><//>`}
       <${Field} label=${양식 ? "메모" : "내용"} wide><textarea rows=${양식 ? 2 : 6} value=${t.body} onInput=${e => setx("body", e.target.value)}></textarea><//>
       <div class="field wide"><span class="lab">사진·파일</span>
         <label class=${"dropzone" + (drag ? " on" : "")}>

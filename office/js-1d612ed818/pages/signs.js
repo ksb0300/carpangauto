@@ -25,6 +25,20 @@ const 환불 = r => r.kind === "3일환불";
 const 대기 = r => !r.signature_path;                 // 사무실이 만들어 보냈고 고객이 아직 서명 안 함
 const 서명시각 = r => r.signed_at || r.created_at;
 const 종류 = r => 환불(r) ? "3일 환불" : "비사업용";
+/** 비사업용 사실확인서 링크 (사용자 2026-10-28: 고객 서류는 보낸 링크로만) — 빈 서류 줄 + 1회용 코드, 차가 있으면 차량번호·차명을 채워 둔다 */
+export async function 비사업용링크(app, car = null) {
+  const token = crypto.randomUUID().replace(/-/g, "");
+  await q(app.db.from("sign_docs").insert({ kind: "비사업용확인서", car_id: car?.id || null, car_no: car?.plate || null, car_name: car?.car_name || null,
+    token, prepared_by: app.user.id, signed_at: null, agreed: false }));
+  return 비사업용주소(token);
+}
+const 비사업용주소 = token => `${location.origin}/sign/?t=${token}`;
+const 폰 = () => /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.platform));
+/** 링크 보내기: 폰은 공유창(카톡), PC 는 복사 */
+export async function 링크보내기(url, title) {
+  if (폰() && navigator.share) { try { await navigator.share({ title, url }); } catch {} return; }
+  try { await navigator.clipboard.writeText(url); toast("링크를 복사했습니다 — 카톡에 붙여 넣으세요"); } catch { window.prompt("이 링크를 복사해 보내세요", url); }
+}
 const 요일 = "일월화수목금토";
 export const 기한글 = iso => { const k = new Date(Date.parse(iso) + 9 * 3600e3); return `${k.getUTCMonth() + 1}/${k.getUTCDate()}(${요일[k.getUTCDay()]}) ${k.getUTCHours()}시`; };
 /** 3일 환불: 기한 안이면 '환불 가능' 표시 */
@@ -48,8 +62,13 @@ function SignList({ app }) {
   if (!rows) return html`<${Loading} />`;
   const 새것 = r => !r.checked_at && !대기(r);
   const list = rows.filter(r => (only === "전체" || 새것(r)) && (kind === "전체 종류" || 종류(r) === kind));
-  return html`<div class="bar"><h2>서류 접수</h2><span class="muted small">고객 작성 주소: 비사업용 <a href="/sign/" target="_blank">tieronekorea.com/sign</a>
-      · 3일 환불 <a href="/sign/refund/" target="_blank">tieronekorea.com/sign/refund</a></span>
+  // 비사업용 링크 만들기 — 매입 전에 고객에게 보내는 링크라 차량번호는 고객이 직접 쓴다 (사용자 2026-10-30)
+  const 새링크 = () => run(async () => {
+    await 링크보내기(await 비사업용링크(app), "비사업용 사실확인서");
+    setRows(await withCars(app.db, await q(app.db.from("sign_docs").select("*").order("created_at", { ascending: false }))));
+  });
+  return html`<div class="bar"><h2>서류 접수</h2><span class="muted small">고객 서류는 보낸 링크로만 열립니다 (주소만으로는 못 씀)</span>
+      <button class="btn sm" onClick=${새링크}>✍️ 비사업용 확인서 링크 만들기</button>
       <span class="grow"></span>
       <div class="seg">${["전체 종류", "비사업용", "3일 환불"].map(k => html`<button class=${kind === k ? "on" : ""} onClick=${() => setKind(k)}>${k}</button>`)}</div>
       <div class="seg">${["전체", "새 서류"].map(k => html`<button class=${only === k ? "on" : ""} onClick=${() => setOnly(k)}>${k}${k === "새 서류" ? ` ${rows.filter(새것).length}` : ""}</button>`)}</div></div>
@@ -60,9 +79,9 @@ function SignList({ app }) {
           <td>${kst(서명시각(r))}</td><td>${종류(r)}</td><td><b>${r.car_no}</b></td><td class="ellipsis">${r.car_name}</td><td>${r.name || "-"}</td><td>${r.ssn_masked || r.birth || "-"}</td>
           <td>${r.phone || "-"}</td><td>${r.biz_no || "-"}</td>
           <td onClick=${e => e.stopPropagation()}>${r.car_id ? html`<a href=${"#/car/" + r.car_id}>${r.cars?.plate} (${r.cars?.status})</a>` : html`<span class="muted">-</span>`}</td>
-          <td class="nowrap">${대기(r) ? "" : r.checked_at ? html`<${Badge} tone="green">확인<//>` : html`<${Badge} tone="amber">새 서류<//>`} ${기한배지(r)}</td></tr>`)}</tbody></table></div>`}
+          <td class="nowrap" onClick=${e => 대기(r) && r.token && !환불(r) && e.stopPropagation()}>${대기(r) && r.token && !환불(r) ? html`<${Badge}>서명 대기<//> <button class="btn sm ghost" onClick=${() => 링크보내기(비사업용주소(r.token), "비사업용 사실확인서")}>링크 다시</button>` : 대기(r) ? "" : r.checked_at ? html`<${Badge} tone="green">확인<//>` : html`<${Badge} tone="amber">새 서류<//>`} ${기한배지(r)}</td></tr>`)}</tbody></table></div>`}
     <p class="note">고객이 휴대폰으로 서명하면 여기에 쌓입니다. 서류를 열어 인쇄하거나 PDF 로 저장합니다. 번호판이 같은 우리 차가 있으면 자동으로 연결됩니다.
-      3일 환불 약정서는 차 화면 '고객에게 보내기'에서 차량 정보가 채워진 링크로 보낼 수 있습니다.</p>`;
+      3일 환불 약정서는 차 화면 '고객에게 보내기'에서, 비사업용 확인서는 매입 전에 위 [비사업용 확인서 링크 만들기]로 보냅니다. 링크는 2주 동안, 한 번만 쓸 수 있습니다.</p>`;
 }
 
 function SignView({ app, id }) {
