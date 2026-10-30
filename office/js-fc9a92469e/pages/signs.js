@@ -62,14 +62,9 @@ function SignList({ app }) {
   if (!rows) return html`<${Loading} />`;
   const 새것 = r => !r.checked_at && !대기(r);
   const list = rows.filter(r => (only === "전체" || 새것(r)) && (kind === "전체 종류" || 종류(r) === kind));
-  // 비사업용 링크 만들기 — 차량번호를 넣으면 우리 차를 찾아 차명까지 채운다 (모르면 비워도 고객이 직접 씀)
+  // 비사업용 링크 만들기 — 매입 전에 고객에게 보내는 링크라 차량번호는 고객이 직접 쓴다 (사용자 2026-10-30)
   const 새링크 = () => run(async () => {
-    const plate = (window.prompt("차량번호 (모르면 비워 두세요 — 고객이 직접 씁니다)") ?? null);
-    if (plate === null) return;
-    const p = plate.replace(/\s/g, "");
-    const [car] = p ? await q(app.db.from("cars").select("id, plate, car_name").is("deleted_at", null).ilike("plate", `%${p}%`).order("purchase_date", { ascending: false }).limit(1)) : [];
-    const url = await 비사업용링크(app, car || (p ? { plate: p } : null));
-    await 링크보내기(url, `${p || ""} 비사업용 사실확인서`.trim());
+    await 링크보내기(await 비사업용링크(app), "비사업용 사실확인서");
     setRows(await withCars(app.db, await q(app.db.from("sign_docs").select("*").order("created_at", { ascending: false }))));
   });
   return html`<div class="bar"><h2>서류 접수</h2><span class="muted small">고객 서류는 보낸 링크로만 열립니다 (주소만으로는 못 씀)</span>
@@ -86,7 +81,7 @@ function SignList({ app }) {
           <td onClick=${e => e.stopPropagation()}>${r.car_id ? html`<a href=${"#/car/" + r.car_id}>${r.cars?.plate} (${r.cars?.status})</a>` : html`<span class="muted">-</span>`}</td>
           <td class="nowrap" onClick=${e => 대기(r) && r.token && !환불(r) && e.stopPropagation()}>${대기(r) && r.token && !환불(r) ? html`<${Badge}>서명 대기<//> <button class="btn sm ghost" onClick=${() => 링크보내기(비사업용주소(r.token), "비사업용 사실확인서")}>링크 다시</button>` : 대기(r) ? "" : r.checked_at ? html`<${Badge} tone="green">확인<//>` : html`<${Badge} tone="amber">새 서류<//>`} ${기한배지(r)}</td></tr>`)}</tbody></table></div>`}
     <p class="note">고객이 휴대폰으로 서명하면 여기에 쌓입니다. 서류를 열어 인쇄하거나 PDF 로 저장합니다. 번호판이 같은 우리 차가 있으면 자동으로 연결됩니다.
-      3일 환불 약정서·비사업용 확인서는 차 화면 '고객에게 보내기'에서 차량 정보가 채워진 링크로 보낼 수 있습니다. 링크는 2주 동안, 한 번만 쓸 수 있습니다.</p>`;
+      3일 환불 약정서는 차 화면 '고객에게 보내기'에서, 비사업용 확인서는 매입 전에 위 [비사업용 확인서 링크 만들기]로 보냅니다. 링크는 2주 동안, 한 번만 쓸 수 있습니다.</p>`;
 }
 
 function SignView({ app, id }) {
