@@ -2978,3 +2978,10 @@ end $$;
 -- 비사업용 확인서 링크는 차량번호를 몰라도 만들 수 있게 (빈 서류 줄) — 서명할 때 sign 함수가 차량번호·차명을 필수로 받는다 (2026-10-30)
 alter table sign_docs alter column car_no drop not null;
 alter table sign_docs alter column car_name drop not null;
+
+
+-- 20261030000002_sign_fixed_link.sql
+-- 비사업용 사실확인서 고정 링크 (사용자 2026-10-30 "하나의 고정링크로") — 같은 링크로 여러 고객이 각자 서명, 서명본은 한 건씩.
+--   퍼졌으면 업무관리 서류 접수 [링크 바꾸기](대표)로 새 코드 → 예전 링크는 바로 막힘
+alter table settings add column if not exists sign_fixed_token text;
+update settings set sign_fixed_token = md5(random()::text || clock_timestamp()::text) where id = 1 and sign_fixed_token is null;

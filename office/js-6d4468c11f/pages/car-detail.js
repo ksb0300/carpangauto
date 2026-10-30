@@ -1,5 +1,5 @@
 import { html, useState, useEffect, Loading, Badge, won, go, run, toast } from "../ui.js";
-import { RefundPrep, 비사업용링크 } from "./signs.js";
+import { RefundPrep } from "./signs.js";
 import { q } from "../db.js";
 import { CostsTab } from "./tab-costs.js";
 import { LoansTab } from "./tab-loans.js";
@@ -174,7 +174,6 @@ function SendBox({ app, car, sale }) {
     ${car.daangn_id && html`<button class="btn" onClick=${() => shareLink(`https://www.daangn.com/kr/cars/${car.daangn_id}/`, `${car.car_name} ${car.plate}`)}>🥕 당근 광고 링크</button>`}
     <button class=${"btn" + (refund ? " on" : "")} title="차를 내줄 때: 고지 사항(판매금액·압류저당·성능보험·환불 때 비용)을 채워 고객 서명 링크를 보냅니다"
       onClick=${() => setRefund(!refund)}>📝 3일 환불 약정서</button>
-    <button class="btn" title="차를 판 분(사업자)에게 — 링크로만 작성됩니다" onClick=${() => run(async () => shareLink(await 비사업용링크(app, car), `${car.plate} 비사업용 사실확인서`))}>✍️ 비사업용 확인서</button>
   </div>
   ${refund && html`<${RefundPrep} app=${app} car=${car} sale=${sale} shareLink=${shareLink} onClose=${() => setRefund(false)} />`}`;
 }
