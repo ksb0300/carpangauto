@@ -2815,3 +2815,11 @@ begin
   return nid;
 end $$;
 revoke all on function sign_submit(jsonb, text, text) from public, anon, authenticated;
+
+-- 수출 사진 게시판 (2026-10-30) — 사무장이 수출용 차량 사진을 올리는 곳.
+-- 카톡방에 올리던 것을 옮겼다(카톡은 사진을 압축해 비포워드 품질 기준에 못 미친다).
+-- 제목의 번호판으로 car_files(kind='수출사진') 에 자동으로 붙고, 수출 자동화가 그걸 가져간다.
+-- 사진은 비포워드에 올라가면 30일 뒤 자동 삭제한다(Supabase 무료 1GB).
+alter table board_posts drop constraint board_posts_category_check;
+alter table board_posts add constraint board_posts_category_check
+  check (category = any (array['공지', '매입등록증', '매도등록증', '자료', '송금요청', '매도정보', '말소서류', '3일환불제서류', '수출사진', '자유']));
