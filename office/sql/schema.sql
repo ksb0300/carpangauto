@@ -2816,10 +2816,165 @@ begin
 end $$;
 revoke all on function sign_submit(jsonb, text, text) from public, anon, authenticated;
 
--- 수출 사진 게시판 (2026-10-30) — 사무장이 수출용 차량 사진을 올리는 곳.
--- 카톡방에 올리던 것을 옮겼다(카톡은 사진을 압축해 비포워드 품질 기준에 못 미친다).
--- 제목의 번호판으로 car_files(kind='수출사진') 에 자동으로 붙고, 수출 자동화가 그걸 가져간다.
--- 사진은 비포워드에 올라가면 30일 뒤 자동 삭제한다(Supabase 무료 1GB).
-alter table board_posts drop constraint board_posts_category_check;
-alter table board_posts add constraint board_posts_category_check
-  check (category = any (array['공지', '매입등록증', '매도등록증', '자료', '송금요청', '매도정보', '말소서류', '3일환불제서류', '수출사진', '자유']));
+
+-- 20261029000001_bank_auto_classify.sql
+-- 통장 거래 자동 분류 (사용자 2026-10-29 "알아서 해봐") — 10/9~10/29 거래 79% 가 미분류였다.
+--   bank-in 이 문자 한 건 들어올 때마다(송금요청·매도정보 짝짓기 뒤) 부르고, 지금 쌓인 미분류에도 한 번 돌린다.
+--   애매하면 건드리지 않는다(미분류로 남김 — 사무장이 자금관리에서 고른다). 상환 출금으로 대출을 '상환완료'로 닫지는 않는다(이자가 섞여 금액이 안 맞음).
+--   입금
+--     1) 재고금융 실행: 금융사(키움·BNK_·…K·JB·신한) + 같은 금액 대출(실행일 ±7일, 문자에 차번호 숫자가 있으면 그 차) → 그 대출·차
+--     2) 위인데 대출 기록이 없고 문자에서 차를 딱 하나 찾으면 → 대출 자동 등록 (금액·실행일=입금일·금융사 기본 조건)
+--        (같은 'BNK' 라도 'BNK정보경' 처럼 사람 이름이면 고객 할부라 여기 안 옴)
+--     3) 할부로 들어온 차대금: 매도의 할부금액과 같은 돈 (매도일 −20~+7일) → 차량매도대금
+--     4) 매도대금: 매도금액(또는 +매도비, 또는 할부를 뺀 나머지)과 같은 돈 → 차량매도대금
+--   출금
+--     5) 재고금융 상환·이자: KB캐피탈·KB1234·JB1234즉출/연장·신한 대출 → 재고금융 (차번호 숫자가 있으면 그 차의 대출에 연결)
+--     6) 대표 통장 간 이동: 김상혁(티어원)·카팡모터스·티어원 → 자금이동
+--     7) 송금요청 없이 보낸 매입대금: 매입가와 같은 금액 (매입일 −3~+10일, 아직 매입대금이 안 붙은 차) → 차량매입대금
+create or replace function _금융사(cp text) returns text language sql immutable as $$
+  select case when cp ~ '^\s*키움' then '키움증권'
+              when cp ~* '^\s*BNK[_\s]*\d' then '부산은행'
+              when cp ~* '^\s*KB\s*(캐피탈)?\s*\d' or cp ~ '\d\s*K\s*$' then 'KB국민'
+              when cp ~* '^\s*JB' then 'JB우리'
+              when cp ~ '^\s*신한' then '신한은행' end
+$$;
+-- 문자 속 차번호: 온전한 번호(55조8853) 또는 끝 숫자 3~4자리(잘린 '373어208' 도)
+create or replace function _문자차번호(cp text, out full text, out tail text) language sql immutable as $$
+  select (regexp_match(replace(coalesce(cp, ''), ' ', ''), '(\d{2,3}[가-힣]\d{4})'))[1],
+         (regexp_match(coalesce(cp, ''), '(\d{3,4})\D*$'))[1]
+$$;
+
+create or replace function bank_auto_classify(p_tx uuid) returns text
+language plpgsql security definer set search_path = public as $$
+declare t record; cp text; amt bigint; d date; lend text; lid uuid; pf text; pt text; n int; v_loan uuid; v_car uuid; v_inst bigint; newid uuid;
+begin
+  if not (is_office() or current_user in ('service_role', 'postgres', 'supabase_admin')) then raise exception '권한이 없습니다'; end if;   -- 대표·사무장, 서버(bank-in)
+  select * into t from bank_txs where id = p_tx;
+  if t.id is null or t.match_kind is not null then return null; end if;
+  cp := coalesce(t.counterparty, t.remark, ''); d := t.tx_date;
+  select x.full, x.tail into pf, pt from _문자차번호(cp) x;
+  lend := _금융사(cp);
+  select id into lid from lenders where name = lend;
+
+  if coalesce(t.deposit, 0) > 0 then
+    amt := t.deposit;
+    -- 1) 재고금융 실행 — 같은 금액 대출
+    if lend is not null then
+      select count(*) into n from car_loans cl join cars x on x.id = cl.car_id
+       where cl.amount = amt and cl.start_date between d - 7 and d + 7 and x.deleted_at is null
+         and (pt is null or strpos(replace(x.plate, ' ', ''), pt) > 0 or strpos(replace(coalesce(x.plate_before, ''), ' ', ''), pt) > 0)
+         and not exists (select 1 from bank_txs b where b.loan_id = cl.id and b.deposit > 0);
+      if n = 1 then
+        select cl.id, cl.car_id into v_loan, v_car from car_loans cl join cars x on x.id = cl.car_id
+         where cl.amount = amt and cl.start_date between d - 7 and d + 7 and x.deleted_at is null
+           and (pt is null or strpos(replace(x.plate, ' ', ''), pt) > 0 or strpos(replace(coalesce(x.plate_before, ''), ' ', ''), pt) > 0)
+           and not exists (select 1 from bank_txs b where b.loan_id = cl.id and b.deposit > 0);
+        update bank_txs set match_kind = '재고금융', loan_id = v_loan, car_id = v_car, matched_by = '자동' where id = t.id;
+        return '재고금융 실행';
+      end if;
+      -- 2) 대출 기록이 없으면 자동 등록 — 문자에서 차를 딱 하나 찾을 때만 (재고, 그 금융사 진행중 대출 없음)
+      if lid is not null and (pf is not null or length(pt) = 4) then
+        select count(*) into n from cars x where x.deleted_at is null and x.status = '재고'
+           and (case when pf is not null then replace(x.plate, ' ', '') = pf else right(replace(x.plate, ' ', ''), 4) = pt end)
+           and not exists (select 1 from car_loans cl where cl.car_id = x.id and cl.status = '진행중' and cl.lender_id = lid);
+        if n = 1 then
+          select x.id into v_car from cars x where x.deleted_at is null and x.status = '재고'
+             and (case when pf is not null then replace(x.plate, ' ', '') = pf else right(replace(x.plate, ' ', ''), 4) = pt end)
+             and not exists (select 1 from car_loans cl where cl.car_id = x.id and cl.status = '진행중' and cl.lender_id = lid);
+          insert into car_loans (car_id, lender_id, kind, amount, start_date, months, base_months, lender_rate, rate_tiers, ext_rate, due_day, due_cutoff, due_min_days, dealer_rate, memo)
+          select v_car, x.id, '신규', amt, d, coalesce(x.base_months, 3), coalesce(x.base_months, 3), x.base_rate, x.rate_tiers, x.ext_rate, x.due_day, x.due_cutoff, x.due_min_days, 0,
+                 '통장 입금에서 자동 등록 (' || cp || ')'
+            from lenders x where x.id = lid
+          returning id into newid;
+          update bank_txs set match_kind = '재고금융', loan_id = newid, car_id = v_car, matched_by = '자동' where id = t.id;
+          return '재고금융 실행 (대출 자동 등록)';
+        end if;
+      end if;
+    end if;
+    -- 3) 할부로 들어온 차대금 / 4) 매도대금
+    select count(*) into n from car_sales s join cars x on x.id = s.car_id
+     where x.deleted_at is null and s.sale_date between d - 20 and d + 7
+       and amt in (nullif(s.installment_amount, 0), s.sale_amount, s.sale_amount + s.sale_fee,
+                   nullif(s.sale_amount - s.installment_amount, s.sale_amount), nullif(s.sale_amount + s.sale_fee - s.installment_amount, s.sale_amount + s.sale_fee));
+    if n = 1 then
+      select s.car_id, s.installment_amount into v_car, v_inst from car_sales s join cars x on x.id = s.car_id
+       where x.deleted_at is null and s.sale_date between d - 20 and d + 7
+         and amt in (nullif(s.installment_amount, 0), s.sale_amount, s.sale_amount + s.sale_fee,
+                     nullif(s.sale_amount - s.installment_amount, s.sale_amount), nullif(s.sale_amount + s.sale_fee - s.installment_amount, s.sale_amount + s.sale_fee));
+      update bank_txs set match_kind = '차량매도대금', car_id = v_car, matched_by = '자동' where id = t.id;
+      return case when amt = v_inst then '할부 차대금' else '매도대금' end;
+    end if;
+    return null;
+  end if;
+
+  if coalesce(t.withdraw, 0) > 0 then
+    amt := t.withdraw;
+    -- 5) 재고금융 상환·이자
+    if cp ~* '^\s*(KB\s*캐피탈|KB\s*\d|JB\s*\d|신한\s*대출|키움|BNK[_\s]*\d)' or cp ~ '즉출|연장' then
+      select cl.id, cl.car_id into v_loan, v_car from car_loans cl join cars x on x.id = cl.car_id
+       where pt is not null and length(pt) = 4 and right(replace(x.plate, ' ', ''), 4) = pt and x.deleted_at is null
+         and (lid is null or cl.lender_id = lid)
+       order by (cl.status = '진행중') desc, cl.start_date desc limit 1;
+      update bank_txs set match_kind = '재고금융', loan_id = v_loan, car_id = v_car, matched_by = '자동' where id = t.id;
+      return '재고금융 상환';
+    end if;
+    -- 6) 대표 통장 간 이동
+    if cp ~ '^\s*(김상혁\s*\(\s*티어원|카팡모터스|티어원)' then
+      update bank_txs set match_kind = '자금이동', matched_by = '자동' where id = t.id;
+      return '자금이동';
+    end if;
+    -- 7) 송금요청 없이 보낸 매입대금
+    select count(*) into n from cars x where x.deleted_at is null and x.purchase_amount = amt and x.purchase_date between d - 10 and d + 3
+       and not exists (select 1 from bank_txs b where b.car_id = x.id and b.match_kind = '차량매입대금');
+    if n = 1 then
+      select x.id into v_car from cars x where x.deleted_at is null and x.purchase_amount = amt and x.purchase_date between d - 10 and d + 3
+         and not exists (select 1 from bank_txs b where b.car_id = x.id and b.match_kind = '차량매입대금');
+      update bank_txs set match_kind = '차량매입대금', car_id = v_car, matched_by = '자동' where id = t.id;
+      return '매입대금';
+    end if;
+  end if;
+  return null;
+end $$;
+revoke all on function bank_auto_classify(uuid) from public, anon;
+
+-- 매도·재고대출·차를 입력하면 그 무렵의 미분류 거래를 다시 분류 (돈이 업무관리 입력보다 먼저 들어오는 일이 많다 — 할부금·대출 실행)
+create or replace function bank_reclassify(p_from date, p_to date) returns int
+language plpgsql security definer set search_path = public as $$
+declare r record; n int := 0;
+begin
+  if current_setting('app.bank_classifying', true) = '1' then return 0; end if;     -- 분류 중 대출 자동 등록 → 트리거 → 다시 분류 를 막는다
+  perform set_config('app.bank_classifying', '1', true);
+  for r in select id from bank_txs where match_kind is null and tx_date between p_from and p_to order by tx_date, tx_time nulls first, created_at loop
+    if bank_auto_classify(r.id) is not null then n := n + 1; end if;
+  end loop;
+  perform set_config('app.bank_classifying', '0', true);
+  return n;
+end $$;
+revoke all on function bank_reclassify(date, date) from public, anon;
+create or replace function _bank_reclassify_sale() returns trigger language plpgsql security definer set search_path = public as $$
+begin perform bank_reclassify(new.sale_date - 7, new.sale_date + 20); return new; end $$;
+create or replace function _bank_reclassify_loan() returns trigger language plpgsql security definer set search_path = public as $$
+begin perform bank_reclassify(new.start_date - 7, new.start_date + 7); return new; end $$;
+create or replace function _bank_reclassify_car() returns trigger language plpgsql security definer set search_path = public as $$
+begin if new.purchase_date is not null and new.purchase_amount > 0 then perform bank_reclassify(new.purchase_date - 3, new.purchase_date + 10); end if; return new; end $$;
+drop trigger if exists bank_reclassify_sale on car_sales;
+create trigger bank_reclassify_sale after insert or update of sale_amount, sale_fee, installment_amount, sale_date on car_sales for each row execute function _bank_reclassify_sale();
+drop trigger if exists bank_reclassify_loan on car_loans;
+create trigger bank_reclassify_loan after insert or update of amount, start_date on car_loans for each row execute function _bank_reclassify_loan();
+drop trigger if exists bank_reclassify_car on cars;
+create trigger bank_reclassify_car after insert or update of purchase_amount, purchase_date on cars for each row execute function _bank_reclassify_car();
+
+-- 지금 쌓인 미분류에 한 번 (오래된 것부터 — 대출 자동 등록·짝이 순서대로)
+do $$ declare r record; begin
+  perform set_config('request.jwt.claims', '{"role":"service_role"}', true);
+  perform set_config('app.bank_classifying', '1', true);
+  for r in select id from bank_txs where match_kind is null order by tx_date, tx_time nulls first, created_at loop
+    perform bank_auto_classify(r.id);
+  end loop;
+end $$;
+
+
+-- 20261030000001_sign_invite_nullable.sql
+-- 비사업용 확인서 링크는 차량번호를 몰라도 만들 수 있게 (빈 서류 줄) — 서명할 때 sign 함수가 차량번호·차명을 필수로 받는다 (2026-10-30)
+alter table sign_docs alter column car_no drop not null;
+alter table sign_docs alter column car_name drop not null;

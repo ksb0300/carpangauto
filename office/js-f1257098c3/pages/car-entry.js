@@ -46,12 +46,12 @@ export function CarEntryPage({ app }) {
   };
   const load = () => run(async () => {
     const since = new Date(Date.now() - 30 * 86400e3).toISOString().slice(0, 10);
-    let cars = await q(app.db.from("cars").select("id, plate, car_name, model_year, mileage, purchase_amount, dealer_id, purchase_date, acq_tax, acq_tax_unknown, status")
-      .is("deleted_at", null).eq("status", "재고").order("purchase_date", { ascending: false }));
+    let cars = await q(app.db.from("cars").select("id, plate, car_name, model_year, mileage, purchase_amount, dealer_id, purchase_date, acq_tax, acq_tax_unknown, status, created_at")
+      .is("deleted_at", null).eq("status", "재고").order("purchase_date", { ascending: false }).order("created_at", { ascending: false }).order("id"));
     if (scope === "최근 매도") {
       const sold = await q(app.db.from("car_sales").select("car_id").gte("sale_date", since));
-      cars = sold.length ? await q(app.db.from("cars").select("id, plate, car_name, model_year, mileage, purchase_amount, dealer_id, purchase_date, acq_tax, acq_tax_unknown, status")
-        .is("deleted_at", null).in("id", sold.map(s => s.car_id)).order("purchase_date", { ascending: false })) : [];
+      cars = sold.length ? await q(app.db.from("cars").select("id, plate, car_name, model_year, mileage, purchase_amount, dealer_id, purchase_date, acq_tax, acq_tax_unknown, status, created_at")
+        .is("deleted_at", null).in("id", sold.map(s => s.car_id)).order("purchase_date", { ascending: false }).order("created_at", { ascending: false }).order("id")) : [];
     }
     const ids = cars.map(c => c.id);
     const [costs, loans] = ids.length ? await Promise.all([
@@ -62,6 +62,7 @@ export function CarEntryPage({ app }) {
   });
   useEffect(() => { setD(null); load(); }, [scope]);
 
+  // 순서가 저장할 때마다 바뀌면 고치던 칸이 다른 줄로 튄다 (사용자 2026-10-27 "왔다리 갔다리") — 매입일이 같은 차도 늘 같은 순서로
   const rows = useMemo(() => (d?.cars || []).filter(c => !text.trim() || 검색맞음(text, c.plate, c.car_name) > 0), [d, text]);
   if (!d) return html`<${Loading} />`;
   const 자동합 = (car, item) => d.costs.filter(k => k.car_id === car && k.item === item && !고칠수있음(k)).reduce((t, k) => t + n(k.amount), 0);
