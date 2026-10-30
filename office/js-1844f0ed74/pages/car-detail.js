@@ -9,7 +9,6 @@ import { DocsTab } from "./tab-docs.js";
 import { FilesTab } from "./tab-files.js";
 import { InspectionCard } from "./tab-insp.js";
 import { CarChecks } from "./checks.js";
-import { ExportPhotos } from "./export-photos.js";
 
 export async function loadCar(db, id) {
   const [car, costs, loans, sale, buyers, settlement] = await Promise.all([
@@ -100,8 +99,7 @@ function InfoTab({ app, car, sale, office }) {
     <div class="kvgrid">${rows.map(([k, v]) => html`<div><span>${k}</span><b>${v || html`<i class="muted">-</i>`}</b></div>`)}</div>
   </div>
   <${InspectionCard} app=${app} car=${car} office=${office} />
-  ${office && html`<${CarChecks} app=${app} car=${car} />`}
-  ${office && html`<${ExportPhotos} app=${app} car=${car} />`}`;
+  ${office && html`<${CarChecks} app=${app} car=${car} />`}`;
 }
 
 /** 고객에게 보내기 — 손님이 "견적서·성능지 받을 수 있나요?" 할 때 폰에서 바로 (카톡·문자 공유창) */
