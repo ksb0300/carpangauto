@@ -2,7 +2,7 @@
 //   사진은 가운데를 정사각형으로 잘라 512px JPEG 로 줄여 'avatars/<내 id>/<시각>.jpg' 에 올린다 (예전 사진 파일은 지움).
 import { html, useState, run, toast, ask } from "../ui.js";
 import { Avatar, 사진기억, 구성원 } from "../people.js";
-import { ChangePassword } from "../app.js";
+import { ChangePassword, 시작소리 } from "../app.js";
 
 /** 사진 파일 → 가운데 정사각형 512px JPEG Blob */
 async function 정사각형(file) {
@@ -49,5 +49,20 @@ export function MyPage({ app }) {
         ${p.avatar_path && html`<button class="btn ghost" onClick=${지우기}>사진 지우기</button>`}
       </div>
     </div>
+    <${인트로설정} />
     <div style="margin-top:14px"><${ChangePassword} db=${app.db} onDone=${() => (location.hash = "/")} /></div>`;
+}
+
+/** 시작 화면·소리 (하루 한 번 '띵·띵·띵 두둥') — 이 기기에서만 끄고 켠다 */
+function 인트로설정() {
+  const 읽기 = () => { try { return localStorage.getItem("tierone-intro-off") !== "1"; } catch { return true; } };
+  const [on, setOn] = useState(읽기);
+  const 바꾸기 = v => { try { localStorage.setItem("tierone-intro-off", v ? "0" : "1"); } catch {} setOn(v); };
+  return html`<div class="card" style="max-width:420px;margin-top:14px">
+    <h3>시작 화면·소리</h3>
+    <p class="muted small">하루 한 번 앱을 열 때 TierONE 아이콘이 빛나며 '띵·띵·띵 두둥'이 나옵니다. 이 기기에서만 적용됩니다.</p>
+    <div class="row" style="gap:8px;align-items:center">
+      <label class="check"><input type="checkbox" checked=${on} onChange=${e => 바꾸기(e.target.checked)} /> 켜기</label>
+      <button class="btn sm" onClick=${() => 시작소리().catch(() => toast("소리를 낼 수 없습니다 — 기기 소리를 켜 주세요", "err"))}>🔊 들어보기</button>
+    </div></div>`;
 }
