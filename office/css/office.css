@@ -760,3 +760,12 @@ svg.drawing .pnl { pointer-events: none; }
 .entry .mini { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); border: 0; background: none; color: var(--sub); cursor: pointer; font-size: 11px; padding: 2px; }
 .modal-back { position: fixed; inset: 0; z-index: 45; background: rgba(15, 17, 21, .45); display: flex; align-items: center; justify-content: center; padding: 16px; }
 .modal-back .modal { width: min(520px, 100%); max-height: 80vh; overflow: auto; margin: 0; }
+
+/* 시작 화면 (하루 한 번 — 아이콘이 빛나며 떠오름, 소리와 함께) */
+.intro { position: fixed; inset: 0; z-index: 200; background: #050508; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+  animation: intro-out .5s ease 2.3s forwards; cursor: pointer; }
+.intro img { width: min(46vw, 230px); filter: drop-shadow(0 0 0 rgba(139, 47, 255, 0)); animation: intro-in 1.4s cubic-bezier(.2, .8, .2, 1) both, intro-glow 1.6s ease .6s both; }
+.intro small { color: #c9c2e8; font-size: 14px; animation: intro-in .6s ease both; }
+@keyframes intro-in { from { opacity: 0; transform: scale(.82); } to { opacity: 1; transform: none; } }
+@keyframes intro-glow { 0% { filter: drop-shadow(0 0 0 rgba(139, 47, 255, 0)); } 45% { filter: drop-shadow(0 0 42px rgba(139, 47, 255, .75)); } 100% { filter: drop-shadow(0 0 18px rgba(139, 47, 255, .35)); } }
+@keyframes intro-out { to { opacity: 0; visibility: hidden; } }

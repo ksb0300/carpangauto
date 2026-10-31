@@ -62,13 +62,17 @@ function SignList({ app }) {
   if (!rows) return html`<${Loading} />`;
   const 새것 = r => !r.checked_at && !대기(r);
   const list = rows.filter(r => (only === "전체" || 새것(r)) && (kind === "전체 종류" || 종류(r) === kind));
-  // 비사업용 링크 만들기 — 매입 전에 고객에게 보내는 링크라 차량번호는 고객이 직접 쓴다 (사용자 2026-10-30)
-  const 새링크 = () => run(async () => {
-    await 링크보내기(await 비사업용링크(app), "비사업용 사실확인서");
-    setRows(await withCars(app.db, await q(app.db.from("sign_docs").select("*").order("created_at", { ascending: false }))));
-  });
+  // 비사업용 확인서는 고정 링크 하나 (사용자 2026-10-30) — 매입 전 고객에게 복사해 보낸다. 퍼졌으면 대표가 [링크 바꾸기]
+  const 고정링크 = app.settings.sign_fixed_token ? `${location.origin}/sign/?t=${app.settings.sign_fixed_token}` : null;
+  const 링크바꾸기 = () => window.confirm("비사업용 확인서 링크를 새로 바꿀까요? 예전에 보낸 링크는 바로 막힙니다.") && run(async () => {
+    const t = crypto.randomUUID().replace(/-/g, "");
+    await q(app.db.from("settings").update({ sign_fixed_token: t }).eq("id", 1));
+    app.settings.sign_fixed_token = t; await 링크보내기(`${location.origin}/sign/?t=${t}`, "비사업용 사실확인서");
+    setRows([...rows]);
+  }, "링크를 바꿨습니다");
   return html`<div class="bar"><h2>서류 접수</h2><span class="muted small">고객 서류는 보낸 링크로만 열립니다 (주소만으로는 못 씀)</span>
-      <button class="btn sm" onClick=${새링크}>✍️ 비사업용 확인서 링크 만들기</button>
+      ${고정링크 && html`<button class="btn sm" title=${고정링크} onClick=${() => 링크보내기(고정링크, "비사업용 사실확인서")}>✍️ 비사업용 확인서 링크 복사</button>`}
+      ${app.profile.role === "admin" && 고정링크 && html`<button class="btn sm ghost" title="링크가 엉뚱한 데로 퍼졌을 때 — 예전 링크는 막힘" onClick=${링크바꾸기}>링크 바꾸기</button>`}
       <span class="grow"></span>
       <div class="seg">${["전체 종류", "비사업용", "3일 환불"].map(k => html`<button class=${kind === k ? "on" : ""} onClick=${() => setKind(k)}>${k}</button>`)}</div>
       <div class="seg">${["전체", "새 서류"].map(k => html`<button class=${only === k ? "on" : ""} onClick=${() => setOnly(k)}>${k}${k === "새 서류" ? ` ${rows.filter(새것).length}` : ""}</button>`)}</div></div>
@@ -81,7 +85,7 @@ function SignList({ app }) {
           <td onClick=${e => e.stopPropagation()}>${r.car_id ? html`<a href=${"#/car/" + r.car_id}>${r.cars?.plate} (${r.cars?.status})</a>` : html`<span class="muted">-</span>`}</td>
           <td class="nowrap" onClick=${e => 대기(r) && r.token && !환불(r) && e.stopPropagation()}>${대기(r) && r.token && !환불(r) ? html`<${Badge}>서명 대기<//> <button class="btn sm ghost" onClick=${() => 링크보내기(비사업용주소(r.token), "비사업용 사실확인서")}>링크 다시</button>` : 대기(r) ? "" : r.checked_at ? html`<${Badge} tone="green">확인<//>` : html`<${Badge} tone="amber">새 서류<//>`} ${기한배지(r)}</td></tr>`)}</tbody></table></div>`}
     <p class="note">고객이 휴대폰으로 서명하면 여기에 쌓입니다. 서류를 열어 인쇄하거나 PDF 로 저장합니다. 번호판이 같은 우리 차가 있으면 자동으로 연결됩니다.
-      3일 환불 약정서·비사업용 확인서는 차 화면 '고객에게 보내기'에서 차량 정보가 채워진 링크로 보낼 수 있습니다. 링크는 2주 동안, 한 번만 쓸 수 있습니다.</p>`;
+      3일 환불 약정서는 차 화면 '고객에게 보내기'에서 (2주·한 번). 비사업용 확인서는 매입 전에 위 [링크 복사]로 — 늘 같은 링크라 카톡 상용구에 저장해 두고 써도 됩니다.</p>`;
 }
 
 function SignView({ app, id }) {

@@ -102,6 +102,24 @@ function Bell({ app }) {
   return html`<button type="button" class=${"btn sm " + (st === "켜짐" ? "ghost" : "primary")} title="이 기기로 업무관리 알림 받기" onClick=${click}>${st === "켜짐" ? "🔔 알림 켜짐" : "🔕 알림 켜기"}</button>`;
 }
 
+// 시작 화면 + 시그니처 소리 (사용자 2026-10-31) — 하루 한 번, 새 아이콘이 빛나며 '띵·띵·띵 두둥'(Tier → ONE). 내 정보에서 끔 (이 기기)
+//   브라우저는 사람이 한 번 누르기 전엔 소리를 막는다 → 막히면 '눌러서 소리' 로, 로그인 직후는 누른 뒤라 바로 나온다
+const 인트로날 = "tierone-intro-day", 인트로끔 = "tierone-intro-off";
+const 오늘날 = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+const 인트로볼까 = () => { try { return localStorage.getItem(인트로끔) !== "1" && localStorage.getItem(인트로날) !== 오늘날(); } catch { return false; } };
+export const 시작소리 = () => { const a = new Audio("./tierone-intro.wav"); a.volume = 0.85; return a.play(); };
+function Intro({ onDone }) {
+  const [막힘, set막힘] = useState(false);
+  useEffect(() => {
+    try { localStorage.setItem(인트로날, 오늘날()); } catch {}
+    시작소리().catch(() => set막힘(true));
+    const t = setTimeout(onDone, 2800); return () => clearTimeout(t);
+  }, []);
+  const 누름 = () => { if (막힘) { set막힘(false); 시작소리().catch(() => {}); setTimeout(onDone, 2600); } else onDone(); };
+  return html`<div class="intro" onClick=${누름}><img src="./icon-512.png" alt="TierONE" />
+    ${막힘 && html`<small>🔊 눌러서 소리 듣기</small>`}</div>`;
+}
+
 function Shell({ app, children, path }) {
   const { profile, db } = app;
   const office = profile.role !== "dealer";
@@ -113,7 +131,7 @@ function Shell({ app, children, path }) {
   // 펼침 메뉴 (화면은 그대로 있고 메뉴줄에서만 묶는다)
   //   업무: 웍스 대신 쓰는 것 (2026-10-20 테스트 → 정식, 게시판은 맨 위 메뉴로) / 기타: 지금 잘 안 쓰는 것 (사용자 2026-10-05)
   const groups = office ? [
-    ["업무", [["/todos", "할 일"], ["/calendar", "일정"], ["/attendance", "근태 (시험)"], ["/att-works", "근태(웍스테스트)"], ["/contacts", "연락처"], ["/checks", "차량검수"]]],
+    ["업무", [["/todos", "할 일"], ["/calendar", "일정"], ["/attendance", "근태 (시험)"], ["/att-works", "근태(웍스테스트)"], ["/contacts", "연락처"], ["/checks", "차량검수"], ["/signs", "서류 접수"]]],   // 서류 접수: 비사업용 확인서 링크 만들기·고객 서명본 (사용자 2026-10-30 "어딨는데")
     // 정산내역·매출관리·서류·타상사알선은 메뉴에서만 숨김 (사용자 2026-10-20) — 주소로는 그대로 열리고, 서류는 대시보드 '새 서류'·차 화면에서 들어간다
     // 종합업무현황·통계·환경설정도 기타로 (사용자 2026-10-22)
     ["기타", [["/reserve", "광고장 예약"], ["/reports", "종합업무현황"], ["/stats", "통계"], ["/settings", "환경설정"]]],
@@ -190,6 +208,7 @@ function App() {
   const [app, setApp] = useState(null);
   const [needLogin, setNeedLogin] = useState(false);
   const [mustPw, setMustPw] = useState(false);
+  const [intro, setIntro] = useState(인트로볼까);
   const [err, setErr] = useState(null);
 
   const load = async d => {
@@ -225,7 +244,7 @@ function App() {
   if (needLogin && db) return html`<${Login} db=${db} onDone=${() => run(() => load(db))} />`;
   if (mustPw && db) return html`<${ChangePassword} db=${db} forced onDone=${() => run(() => load(db))} />`;
   if (!app) return html`<${Loading} text=${DEMO ? "데모 DB 준비 중… (처음 한 번 몇 초 걸립니다)" : "불러오는 중…"} />`;
-  return html`<${AppCtx.Provider} value=${app}><${Router} app=${app} /></${AppCtx.Provider}>`;
+  return html`<${AppCtx.Provider} value=${app}><${Router} app=${app} />${intro && html`<${Intro} onDone=${() => setIntro(false)} />`}</${AppCtx.Provider}>`;
 }
 
 render(html`<${App} /><${Toasts} />`, document.getElementById("app"));
