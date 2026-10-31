@@ -1,0 +1,168 @@
+import { html, useState, useEffect, Money, Field, Select, run, won, today, toast, go } from "../ui.js";
+import { q } from "../db.js";
+import { 부가세분리, 할부수수료, 엔카믿고수수료 } from "../calc.js";
+
+export const SALE_TYPES = ["내수판매", "수출", "엔카믿고", "알선판매", "FM", "AM"];
+
+let tmp = 0;
+// 매수고객 입력은 조합 전산과 연동되기 전까지 숨긴다 (사용자 2026-10-04). 연동되면 true 로 — 똑순이처럼 공동명의·지분율까지 받는 코드는 그대로 있다
+const SHOW_BUYERS = false;
+const newBuyer = share => ({ _new: ++tmp, name: "", ssn: "", biz_no: "", phone: "", zip: "", addr: "", memo: "", share_rate: share });
+
+export function SaleTab({ app, car, sale, buyers, settlement, reload, locked, office }) {
+  const [editing, setEditing] = useState(!sale && office);
+  const [할부, set할부] = useState(null);      // 확정된 대표 차: 할부만 바로 고치기 { company, amount, rate }
+  if (!sale && !office) return html`<div class="card empty">아직 매도되지 않았습니다.</div>`;
+  if (editing) return html`<${SaleForm} app=${app} car=${car} sale=${sale} buyers=${buyers} onDone=${saved => { setEditing(false); if (saved) reload(); }} />`;
+  if (!sale) return html`<div class="card empty">아직 매도되지 않았습니다. <button class="btn primary" onClick=${() => setEditing(true)}>매도 처리</button></div>`;
+
+  const dealer = app.dealers.find(d => d.id === sale.dealer_id);
+  const cancel = async () => {
+    if (settlement?.finalized) return toast("정산완료된 차량입니다. 정산 탭에서 확정을 먼저 해제하세요.", "err");
+    if (!confirm("매도를 취소할까요? 차량이 재고로 돌아가고 임시정산도 지워집니다.")) return;
+    await run(() => q(app.db.from("car_sales").delete().eq("car_id", car.id)), "매도를 취소했습니다");
+    reload();
+  };
+  // 할부피는 정산 뒤에야 아는 경우가 많다 (사용자 2026-10-26) — 손익확정된 대표 차도 할부만은 확정 해제 없이 고친다.
+  //   대표 차 손익(settlements.net_income)도 늘어난 할부수익만큼 같이 고친다 (할부수익은 비과세라 손익 차이 = 수익 차이). 딜러 차는 지급이 끝난 정산이라 확정 해제를 거친다
+  const 할부바로 = office && locked && (!settlement || settlement.mode === "대표");
+  const 할부저장 = () => run(async () => {
+    const before = Number(sale.installment_income) || 0, amount = Number(할부.amount) || 0;
+    if (amount > 0 && !할부.company) throw new Error("할부 캐피탈사를 고르세요.");
+    const [s2] = await q(app.db.from("car_sales").update({ installment_company: amount > 0 ? 할부.company : null, installment_amount: amount,
+      installment_rate: Number(할부.rate) || 0 }).eq("car_id", car.id).select("installment_income"));
+    const d = (Number(s2?.installment_income) || 0) - before;
+    if (d && settlement?.finalized) await q(app.db.from("settlements").update({ net_income: (Number(settlement.net_income) || 0) + d }).eq("car_id", car.id));
+    set할부(null); reload();
+  }, "할부를 고쳤습니다");
+  const 할부미리 = 할부 ? 할부수수료(할부.amount, 할부.rate) : null;
+  return html`<div class="card">
+    <div class="bar"><h3>매도정보</h3><span class="grow"></span>
+      ${할부바로 && !할부 && html`<button class="btn" title="손익확정을 풀지 않고 할부만 고칩니다" onClick=${() => set할부({ company: sale.installment_company, amount: Number(sale.installment_amount) || 0, rate: Number(sale.installment_rate) || "" })}>할부 고치기</button>`}
+      ${office && !locked && html`<button class="btn" onClick=${() => setEditing(true)}>수정</button><button class="btn danger" onClick=${cancel}>매도취소</button>`}
+      ${office && html`<button class="btn primary" onClick=${() => go(`/car/${car.id}/settle`)}>정산하기 →</button>`}</div>
+    <div class="kvgrid">
+      <div><span>매도일</span><b>${sale.sale_date}</b></div>
+      <div><span>매도담당</span><b>${dealer?.name || "-"}${sale.other_dealer ? " (타상사딜러)" : ""}</b></div>
+      <div><span>매도유형</span><b>${sale.sale_type}</b></div>
+      <div><span>알선딜러</span><b>${app.dealers.find(d => d.id === sale.broker_dealer_id)?.name || "-"}</b></div>
+      <div><span>매도금액</span><b>${won(sale.sale_amount)} <small class="muted">(공급가 ${won(sale.sale_supply)} / 부가세 ${won(sale.sale_vat)})</small></b></div>
+      <div><span>상사매도비</span><b>${won(sale.sale_fee)}</b></div>
+      <div><span>성능보험료</span><b>${won(sale.perf_insurance)}</b></div>
+      ${Number(sale.am_income) > 0 && html`<div><span>AM수익</span><b>${won(sale.am_income)}</b></div>`}
+      ${Number(sale.installment_amount) > 0 && html`<div><span>할부 (${sale.installment_company || "캐피탈사 미입력"})</span><b>${won(sale.installment_income)} <small class="muted">(할부 ${won(sale.installment_amount)} × ${Number(sale.installment_rate)}% = ${won(sale.installment_fee)} − 원천징수 ${won(sale.installment_tax)})</small></b></div>`}
+      <div><span>출고 번호판</span><b>${sale.plate_out || car.plate}</b></div>
+      <div><span>특이사항</span><b>${sale.memo || "-"}</b></div>
+    </div>
+    ${할부 && html`<div class="bar" style="margin-top:12px"><h3>할부 고치기</h3><span class="muted small">손익확정은 그대로 두고 할부수익·차량 손익만 다시 계산합니다</span></div>
+      <div class="fgrid">
+        <${Field} label="캐피탈사"><${Select} value=${할부.company} onChange=${v => set할부({ ...할부, company: v })} empty="선택"
+          options=${[...new Set([...(app.settings.installment_companies || []), ...(할부.company ? [할부.company] : [])])]} /><//>
+        <${Field} label="할부금액"><${Money} value=${할부.amount} onInput=${v => set할부({ ...할부, amount: v })} /><//>
+        <${Field} label="할부피(%)" hint=${할부미리?.수수료 ? `수수료 ${won(할부미리.수수료)} − 원천징수 ${won(할부미리.원천징수)} = 수익 ${won(할부미리.수익)}` : "수익 = 할부금액 × 할부피 − 원천징수 3.3%"}>
+          <input inputmode="decimal" value=${할부.rate} onInput=${e => set할부({ ...할부, rate: e.target.value })} /><//>
+      </div>
+      <div class="bar"><span class="grow"></span><button class="btn ghost" onClick=${() => set할부(null)}>취소</button><button class="btn primary" onClick=${할부저장}>저장</button></div>`}
+    ${(SHOW_BUYERS || buyers.length > 0) && html`<h3>매수고객</h3>
+    <div class="table-wrap"><table class="grid"><thead><tr><th>고객명</th><th>주민(법인)번호</th><th>사업자번호</th><th>연락처</th><th>주소</th><th class="r">지분율</th></tr></thead>
+      <tbody>${buyers.map(b => html`<tr><td>${b.name}</td><td>${b.ssn_masked || "-"}</td><td>${b.biz_no || "-"}</td><td>${b.phone || "-"}</td><td>${b.addr || "-"}</td><td class="r">${b.share_rate}%</td></tr>`)}</tbody></table></div>`}
+  </div>`;
+}
+
+function SaleForm({ app, car, sale, buyers, onDone }) {
+  const [f, setF] = useState(sale ? { ...sale } : {
+    sale_date: today(), dealer_id: car.dealer_id, other_dealer: false, sale_type: "내수판매",
+    sale_amount: car.list_price ? Number(car.list_price) : 0,   // 리스트에 넣은 판매가(매도비 제외 차값)
+    plate_out: car.plate, sale_fee: app.settings.sale_fee, perf_insurance: 0, memo: "", broker_dealer_id: null,
+    installment_company: null, installment_amount: 0, installment_rate: 0, am_income: 0 });
+  const [bs, setBs] = useState(buyers.length ? buyers.map(b => ({ ...b, ssn: "" })) : [newBuyer(100)]);
+  // 새 매도: 성능보험료는 최근 성능점검(KAIWA)의 보험료를 기본값으로 (손님이 내는 돈 — 현금영수증용)
+  useEffect(() => { if (!sale) run(async () => {
+    const r = await q(app.db.from("car_inspections").select("insur_price").eq("car_id", car.id).order("recept_date", { ascending: false }).limit(1));
+    if (r[0]?.insur_price) setF(p => p.perf_insurance ? p : { ...p, perf_insurance: Number(r[0].insur_price) });
+  }); }, []);
+  const [busy, setBusy] = useState(false);
+  const set = k => v => setF(p => ({ ...p, [k]: v }));
+  const upd = (i, k, v) => setBs(x => x.map((b, j) => j === i ? { ...b, [k]: v } : b));
+  const vat = 부가세분리(f.sale_amount);
+  const 할부 = 할부수수료(f.installment_amount, f.installment_rate);
+  // 엔카믿고도 매도비는 그대로(고객이 44만원 냄) — 엔카가 떼는 수수료는 저장하면 상품화비용으로 자동 등록
+  const pickType = v => setF(p => ({ ...p, sale_type: v }));
+  const shareSum = bs.reduce((s, b) => s + Number(b.share_rate || 0), 0);
+
+  const save = async e => {
+    e.preventDefault();
+    if (!f.sale_amount) return toast("매도금액을 입력하세요.", "err");
+    if (SHOW_BUYERS) for (const b of bs) {
+      if (!b.name.trim()) return toast("매수고객 이름을 입력하세요.", "err");
+      if (!b.ssn.trim() && !b.ssn_masked && !b.biz_no?.trim()) return toast(`${b.name}: 주민번호나 사업자번호 중 하나는 꼭 입력하세요.`, "err");
+    }
+    if (SHOW_BUYERS && Math.abs(shareSum - 100) > 0.001) return toast(`지분율 합계가 100%가 아닙니다 (${shareSum}%).`, "err");
+    if (Number(f.installment_amount) > 0 && !f.installment_company) return toast("할부 캐피탈사를 고르세요.", "err");
+    setBusy(true);
+    const ok = await run(async () => {
+      const row = { car_id: car.id, sale_date: f.sale_date, dealer_id: f.dealer_id, other_dealer: f.other_dealer, sale_type: f.sale_type,
+        sale_amount: f.sale_amount, plate_out: f.plate_out || null, sale_fee: f.sale_fee, perf_insurance: f.perf_insurance, memo: f.memo || null,
+        broker_dealer_id: f.broker_dealer_id || null,
+        installment_company: Number(f.installment_amount) > 0 ? (f.installment_company || null) : null,
+        installment_amount: Number(f.installment_amount) || 0, installment_rate: Number(f.installment_rate) || 0,
+        am_income: f.sale_type === "AM" ? Number(f.am_income) || 0 : 0 };
+      if (sale) await q(app.db.from("car_sales").update(row).eq("car_id", car.id));
+      else await q(app.db.from("car_sales").insert(row));
+      if (!SHOW_BUYERS) return true;     // 매수고객 숨김 중 — 기존 기록은 건드리지 않는다
+      const keep = new Set(bs.filter(b => b.id).map(b => b.id));
+      const gone = buyers.filter(b => !keep.has(b.id)).map(b => b.id);
+      if (gone.length) await q(app.db.from("car_buyers").delete().in("id", gone));
+      for (const [i, b] of bs.entries()) {
+        const r = { name: b.name.trim(), biz_no: b.biz_no || null, phone: b.phone || null, zip: b.zip || null, addr: b.addr || null,
+          memo: b.memo || null, share_rate: Number(b.share_rate), sort: i };
+        const id = b.id ? (await q(app.db.from("car_buyers").update(r).eq("id", b.id).select("id").single())).id
+                        : (await q(app.db.from("car_buyers").insert({ ...r, car_id: car.id }).select("id").single())).id;
+        if (b.ssn.trim()) await q(app.db.rpc("set_ssn", { p_target: "buyer", p_id: id, p_ssn: b.ssn.trim() }));
+      }
+      return true;
+    }, sale ? "매도정보를 수정했습니다" : "매도 처리했습니다");
+    setBusy(false);
+    if (ok) onDone(true);
+  };
+
+  return html`<form class="card form" onSubmit=${save}>
+    <div class="bar"><h3>${sale ? "매도정보 수정" : "매도 처리"}</h3><span class="grow"></span>
+      <button type="button" class="btn ghost" onClick=${() => onDone(false)}>취소</button>
+      <button class="btn primary" disabled=${busy}>${busy ? "저장 중…" : "저장"}</button></div>
+    <div class="fgrid">
+      <${Field} label="매도일" req><input type="date" value=${f.sale_date} onInput=${e => set("sale_date")(e.target.value)} required /><//>
+      <${Field} label="매도담당"><div class="row"><${Select} value=${f.dealer_id} onChange=${set("dealer_id")} options=${app.dealers.map(d => [d.id, d.name + (d.partner ? " (대표)" : "")])} />
+        <label class="check"><input type="checkbox" checked=${f.other_dealer} onChange=${e => set("other_dealer")(e.target.checked)} /> 타상사딜러</label></div><//>
+      <${Field} label="알선딜러" hint="다른 딜러가 손님을 데려와 판 경우 — 정산 때 정산금을 나눕니다">
+        <${Select} value=${f.broker_dealer_id} onChange=${set("broker_dealer_id")} empty="없음" options=${app.dealers.filter(d => d.id !== f.dealer_id).map(d => [d.id, d.name])} /><//>
+      <${Field} label="판매유형" hint=${f.sale_type === "수출" ? "수출 — 성능점검비가 22,000원으로 바뀝니다" : f.sale_type === "엔카믿고" ? `엔카믿고 — 수수료 ${won(엔카믿고수수료(f.sale_amount))}원이 상품화비용으로 자동 등록됩니다 (매도비에서 엔카가 떼고 입금)` : ""}>
+        <${Select} value=${f.sale_type} onChange=${pickType} options=${SALE_TYPES} /><//>
+      ${f.sale_type === "AM" && html`<${Field} label="AM수익" hint="마진(차량 손익)에 더해집니다"><${Money} value=${f.am_income || 0} onInput=${set("am_income")} /><//>`}
+      <${Field} label="매도금액" req hint=${f.sale_amount ? `공급가 ${won(vat.공급가)} / 부가세 ${won(vat.부가세)}` : "부가세 포함"}><${Money} value=${f.sale_amount} onInput=${set("sale_amount")} /><//>
+      <${Field} label="상사매도비" hint="상사 매출로 잡힙니다"><${Money} value=${f.sale_fee} onInput=${set("sale_fee")} /><//>
+      <${Field} label="성능보험료" hint="손님이 내는 돈 — 현금영수증용, 손익에는 안 들어감"><${Money} value=${f.perf_insurance} onInput=${set("perf_insurance")} /><//>
+      <${Field} label="출고 번호판"><input value=${f.plate_out || ""} onInput=${e => set("plate_out")(e.target.value)} /><//>
+      <${Field} label="특이사항" wide><input value=${f.memo || ""} onInput=${e => set("memo")(e.target.value)} /><//>
+    </div>
+    <div class="bar"><h3>할부 내용</h3><span class="muted small">할부(금융)로 판 경우만 — 재고금융 → 할부실적에 캐피탈사별로 쌓입니다</span></div>
+    <div class="fgrid">
+      <${Field} label="캐피탈사"><${Select} value=${f.installment_company} onChange=${set("installment_company")} empty="선택"
+        options=${[...new Set([...(app.settings.installment_companies || []), ...(f.installment_company ? [f.installment_company] : [])])]} /><//>
+      <${Field} label="할부금액"><${Money} value=${f.installment_amount} onInput=${set("installment_amount")} /><//>
+      <${Field} label="할부피(%)" hint=${할부.수수료 ? `수수료 ${won(할부.수수료)} − 원천징수 ${won(할부.원천징수)} = 수익 ${won(할부.수익)}` : "수익 = 할부금액 × 할부피 − 원천징수 3.3%"}>
+        <input inputmode="decimal" value=${f.installment_rate || ""} onInput=${e => set("installment_rate")(e.target.value)} /><//>
+    </div>
+    ${SHOW_BUYERS && html`<div class="bar"><h3>매수고객</h3><span class=${"muted" + (Math.abs(shareSum - 100) > 0.001 ? " red" : "")}>지분율 합계 ${shareSum}%</span><span class="grow"></span>
+      <button type="button" class="btn sm" onClick=${() => setBs(x => [...x, newBuyer(0)])}>+ 공동명의 추가</button></div>
+    ${bs.map((b, i) => html`<div class="buyer fgrid">
+      <${Field} label="고객명" req><input value=${b.name} onInput=${e => upd(i, "name", e.target.value)} /><//>
+      <${Field} label="주민(법인)번호" hint=${b.ssn_masked ? `저장됨 ${b.ssn_masked}` : "암호화 저장"}><input autocomplete="off" placeholder=${b.ssn_masked || ""} value=${b.ssn} onInput=${e => upd(i, "ssn", e.target.value)} /><//>
+      <${Field} label="사업자번호"><input value=${b.biz_no || ""} onInput=${e => upd(i, "biz_no", e.target.value)} /><//>
+      <${Field} label="연락처"><input value=${b.phone || ""} onInput=${e => upd(i, "phone", e.target.value)} /><//>
+      <${Field} label="주소" wide><input value=${b.addr || ""} onInput=${e => upd(i, "addr", e.target.value)} /><//>
+      <${Field} label="지분율(%)"><div class="row"><input inputmode="decimal" value=${b.share_rate} onInput=${e => upd(i, "share_rate", e.target.value)} />
+        ${bs.length > 1 && html`<button type="button" class="btn sm ghost" onClick=${() => setBs(x => x.filter((_, j) => j !== i))}>삭제</button>`}</div><//>
+    </div>`)}`}
+  </form>`;
+}
