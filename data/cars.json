@@ -1,6 +1,6 @@
 {
- "updated": "2026-10-30 17:52",
- "count": 55,
+ "updated": "2026-10-31 17:47",
+ "count": 56,
  "cars": [
   {
    "id": "42585926",
@@ -731,6 +731,32 @@
    "link": "https://fem.encar.com/cars/detail/42618931"
   },
   {
+   "id": "42961863",
+   "plate": "124무3034",
+   "maker": "폭스바겐",
+   "model": "아테온",
+   "grade": "2.0 TDI 프레스티지",
+   "year": "23년 08월",
+   "yearRaw": "202308",
+   "mileage": 38739,
+   "fuel": "디젤",
+   "transmission": "오토",
+   "color": "흰색",
+   "price": 2890,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture06/pic4296/42961863_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4296/42961863_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4296/42961863_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4296/42961863_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4296/42961863_046.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4296/42961863_041.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4296/42961863_017.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4296/42961863_044.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42961863"
+  },
+  {
    "id": "42790171",
    "plate": "111어8930",
    "maker": "BMW",
@@ -775,10 +801,10 @@
     "https://ci.encar.com/carpicture05/pic4305/43059842_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture05/pic4305/43059842_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture05/pic4305/43059842_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4305/43059842_040.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4305/43059842_017.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4305/43059842_024.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4305/43059842_041.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture05/pic4305/43059842_036.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4305/43059842_047.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4305/43059842_032.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4305/43059842_020.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/43059842"
   },
