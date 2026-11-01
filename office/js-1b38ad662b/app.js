@@ -246,3 +246,25 @@ function App() {
 }
 
 render(html`<${App} /><${Toasts} />`, document.getElementById("app"));
+
+// 새 버전 알림 (2026-11-01): 배포 전에 열어 둔 화면은 옛 코드로 계속 돈다 (65고1752 매도정보 글이 안 올라온 원인).
+//   화면으로 돌아올 때·10분마다 index.html 의 js-해시를 보고, 바뀌었으면 아래에 [새로고침] 띠를 띄운다 (쓰던 내용이 있을 수 있어 자동으로는 안 함)
+{
+  const 지금판 = (import.meta.url.match(/\/(js-[0-9a-f]+)\//) || [])[1];
+  let 띠 = null;
+  const 확인 = async () => {
+    if (!지금판 || 띠 || document.hidden) return;
+    try {
+      const t = await (await fetch("./?v=" + Date.now(), { cache: "no-store" })).text();
+      const 새판 = (t.match(/\.\/(js-[0-9a-f]+)\/app\.js/) || [])[1];
+      if (!새판 || 새판 === 지금판) return;
+      띠 = document.createElement("div");
+      띠.style.cssText = "position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:60;background:#111827;color:#fff;padding:10px 14px;border-radius:12px;display:flex;gap:10px;align-items:center;font-size:14px;box-shadow:0 6px 20px rgba(0,0,0,.25)";
+      띠.innerHTML = '🔄 업무관리 새 버전이 나왔습니다 <button class="btn sm primary">새로고침</button>';
+      띠.querySelector("button").onclick = () => location.reload();
+      document.body.appendChild(띠);
+    } catch {}
+  };
+  document.addEventListener("visibilitychange", 확인);
+  setInterval(확인, 10 * 60e3);
+}
