@@ -3048,3 +3048,63 @@ end $$;
 drop trigger if exists car_sales_board_done on car_sales;
 create trigger car_sales_board_done after update of contract on car_sales
   for each row execute function _sale_board_done();
+
+
+-- 20261101000003_sale_board_post.sql
+-- 매도 탭 저장 → 게시판 매도정보 글을 DB 가 올린다 (2026-11-01).
+--   처음엔 화면이 올렸는데, 배포 전에 열어 둔 화면(옛 버전)으로 계약중 저장하자 글이 안 올라왔다 (65고1752).
+--   그래서 서버에서: 새 매도이거나 계약중으로 바뀔 때, 이 차의 매도정보 글이 없으면 올린다.
+--   알림은 tick 이 1분 안에 보낸다 (notified_at 비움 = 화면이 알림을 못 보낸 글). 이미 있는 글은 건드리지 않는다.
+--   구매자 이름·연락처는 매도 탭 칸(buyer_name·buyer_phone) — 통장 입금 짝짓기용. board_post=false 면 안 올린다(화면 체크).
+alter table car_sales add column if not exists buyer_name text;
+alter table car_sales add column if not exists buyer_phone text;
+alter table car_sales add column if not exists board_post boolean not null default true;
+
+create or replace function _원(n bigint) returns text language sql immutable as $$ select to_char(coalesce(n, 0), 'FM999,999,999,990') || '원' $$;
+
+create or replace function sale_board_post(p_car uuid) returns uuid language plpgsql security definer set search_path = public as $$
+declare s record; c record; v_since timestamptz; v_type text; v_name text; v_when text; v_memo text; v_form jsonb; v_title text; v_body text; v_id uuid;
+begin
+  select * into s from car_sales where car_id = p_car;
+  select * into c from cars where id = p_car;
+  if s is null or c is null then return null; end if;
+  v_since := coalesce(c.purchase_date::timestamptz - interval '30 days', '2000-01-01');
+  if exists (select 1 from board_posts b where b.category = '매도정보' and b.created_at >= v_since
+              and (b.car_id = p_car or (b.car_id is null and coalesce(c.plate, '') <> '' and replace(coalesce(b.form->>'plate', b.plate, ''), ' ', '') = replace(c.plate, ' ', '')))) then
+    return null;
+  end if;
+  v_type := case s.sale_type when '내수판매' then '내수' when '알선판매' then '내수' else s.sale_type end;
+  -- 짧은 차명: 모델명 있으면 그것, 없으면 차명 앞 두 낱말 (괄호·'더 뉴' 뺌)
+  v_name := nullif(trim(coalesce(nullif(c.model, ''),
+              array_to_string((regexp_split_to_array(trim(regexp_replace(regexp_replace(coalesce(c.car_name, ''), '\([^)]*\)', ' ', 'g'), '^\s*(더\s*뉴|디\s*올\s*뉴|올\s*뉴|뉴)\s+', '')), '\s+'))[1:2], ' '))), '');
+  v_when := case when s.contract and s.deposit_at is not null then to_char(s.deposit_at at time zone 'Asia/Seoul', 'MM/DD HH24:MI') end;
+  v_memo := nullif(concat_ws(E'\n', case when s.contract and s.balance_due is not null then '잔금 ' || extract(month from s.balance_due)::int || '월 ' || extract(day from s.balance_due)::int || '일 예정' end,
+                              nullif(s.memo, '')), '');
+  v_form := jsonb_build_object('type', v_type, 'plate', c.plate, 'car_name', v_name, 'buyer', nullif(trim(s.buyer_name), ''), 'phone', nullif(trim(s.buyer_phone), ''),
+              'amount', s.sale_amount, 'fee_included', false, 'deposit', case when s.contract then s.deposit_amount end, 'deposit_when', v_when, 'memo', v_memo);
+  v_title := concat_ws(' ', c.plate, v_name, '매도');
+  v_body := concat_ws(E'\n', '매도형태: ' || coalesce(v_type, '-'),
+              '차량: ' || coalesce(nullif(concat_ws(' ', c.plate, v_name), ''), '-'),
+              '구매자: ' || coalesce(nullif(concat_ws(' ', nullif(trim(s.buyer_name), ''), nullif(trim(s.buyer_phone), '')), ''), '-'),
+              '매도 금액: 매도비 별도 ' || _원(s.sale_amount),
+              '계약금: ' || case when s.contract and s.deposit_amount = 0 then '없음'
+                                 when s.contract then concat_ws(' ', v_when, _원(s.deposit_amount)) else '-' end,
+              case when v_memo is not null then E'\n' || v_memo end);
+  insert into board_posts (category, title, body, plate, car_id, created_by, author_name, form, notified_at)
+  values ('매도정보', v_title, v_body, c.plate, p_car, auth.uid(),
+          coalesce((select name from profiles where user_id = auth.uid()), '업무관리'), v_form, null)
+  returning id into v_id;
+  return v_id;
+end $$;
+revoke execute on function sale_board_post(uuid) from public, anon, authenticated;
+
+create or replace function _sale_board_post() returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if new.board_post and (tg_op = 'INSERT' or (new.contract and not old.contract)) then
+    perform sale_board_post(new.car_id);
+  end if;
+  return new;
+end $$;
+drop trigger if exists car_sales_board_post on car_sales;
+create trigger car_sales_board_post after insert or update of contract on car_sales
+  for each row execute function _sale_board_post();

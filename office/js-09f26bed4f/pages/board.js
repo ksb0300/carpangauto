@@ -582,6 +582,7 @@ function Post({ app, id }) {
       : html`🔔 <b>사무장 확인 전</b> <span class="muted small">[확인]을 누를 때까지 사무장 근무시간(평일 8:30~17:00)에 재촉합니다 (최대 3번)</span><span class="grow"></span>
         <button class="btn sm primary" onClick=${확인}>👀 확인했어요</button>`}</div>`}
     ${송금 && p.car_id && html`<p class="small" style="margin-top:8px">🚗 <a href=${"#/car/" + p.car_id}>재고 차 보기 →</a> <span class="muted">차대금 송금이 끝나면 리스트에 자동으로 올라갑니다 (취득세는 사무장 확인)</span></p>`}
+    ${매도 && p.car_id && html`<p class="small" style="margin-top:8px">🚗 <a href=${"#/car/" + p.car_id + "/sale"}>차 매도 탭 보기 →</a> <span class="muted">잔금 완료가 되면 매도 탭의 계약중도 매도로 확정됩니다</span></p>`}
     ${p.publish_at && Date.parse(p.publish_at) > Date.now() && html`<p class="note">🕒 ${날짜시각(p.publish_at)}에 올라가고 그때 알림이 갑니다. 지금은 쓴 사람과 대표만 보입니다.</p>`}
     ${매도 && p.form?.amount && html`<${잔금줄} p=${p} ins=${x.ins || []} 완료=${완료} />`}
 

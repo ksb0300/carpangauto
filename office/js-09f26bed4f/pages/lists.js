@@ -26,7 +26,7 @@ function useBook(app) {
     const docs = await (async () => { try { const { data } = await app.db.from("issue_docs").select("car_id,status,trade_date,doc_type"); return data || []; } catch { return []; } })();
     const by = (arr, k = "car_id") => arr.reduce((m, r) => ((m[r[k]] ||= []).push(r), m), {});
     const lenderOf = Object.fromEntries(all.lenders.map(x => [x.id, x]));
-    const cost = by(all.costs), loan = by(all.loans), pay = by(all.payments, "loan_id"), sale = Object.fromEntries(all.sales.map(s => [s.car_id, s]));
+    const cost = by(all.costs), loan = by(all.loans), pay = by(all.payments, "loan_id"), sale = Object.fromEntries(all.sales.map(s => [s.car_id, s])), 계약 = Object.fromEntries((all.contracts || []).map(s => [s.car_id, s]));
     const settle = Object.fromEntries(all.settlements.map(s => [s.car_id, s])), doc = by(docs);
     const buyer = by(all.buyers);
     const cars = all.cars.filter(c => !c.deleted_at).map(c => {
@@ -46,7 +46,7 @@ function useBook(app) {
         해지비용: ls.reduce((t, l) => t + (l.status === "상환완료" ? n(l.repay_fee) : n(lenderOf[l.lender_id]?.release_fee)), 0),
         재반항목: ks.filter(k => 비용구분(k.item) === "재반").reduce((t, k) => t + n(k.amount), 0)
           + ls.reduce((t, l) => t + (l.status === "상환완료" ? n(l.repay_fee) : n(lenderOf[l.lender_id]?.release_fee)), 0),
-        sale: sale[c.id], settle: settle[c.id], buyers: buyer[c.id] || [], 매출발행일: issued[0] || "" };
+        sale: sale[c.id], 계약: 계약[c.id], settle: settle[c.id], buyers: buyer[c.id] || [], 매출발행일: issued[0] || "" };
     });
     setD({ ...all, cars });
   });
@@ -128,7 +128,7 @@ export function PurchasesPage({ app }) {
     const 재반 = c.재반항목 + c.재고이자, 총원가 = n(c.purchase_amount) + 재반 + c.상품화비;
     const 입력가 = price[c.id] ?? (c.list_price != null ? n(c.list_price) : null);
     const 예상 = !c.sale && !입력가 && n(c.ad_price) > 0;          // 판매가를 안 넣었으면 엔카 광고가로 '예상'
-    const 판매가 = c.sale ? n(c.sale.sale_amount) : 입력가 || (예상 ? n(c.ad_price) : null);
+    const 판매가 = c.sale ? n(c.sale.sale_amount) : c.계약 ? n(c.계약.sale_amount) : 입력가 || (예상 ? n(c.ad_price) : null);   // 계약중이면 계약한 금액
     const 매도비 = c.sale ? n(c.sale.sale_fee) : 기본매도비;
     const 입력추가 = n(price["x" + c.id] ?? c.extra_income);          // 리스트에서 넣은 추가수익 (매도 뒤에도 넣을 수 있다)
     const 추가수익 = c.sale ? n(c.sale.installment_income) + n(c.sale.am_income) + (c.settle?.other_revenue || []).reduce((t, x) => t + n(x.금액), 0) + 입력추가 : 입력추가;
@@ -159,7 +159,7 @@ export function PurchasesPage({ app }) {
         <th class="r" title="매입가 + 재반비용 + 상품화비용">총원가</th><th class="r" title="할부 수수료 등 차값 말고 더 들어올 돈 (매도된 차는 할부수익 + 정산 기타매출)">추가수익</th><th class="r">판매가(매도비제외)</th>
         <th class="r" title="판매가 + 매도비 + 추가수익 − 총원가">마진</th><th class="r">재고일</th><th>매도·정산</th></tr></thead>
       <tbody>${rows.map(c => { const x = calc(c); return html`<tr key=${c.id} onClick=${() => go("/car/" + c.id)}><td>${c.purchase_date}</td>
-        <td><b>${c.plate}</b></td><td onClick=${e => office && e.stopPropagation()}>${office ? html`<${OwnerPick} app=${app} car=${c} onDone=${reload} />` : dealer[c.dealer_id] || "-"}</td>
+        <td><b>${c.plate}</b>${c.계약 && html` <span class="badge amber" title=${`계약금 ${won(c.계약.deposit_amount)} · 잔금 예정 ${c.계약.balance_due || "-"}`}>계약중</span>`}</td><td onClick=${e => office && e.stopPropagation()}>${office ? html`<${OwnerPick} app=${app} car=${c} onDone=${reload} />` : dealer[c.dealer_id] || "-"}</td>
         <td class="ellipsis">${c.car_name}</td>${W(c.purchase_amount)}
         <td class="r" title=${`비용 ${won(c.재반항목 - c.해지비용)} + 저당해지비용 ${won(c.해지비용)} + 재고이자 ${won(c.재고이자)}`}>${won(x.재반)}</td>${상품화칸(c.상품화비)}<td class="r"><b>${won(x.총원가)}</b></td>
         <td class="r" onClick=${e => e.stopPropagation()}>${!office && c.sale ? (x.추가수익 ? won(x.추가수익) : html`<span class="muted">-</span>`)
