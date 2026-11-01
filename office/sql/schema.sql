@@ -3108,3 +3108,96 @@ end $$;
 drop trigger if exists car_sales_board_post on car_sales;
 create trigger car_sales_board_post after insert or update of contract on car_sales
   for each row execute function _sale_board_post();
+
+
+-- 20261101000004_sale_link_deposit.sql
+-- 다른 사람 이름으로 들어온 계약금·잔금 (사용자 2026-11-01 "계약금이 다른사람이름으로 들어왔어, 계약금 선택하는 드롭다운이 없네?")
+--   매도 탭·매도정보 글에서 통장 입금을 손으로 골라 잇는다 → sale_link_deposit. 손으로 이은 입금은 이름·날짜가 안 맞아도 합계에 넣는다(board_match_sales).
+CREATE OR REPLACE FUNCTION public.board_match_sales()
+ RETURNS TABLE(post_id uuid, created_by uuid, title text, received bigint, done_now boolean)
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+#variable_conflict use_column
+declare p record; v_d date; v_name text; v_plate text; v_p4 text; v_car uuid; v_amt bigint; v_dep bigint;
+        v_sum bigint; v_dep_seen boolean; v_new int; v_done boolean; v_last record;
+begin
+  if not (is_office() or coalesce(auth.role(), '') = 'service_role') then raise exception '권한이 없습니다'; end if;
+  for p in select bp.id, bp.created_by, bp.title, bp.car_id, bp.form, bp.done_at, bp.created_at from board_posts bp
+            where bp.category = '매도정보' and bp.done_at is null and coalesce(bp.form->>'amount', '') ~ '^[0-9]+$'
+            order by bp.created_at loop
+    v_d := (p.created_at at time zone 'Asia/Seoul')::date;
+    v_amt := (p.form->>'amount')::bigint;
+    v_dep := case when coalesce(p.form->>'deposit', '') ~ '^[0-9]+$' then (p.form->>'deposit')::bigint else 0 end;
+    v_name := _이름키(p.form->>'buyer');
+    if length(v_name) < 2 or v_name in ('내수', '수출', 'fm', 'am', '엔카믿고', '없음') then v_name := null; end if;
+    v_plate := _이름키(p.form->>'plate');
+    v_p4 := case when right(v_plate, 4) ~ '^[0-9]{4}$' then right(v_plate, 4) end;
+    v_car := coalesce(p.car_id, (select c.id from cars c where c.deleted_at is null and replace(c.plate, ' ', '') = replace(p.form->>'plate', ' ', '')
+                                  order by c.purchase_date desc nulls last limit 1));
+
+    create temp table if not exists _sale_tx (id uuid, amt bigint) on commit drop;
+    truncate _sale_tx;
+    insert into _sale_tx
+    select x.id, x.deposit from bank_txs x
+     where x.deposit > 0 and (x.post_id is null or x.post_id = p.id)
+       and coalesce(x.match_kind, '차량매도대금') = '차량매도대금'
+       and (x.car_id is null or v_car is null or x.car_id = v_car)
+       and (x.post_id = p.id or x.tx_date between v_d - 14 and v_d + 60)
+       and (x.post_id = p.id or
+         (v_name is not null and length(_이름키(coalesce(x.counterparty, x.remark))) >= 2
+            and (starts_with(v_name, _이름키(coalesce(x.counterparty, x.remark))) or starts_with(_이름키(coalesce(x.counterparty, x.remark)), v_name)))
+         or (length(v_plate) >= 7 and _이름키(coalesce(x.counterparty, x.remark)) = v_plate)
+         or (v_p4 is not null and coalesce(x.counterparty, x.remark) like '%' || v_p4 || '%' and coalesce(x.counterparty, x.remark) like '%캐%')
+       );
+
+    select count(*) into v_new from _sale_tx t join bank_txs x on x.id = t.id where x.post_id is null;
+    select coalesce(sum(amt), 0), coalesce(bool_or(amt = v_dep), false) into v_sum, v_dep_seen from _sale_tx;
+    continue when v_sum = 0;
+
+    update bank_txs x set post_id = p.id, match_kind = '차량매도대금', car_id = coalesce(x.car_id, v_car), matched_by = coalesce(x.matched_by, '자동')
+      from _sale_tx t where x.id = t.id and x.post_id is null;
+
+    v_done := v_sum >= v_amt or (v_dep > 0 and not v_dep_seen and v_sum + v_dep >= v_amt);
+    if v_done then
+      select x.tx_date, x.tx_time into v_last from bank_txs x join _sale_tx t on t.id = x.id order by x.tx_date desc, x.tx_time desc nulls last limit 1;
+      update board_posts set done_at = (v_last.tx_date + coalesce(nullif(v_last.tx_time, '')::time, '00:00'::time)) at time zone 'Asia/Seoul',
+                             done_by = '통장 확인' where id = p.id;
+    end if;
+    continue when v_new = 0 and not v_done;
+    post_id := p.id; created_by := p.created_by; title := p.title; received := v_sum; done_now := v_done;
+    return next;
+  end loop;
+end $function$
+;
+
+create or replace function sale_link_deposit(p_tx uuid, p_car uuid, p_post uuid default null) returns void
+language plpgsql security definer set search_path = public as $$
+declare v_post uuid := p_post; v_car uuid := p_car;
+begin
+  if not is_office() then raise exception '권한이 없습니다'; end if;
+  if v_post is null and v_car is not null then
+    select b.id into v_post from board_posts b where b.category = '매도정보' and b.car_id = v_car and b.done_at is null order by b.created_at desc limit 1;
+  end if;
+  if v_car is null and v_post is not null then select b.car_id into v_car from board_posts b where b.id = v_post; end if;
+  if exists (select 1 from bank_txs where id = p_tx and (deposit is null or deposit <= 0 or (post_id is not null and post_id is distinct from v_post))) then
+    raise exception '고를 수 없는 입금입니다 (출금이거나 다른 글에 이미 이어짐)';
+  end if;
+  update bank_txs set post_id = v_post, car_id = coalesce(v_car, car_id), match_kind = '차량매도대금',
+         matched_by = '수동'
+   where id = p_tx;
+  perform * from board_match_sales();
+end $$;
+revoke execute on function sale_link_deposit(uuid, uuid, uuid) from public, anon;
+grant execute on function sale_link_deposit(uuid, uuid, uuid) to authenticated;
+
+-- 잘못 고른 입금 풀기 (매도대금으로 이은 것만)
+create or replace function sale_unlink_deposit(p_tx uuid) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if not is_office() then raise exception '권한이 없습니다'; end if;
+  update bank_txs set post_id = null, car_id = null, match_kind = null, matched_by = null where id = p_tx and match_kind = '차량매도대금';
+end $$;
+revoke execute on function sale_unlink_deposit(uuid) from public, anon;
+grant execute on function sale_unlink_deposit(uuid) to authenticated;

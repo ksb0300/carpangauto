@@ -15,7 +15,7 @@ export function Settlements({ app }) {
     const [st, cars, sales] = await Promise.all([
       q(app.db.from("settlements").select("*")),
       q(app.db.from("cars").select("id,plate,car_name,dealer_id,purchase_date,purchase_amount,consign")),
-      q(app.db.from("car_sales").select("car_id,sale_date,sale_amount,dealer_id,broker_dealer_id")),
+      q(app.db.from("car_sales").select("*")).then(r => r.filter(s => !s.contract)),   // 계약중 빼고
     ]);
     const car = Object.fromEntries(cars.map(c => [c.id, c])), sale = Object.fromEntries(sales.map(s => [s.car_id, s]));
     // 딜러 정산만 (공동대표 차의 손익확정은 종합업무현황 → 대표별 실적)

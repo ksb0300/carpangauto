@@ -171,3 +171,16 @@ export function 매도글(f, memo = "") {
     memo && "", memo,
   ].filter(x => x !== false && x != null).join("\n").trim();
 }
+
+/** 매도정보 '계약금 받은 때'(대충 쓴 글) → ISO 시각. '10/31 11:00', '10.29 12시 20분', '2026-10-29', '11월 3일' — 해는 글 쓴 해(기준).
+ *  날짜를 못 읽으면 null */
+export function 계약금일시(s, 기준 = new Date()) {
+  const t = String(s ?? "");
+  const m = t.match(/(?:(\d{4})\s*[-./년]\s*)?(\d{1,2})\s*[-./월]\s*(\d{1,2})일?(?:\s*(\d{1,2})\s*[:시]\s*(\d{1,2})?)?/);
+  if (!m) return null;
+  const 해 = m[1] ? Number(m[1]) : new Date(new Date(기준).getTime() + 9 * 3600e3).getUTCFullYear();
+  const [월, 일, 시, 분] = [m[2], m[3], m[4] || 0, m[5] || 0].map(Number);
+  if (월 < 1 || 월 > 12 || 일 < 1 || 일 > 31 || 시 > 23 || 분 > 59) return null;
+  const p = n => String(n).padStart(2, "0");
+  return new Date(`${해}-${p(월)}-${p(일)}T${p(시)}:${p(분)}:00+09:00`).toISOString();
+}

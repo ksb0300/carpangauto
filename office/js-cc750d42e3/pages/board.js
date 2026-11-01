@@ -7,6 +7,7 @@
 import { html, useState, useEffect, Loading, Empty, Badge, Seg, Field, Select, run, toast, ask, go, 검색맞음 } from "../ui.js";
 import { q } from "../db.js";
 import { 보내기 as 알림 } from "../push.js";
+import { 고를입금, 입금글 } from "./tab-sale.js";
 import { 모두줄이기 } from "../img.js";
 import { 구성원, 이름표, Avatar, 언제, 날짜시각 } from "../people.js";
 import { 송금읽기, 송금글, 매도읽기, 매도글, 금액, 원, 송금종류, 매도형태들, 번호판, 기한시각 } from "../forms.js";
@@ -404,17 +405,27 @@ function 첨부버튼({ f, url }) {
 }
 
 /** 매도정보 진행: 계약금 받고 올린 글은 잔금 대기, 계약금 없으면 입금 대기 → 통장에 다 들어오면(DB board_match_sales) 잔금 완료 */
-function 잔금줄({ p, ins, 완료 }) {
+function 잔금줄({ app, p, ins, 완료, load }) {
   const f = p.form, 받음 = ins.reduce((a, t) => a + Number(t.deposit), 0), 계약 = Number(f.deposit) || 0;
   const 계약금보임 = 계약 > 0 && ins.some(t => Number(t.deposit) === 계약);
   const 남음 = Math.max(0, f.amount - 받음 - (계약 > 0 && !계약금보임 ? 계약 : 0));
-  const 입금들 = ins.length > 0 && html`<div class="small" style="width:100%;margin-top:4px">${ins.map(t => html`<div>· ${t.tx_date.slice(5).replace("-", "/")} ${t.tx_time || ""} ${t.counterparty || ""} <b>${원(t.deposit)}</b> 입금</div>`)}</div>`;
+  // 다른 이름으로 들어온 계약금·잔금은 손으로 고른다 (사용자 2026-11-01) — 손으로 이은 건 [풀기]
+  const [후보, set후보] = useState(null);
+  const 열기 = () => run(async () => set후보(await 고를입금(app, { car_id: p.car_id, post_id: p.id,
+    from: new Date(Date.parse(p.created_at) + 9 * 3600e3 - 14 * 864e5).toISOString().slice(0, 10) })));
+  const 잇기 = id => id && run(async () => { await q(app.db.rpc("sale_link_deposit", { p_tx: id, p_car: p.car_id || null, p_post: p.id })); set후보(null); load(); }, "입금을 붙였습니다");
+  const 풀기 = id => ask("이 입금을 이 글에서 뺄까요?") && run(async () => { await q(app.db.rpc("sale_unlink_deposit", { p_tx: id })); load(); }, "뺐습니다");
+  const 입금들 = ins.length > 0 && html`<div class="small" style="width:100%;margin-top:4px">${ins.map(t => html`<div>· ${t.tx_date.slice(5).replace("-", "/")} ${t.tx_time || ""} ${t.counterparty || ""} <b>${원(t.deposit)}</b> 입금
+    ${t.matched_by === "수동" && !p.done_at && html` <button class="linkbtn" onClick=${() => 풀기(t.id)}>풀기</button>`}</div>`)}</div>`;
+  const 고르기 = 후보 ? html`<div style="width:100%;margin-top:6px;max-width:460px"><${Select} value=${null} onChange=${잇기}
+      empty=${후보.filter(t => t.post_id !== p.id).length ? "붙일 입금 고르기" : "고를 입금이 없습니다 (최근 입금이 다 나뉨)"} options=${후보.filter(t => t.post_id !== p.id).map(t => [t.id, 입금글(t)])} /></div>`
+    : html`<button class="btn sm" onClick=${열기}>＋ 다른 이름 입금 붙이기</button>`;
   if (p.done_at) return html`<div class="bank-ok" style="flex-wrap:wrap">✔ <b>잔금 완료</b> <span class="muted small">${p.done_by || ""} · ${날짜시각(p.done_at)}${받음 ? ` · 통장 입금 ${원(받음)}` : ""}</span><span class="grow"></span>
     <button class="btn sm ghost" onClick=${() => ask("잔금 완료를 취소할까요?") && 완료(false)}>완료 취소</button>${입금들}</div>`;
   return html`<div class="bank-ok bank-wait" style="flex-wrap:wrap">⏳ <b>${계약 > 0 ? "잔금 대기" : "입금 대기"}</b>
     <span class="small">매도 ${원(f.amount)}${계약 > 0 ? ` · 계약금 ${원(계약)}` : ""}${받음 ? ` · 통장 입금 ${원(받음)}` : ""} · <b>남은 ${원(남음)}</b></span>
-    <span class="grow"></span><button class="btn sm primary" onClick=${() => 완료(true)}>✔ 잔금 완료</button>
-    <div class="muted small" style="width:100%">구매자 이름(또는 번호판·캐피탈)으로 다 들어오면 자동으로 완료 · 댓글 '입완'으로도 완료</div>${입금들}</div>`;
+    <span class="grow"></span>${!후보 && 고르기}<button class="btn sm primary" onClick=${() => 완료(true)}>✔ 잔금 완료</button>
+    <div class="muted small" style="width:100%">구매자 이름(또는 번호판·캐피탈)으로 다 들어오면 자동으로 완료 · 이름이 다르면 [다른 이름 입금 붙이기] · 댓글 '입완'으로도 완료</div>${후보 && 고르기}${입금들}</div>`;
 }
 
 function Post({ app, id }) {
@@ -433,7 +444,7 @@ function Post({ app, id }) {
       q(app.db.from("board_reads").select("user_id, read_at, seed").eq("post_id", id)),
       q(app.db.from("board_reactions").select("user_id, emoji, name").eq("post_id", id)),
       q(app.db.from("board_stars").select("post_id").eq("post_id", id)),
-      q(app.db.from("bank_txs").select("tx_date, tx_time, deposit, withdraw, counterparty, match_kind").eq("post_id", id).order("tx_date").order("tx_time")),
+      q(app.db.from("bank_txs").select("id, tx_date, tx_time, deposit, withdraw, counterparty, match_kind, matched_by").eq("post_id", id).order("tx_date").order("tx_time")),
       구성원(app),
     ]);
     setP(post || null);
@@ -582,8 +593,9 @@ function Post({ app, id }) {
       : html`🔔 <b>사무장 확인 전</b> <span class="muted small">[확인]을 누를 때까지 사무장 근무시간(평일 8:30~17:00)에 재촉합니다 (최대 3번)</span><span class="grow"></span>
         <button class="btn sm primary" onClick=${확인}>👀 확인했어요</button>`}</div>`}
     ${송금 && p.car_id && html`<p class="small" style="margin-top:8px">🚗 <a href=${"#/car/" + p.car_id}>재고 차 보기 →</a> <span class="muted">차대금 송금이 끝나면 리스트에 자동으로 올라갑니다 (취득세는 사무장 확인)</span></p>`}
+    ${매도 && p.car_id && html`<p class="small" style="margin-top:8px">🚗 <a href=${"#/car/" + p.car_id + "/sale"}>차 매도 탭 보기 →</a> <span class="muted">잔금 완료가 되면 매도 탭의 계약중도 매도로 확정됩니다</span></p>`}
     ${p.publish_at && Date.parse(p.publish_at) > Date.now() && html`<p class="note">🕒 ${날짜시각(p.publish_at)}에 올라가고 그때 알림이 갑니다. 지금은 쓴 사람과 대표만 보입니다.</p>`}
-    ${매도 && p.form?.amount && html`<${잔금줄} p=${p} ins=${x.ins || []} 완료=${완료} />`}
+    ${매도 && p.form?.amount && html`<${잔금줄} app=${app} p=${p} ins=${x.ins || []} 완료=${완료} load=${load} />`}
 
     ${edit ? html`<div style="margin-top:14px">
         ${p.category !== "매도정보" && html`<${Field} label="제목" wide><input value=${edit.title} onInput=${e => setEdit({ ...edit, title: e.target.value })} /><//>`}
