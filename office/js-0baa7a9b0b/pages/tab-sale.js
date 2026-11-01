@@ -9,6 +9,7 @@ let tmp = 0;
 const SHOW_BUYERS = false;
 const newBuyer = share => ({ _new: ++tmp, name: "", ssn: "", biz_no: "", phone: "", zip: "", addr: "", memo: "", share_rate: share });
 
+// 알선딜러·출고 번호판 칸은 뺌 (사용자 2026-11-01) — 출고 번호판은 지금 번호판으로 저장(매도 등록증 연결용), 알선딜러는 예전 값만 그대로
 export function SaleTab({ app, car, sale, buyers, settlement, reload, locked, office }) {
   const [editing, setEditing] = useState(!sale && office);
   const [할부, set할부] = useState(null);      // 확정된 대표 차: 할부만 바로 고치기 { company, amount, rate }
@@ -36,22 +37,28 @@ export function SaleTab({ app, car, sale, buyers, settlement, reload, locked, of
     set할부(null); reload();
   }, "할부를 고쳤습니다");
   const 할부미리 = 할부 ? 할부수수료(할부.amount, 할부.rate) : null;
+  // 계약중 (사용자 2026-11-01): 계약금만 받은 차 — 재고 그대로, 잔금 받으면 [잔금 완료]로 매도 확정 (매도일 = 오늘)
+  const 잔금완료 = () => confirm("잔금을 다 받았나요? 매도로 확정하고 매도일을 오늘로 합니다.") && run(async () => {
+    await q(app.db.from("car_sales").update({ contract: false, sale_date: today() }).eq("car_id", car.id)); reload();
+  }, "매도로 확정했습니다");
+  const 일시 = iso => iso ? new Date(Date.parse(iso) + 9 * 3600e3).toISOString().slice(5, 16).replace("-", "/").replace("T", " ") : "-";
   return html`<div class="card">
+    ${sale.contract && html`<div class="bank-ok bank-wait" style="margin-bottom:12px">📝 <b>계약중</b>
+      <span class="muted small">계약금 ${won(sale.deposit_amount)} · 받은 때 ${일시(sale.deposit_at)} · 잔금 예정 ${sale.balance_due || "-"} — 차는 재고 그대로, 실적에는 안 잡힙니다</span><span class="grow"></span>
+      ${office && html`<button class="btn sm primary" onClick=${잔금완료}>잔금 완료 → 매도 확정</button>`}</div>`}
     <div class="bar"><h3>매도정보</h3><span class="grow"></span>
       ${할부바로 && !할부 && html`<button class="btn" title="손익확정을 풀지 않고 할부만 고칩니다" onClick=${() => set할부({ company: sale.installment_company, amount: Number(sale.installment_amount) || 0, rate: Number(sale.installment_rate) || "" })}>할부 고치기</button>`}
       ${office && !locked && html`<button class="btn" onClick=${() => setEditing(true)}>수정</button><button class="btn danger" onClick=${cancel}>매도취소</button>`}
-      ${office && html`<button class="btn primary" onClick=${() => go(`/car/${car.id}/settle`)}>정산하기 →</button>`}</div>
+      ${office && !sale.contract && html`<button class="btn primary" onClick=${() => go(`/car/${car.id}/settle`)}>정산하기 →</button>`}</div>
     <div class="kvgrid">
-      <div><span>매도일</span><b>${sale.sale_date}</b></div>
+      <div><span>${sale.contract ? "계약일" : "매도일"}</span><b>${sale.sale_date}</b></div>
       <div><span>매도담당</span><b>${dealer?.name || "-"}${sale.other_dealer ? " (타상사딜러)" : ""}</b></div>
       <div><span>매도유형</span><b>${sale.sale_type}</b></div>
-      <div><span>알선딜러</span><b>${app.dealers.find(d => d.id === sale.broker_dealer_id)?.name || "-"}</b></div>
       <div><span>매도금액</span><b>${won(sale.sale_amount)} <small class="muted">(공급가 ${won(sale.sale_supply)} / 부가세 ${won(sale.sale_vat)})</small></b></div>
       <div><span>상사매도비</span><b>${won(sale.sale_fee)}</b></div>
       <div><span>성능보험료</span><b>${won(sale.perf_insurance)}</b></div>
       ${Number(sale.am_income) > 0 && html`<div><span>AM수익</span><b>${won(sale.am_income)}</b></div>`}
       ${Number(sale.installment_amount) > 0 && html`<div><span>할부 (${sale.installment_company || "캐피탈사 미입력"})</span><b>${won(sale.installment_income)} <small class="muted">(할부 ${won(sale.installment_amount)} × ${Number(sale.installment_rate)}% = ${won(sale.installment_fee)} − 원천징수 ${won(sale.installment_tax)})</small></b></div>`}
-      <div><span>출고 번호판</span><b>${sale.plate_out || car.plate}</b></div>
       <div><span>특이사항</span><b>${sale.memo || "-"}</b></div>
     </div>
     ${할부 && html`<div class="bar" style="margin-top:12px"><h3>할부 고치기</h3><span class="muted small">손익확정은 그대로 두고 할부수익·차량 손익만 다시 계산합니다</span></div>
@@ -74,7 +81,8 @@ function SaleForm({ app, car, sale, buyers, onDone }) {
     sale_date: today(), dealer_id: car.dealer_id, other_dealer: false, sale_type: "내수판매",
     sale_amount: car.list_price ? Number(car.list_price) : 0,   // 리스트에 넣은 판매가(매도비 제외 차값)
     plate_out: car.plate, sale_fee: app.settings.sale_fee, perf_insurance: 0, memo: "", broker_dealer_id: null,
-    installment_company: null, installment_amount: 0, installment_rate: 0, am_income: 0 });
+    installment_company: null, installment_amount: 0, installment_rate: 0, am_income: 0,
+    contract: false, deposit_amount: 0, deposit_at: null, balance_due: null });
   const [bs, setBs] = useState(buyers.length ? buyers.map(b => ({ ...b, ssn: "" })) : [newBuyer(100)]);
   // 새 매도: 성능보험료는 최근 성능점검(KAIWA)의 보험료를 기본값으로 (손님이 내는 돈 — 현금영수증용)
   useEffect(() => { if (!sale) run(async () => {
@@ -106,7 +114,10 @@ function SaleForm({ app, car, sale, buyers, onDone }) {
         broker_dealer_id: f.broker_dealer_id || null,
         installment_company: Number(f.installment_amount) > 0 ? (f.installment_company || null) : null,
         installment_amount: Number(f.installment_amount) || 0, installment_rate: Number(f.installment_rate) || 0,
-        am_income: f.sale_type === "AM" ? Number(f.am_income) || 0 : 0 };
+        am_income: f.sale_type === "AM" ? Number(f.am_income) || 0 : 0,
+        // 계약중 칸 — DB 에 칸이 있을 때(기존 매도에 contract 가 있거나 계약중을 체크했을 때)만 보낸다
+        ...(f.contract || (sale && "contract" in sale) ? { contract: !!f.contract, deposit_amount: Number(f.deposit_amount) || 0,
+          deposit_at: f.deposit_at ? new Date(f.deposit_at).toISOString() : null, balance_due: f.balance_due || null } : {}) };
       if (sale) await q(app.db.from("car_sales").update(row).eq("car_id", car.id));
       else await q(app.db.from("car_sales").insert(row));
       if (!SHOW_BUYERS) return true;     // 매수고객 숨김 중 — 기존 기록은 건드리지 않는다
@@ -131,18 +142,21 @@ function SaleForm({ app, car, sale, buyers, onDone }) {
       <button type="button" class="btn ghost" onClick=${() => onDone(false)}>취소</button>
       <button class="btn primary" disabled=${busy}>${busy ? "저장 중…" : "저장"}</button></div>
     <div class="fgrid">
-      <${Field} label="매도일" req><input type="date" value=${f.sale_date} onInput=${e => set("sale_date")(e.target.value)} required /><//>
+      <${Field} label="계약중" hint=${f.contract ? "계약금만 받음 — 차는 재고 그대로, 실적에 안 잡힘. 잔금 받으면 체크를 풀거나 [잔금 완료]" : "잔금까지 다 받았으면 체크하지 않습니다"}>
+        <label class="check"><input type="checkbox" checked=${!!f.contract} onChange=${e => setF(p => ({ ...p, contract: e.target.checked, ...(!e.target.checked && p.contract ? { sale_date: today() } : {}) }))} /> 계약금만 받았음</label><//>
+      <${Field} label=${f.contract ? "계약일" : "매도일"} req><input type="date" value=${f.sale_date} onInput=${e => set("sale_date")(e.target.value)} required /><//>
+      ${f.contract && html`<${Field} label="계약금"><${Money} value=${f.deposit_amount || 0} onInput=${set("deposit_amount")} /><//>
+      <${Field} label="계약금 받은 일시" hint="대충이라도"><input type="datetime-local" value=${f.deposit_at ? new Date(Date.parse(f.deposit_at) + 9 * 3600e3).toISOString().slice(0, 16) : ""}
+        onInput=${e => set("deposit_at")(e.target.value ? e.target.value + ":00+09:00" : null)} /><//>
+      <${Field} label="잔금 예정일" hint="대충이라도"><input type="date" value=${f.balance_due || ""} onInput=${e => set("balance_due")(e.target.value || null)} /><//>`}
       <${Field} label="매도담당"><div class="row"><${Select} value=${f.dealer_id} onChange=${set("dealer_id")} options=${app.dealers.map(d => [d.id, d.name + (d.partner ? " (대표)" : "")])} />
         <label class="check"><input type="checkbox" checked=${f.other_dealer} onChange=${e => set("other_dealer")(e.target.checked)} /> 타상사딜러</label></div><//>
-      <${Field} label="알선딜러" hint="다른 딜러가 손님을 데려와 판 경우 — 정산 때 정산금을 나눕니다">
-        <${Select} value=${f.broker_dealer_id} onChange=${set("broker_dealer_id")} empty="없음" options=${app.dealers.filter(d => d.id !== f.dealer_id).map(d => [d.id, d.name])} /><//>
       <${Field} label="판매유형" hint=${f.sale_type === "수출" ? "수출 — 성능점검비가 22,000원으로 바뀝니다" : f.sale_type === "엔카믿고" ? `엔카믿고 — 수수료 ${won(엔카믿고수수료(f.sale_amount))}원이 상품화비용으로 자동 등록됩니다 (매도비에서 엔카가 떼고 입금)` : ""}>
         <${Select} value=${f.sale_type} onChange=${pickType} options=${SALE_TYPES} /><//>
       ${f.sale_type === "AM" && html`<${Field} label="AM수익" hint="마진(차량 손익)에 더해집니다"><${Money} value=${f.am_income || 0} onInput=${set("am_income")} /><//>`}
       <${Field} label="매도금액" req hint=${f.sale_amount ? `공급가 ${won(vat.공급가)} / 부가세 ${won(vat.부가세)}` : "부가세 포함"}><${Money} value=${f.sale_amount} onInput=${set("sale_amount")} /><//>
       <${Field} label="상사매도비" hint="상사 매출로 잡힙니다"><${Money} value=${f.sale_fee} onInput=${set("sale_fee")} /><//>
       <${Field} label="성능보험료" hint="손님이 내는 돈 — 현금영수증용, 손익에는 안 들어감"><${Money} value=${f.perf_insurance} onInput=${set("perf_insurance")} /><//>
-      <${Field} label="출고 번호판"><input value=${f.plate_out || ""} onInput=${e => set("plate_out")(e.target.value)} /><//>
       <${Field} label="특이사항" wide><input value=${f.memo || ""} onInput=${e => set("memo")(e.target.value)} /><//>
     </div>
     <div class="bar"><h3>할부 내용</h3><span class="muted small">할부(금융)로 판 경우만 — 재고금융 → 할부실적에 캐피탈사별로 쌓입니다</span></div>

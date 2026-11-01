@@ -109,15 +109,13 @@ const 오늘날 = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0,
 const 인트로볼까 = () => { try { return localStorage.getItem(인트로끔) !== "1" && localStorage.getItem(인트로날) !== 오늘날(); } catch { return false; } };
 export const 시작소리 = () => { const a = new Audio("./tierone-intro.wav"); a.volume = 0.85; return a.play(); };
 function Intro({ onDone }) {
-  const [막힘, set막힘] = useState(false);
   useEffect(() => {
     try { localStorage.setItem(인트로날, 오늘날()); } catch {}
-    시작소리().catch(() => set막힘(true));
+    // 브라우저가 소리를 막으면 안내 없이 조용히 — 시작 화면이 떠 있는 동안 누르면 그때 울린다 (사용자 2026-10-31: 안내 필요 없음)
+    시작소리().catch(() => addEventListener("pointerdown", () => { if (document.querySelector(".intro")) 시작소리().catch(() => {}); }, { once: true }));
     const t = setTimeout(onDone, 2800); return () => clearTimeout(t);
   }, []);
-  const 누름 = () => { if (막힘) { set막힘(false); 시작소리().catch(() => {}); setTimeout(onDone, 2600); } else onDone(); };
-  return html`<div class="intro" onClick=${누름}><img src="./icon-512.png" alt="TierONE" />
-    ${막힘 && html`<small>🔊 눌러서 소리 듣기</small>`}</div>`;
+  return html`<div class="intro" onClick=${onDone}><img src="./intro-icon.png" alt="TierONE" /></div>`;
 }
 
 function Shell({ app, children, path }) {

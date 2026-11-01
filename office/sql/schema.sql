@@ -2985,3 +2985,29 @@ alter table sign_docs alter column car_name drop not null;
 --   퍼졌으면 업무관리 서류 접수 [링크 바꾸기](대표)로 새 코드 → 예전 링크는 바로 막힘
 alter table settings add column if not exists sign_fixed_token text;
 update settings set sign_fixed_token = md5(random()::text || clock_timestamp()::text) where id = 1 and sign_fixed_token is null;
+
+
+-- 20261101000001_sale_contract.sql
+-- 매도 탭 '계약중' (사용자 2026-11-01): 계약금만 받은 차 — 매도 기록은 있지만 차는 재고 그대로, 실적·매출에서 빠진다.
+--   잔금까지 받으면 체크를 풀어(또는 [잔금 완료]) 그때 '매도' — 매도일은 잔금 완료일로
+alter table car_sales add column if not exists contract boolean not null default false;   -- 계약중
+alter table car_sales add column if not exists deposit_amount bigint not null default 0;  -- 계약금
+alter table car_sales add column if not exists deposit_at timestamptz;                    -- 계약금 받은 일시 (대충)
+alter table car_sales add column if not exists balance_due date;                          -- 잔금 예정일 (대충)
+
+create or replace function car_sales_status() returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if tg_op = 'DELETE' then
+    if exists (select 1 from settlements where car_id = old.car_id and finalized) then
+      raise exception '정산완료된 차량은 매도취소할 수 없습니다. 정산 확정을 먼저 해제하세요.';
+    end if;
+    update cars set status = '재고' where id = old.car_id;
+    delete from settlements where car_id = old.car_id;   -- 임시정산도 함께 정리 (똑순이는 남겨둠)
+    return old;
+  end if;
+  update cars set status = case when new.contract then '재고' else '매도' end where id = new.car_id;   -- 계약중이면 재고 그대로
+  return new;
+end $$;
+drop trigger if exists car_sales_status on car_sales;
+create trigger car_sales_status after insert or delete or update of contract on car_sales
+  for each row execute function car_sales_status();

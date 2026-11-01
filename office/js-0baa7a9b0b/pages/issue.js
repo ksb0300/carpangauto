@@ -38,7 +38,7 @@ export function IssuePage({ app, tab = "wait" }) {
   const load = () => run(async () => {
     const [docs, cars, sales, buyers] = await Promise.all([
       q(app.db.from("issue_docs").select("*").order("trade_date")), q(app.db.from("cars").select("*").is("deleted_at", null)),
-      q(app.db.from("car_sales").select("*")), q(app.db.from("car_buyers").select("*")),
+      q(app.db.from("car_sales").select("*")).then(r => r.filter(s => !s.contract)), q(app.db.from("car_buyers").select("*")),
     ]);
     setD({ docs, cars: Object.fromEntries(cars.map(c => [c.id, c])), sales, buyers });
   });

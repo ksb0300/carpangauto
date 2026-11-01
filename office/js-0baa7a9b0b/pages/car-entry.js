@@ -49,7 +49,7 @@ export function CarEntryPage({ app }) {
     let cars = await q(app.db.from("cars").select("id, plate, car_name, model_year, mileage, purchase_amount, dealer_id, purchase_date, acq_tax, acq_tax_unknown, status, created_at")
       .is("deleted_at", null).eq("status", "재고").order("purchase_date", { ascending: false }).order("created_at", { ascending: false }).order("id"));
     if (scope === "최근 매도") {
-      const sold = await q(app.db.from("car_sales").select("car_id").gte("sale_date", since));
+      const sold = (await q(app.db.from("car_sales").select("*").gte("sale_date", since))).filter(s => !s.contract);
       cars = sold.length ? await q(app.db.from("cars").select("id, plate, car_name, model_year, mileage, purchase_amount, dealer_id, purchase_date, acq_tax, acq_tax_unknown, status, created_at")
         .is("deleted_at", null).in("id", sold.map(s => s.car_id)).order("purchase_date", { ascending: false }).order("created_at", { ascending: false }).order("id")) : [];
     }
