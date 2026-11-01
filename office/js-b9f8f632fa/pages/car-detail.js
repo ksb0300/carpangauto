@@ -47,6 +47,7 @@ export function CarDetail({ app, id, tab }) {
         <h2>${car.plate} <span>${car.car_name}</span></h2>
         <div class="tags">
           <${Badge} tone=${car.status === "매도" ? "blue" : "gray"}>${car.status}<//>
+          ${sale?.contract && html`<${Badge} tone="amber">계약중 · 잔금 예정 ${sale.balance_due || "?"}<//>`}
           ${car.consign === "고객위탁" && html`<${Badge}>고객위탁<//>`}
           ${settlement && html`<${Badge} tone=${settlement.finalized ? "green" : "amber"}>${settlement.mode === "대표" ? (settlement.finalized ? "손익확정" : "임시") : settlement.finalized ? "정산완료" : "임시정산"}<//>`}
           <span class="muted">${car.code} · ${dealer ? dealer.name + (dealer.partner ? " (대표)" : "") : "담당 미지정"} · 매입 ${car.purchase_date}</span>

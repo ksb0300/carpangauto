@@ -7,7 +7,7 @@ export async function loadCarRows(db) {
     q(db.from("cars").select("*").is("deleted_at", null).order("purchase_date", { ascending: false })),
     q(db.from("car_costs").select("car_id,amount")),
     q(db.from("car_loans").select("car_id,amount,status")),
-    q(db.from("car_sales").select("car_id,sale_amount,sale_date")),
+    q(db.from("car_sales").select("*")).then(r => r.filter(s => !s.contract)),   // 계약중 빼고
     q(db.from("settlements").select("car_id,finalized,payout,settle_date")),
   ]);
   const by = (arr, f) => arr.reduce((m, r) => (m[r.car_id] = f(m[r.car_id], r), m), {});

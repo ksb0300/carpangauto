@@ -115,7 +115,7 @@ function Intro({ onDone }) {
     시작소리().catch(() => addEventListener("pointerdown", () => { if (document.querySelector(".intro")) 시작소리().catch(() => {}); }, { once: true }));
     const t = setTimeout(onDone, 2800); return () => clearTimeout(t);
   }, []);
-  return html`<div class="intro" onClick=${onDone}><img src="./icon-512.png" alt="TierONE" /></div>`;
+  return html`<div class="intro" onClick=${onDone}><img src="./intro-icon.png" alt="TierONE" /></div>`;
 }
 
 function Shell({ app, children, path }) {

@@ -3011,3 +3011,40 @@ end $$;
 drop trigger if exists car_sales_status on car_sales;
 create trigger car_sales_status after insert or delete or update of contract on car_sales
   for each row execute function car_sales_status();
+
+
+-- 20261101000002_sale_board_link.sql
+-- 매도 탭 ↔ 게시판 매도정보 글 (사용자 2026-11-01): 한쪽에서 잔금이 끝나면 다른 쪽도 끝난다.
+--   글이 '잔금 완료'(통장 확인·손으로·댓글) → 그 차의 계약중 매도를 매도로 확정 (매도일 = 잔금 완료일)
+--   매도 탭에서 계약중을 풀면(잔금 완료) → 이어진 매도정보 글도 '잔금 완료'
+--   글은 car_id 로, 없으면 차량번호로 잇는다 (웍스에서 옮긴 글·차 등록 전에 쓴 글)
+
+create or replace function _board_sale_done() returns trigger language plpgsql security definer set search_path = public as $$
+declare v_car uuid;
+begin
+  if new.done_at is null or old.done_at is not null then return new; end if;
+  v_car := coalesce(new.car_id, (select c.id from cars c where c.deleted_at is null and coalesce(c.plate, '') <> ''
+                                  and replace(c.plate, ' ', '') = replace(coalesce(new.form->>'plate', new.plate, ''), ' ', '')
+                                  order by c.purchase_date desc nulls last limit 1));
+  if v_car is not null then
+    update car_sales set contract = false, sale_date = (new.done_at at time zone 'Asia/Seoul')::date where car_id = v_car and contract;
+  end if;
+  return new;
+end $$;
+drop trigger if exists board_sale_done on board_posts;
+create trigger board_sale_done after update of done_at on board_posts
+  for each row when (new.category = '매도정보') execute function _board_sale_done();
+
+create or replace function _sale_board_done() returns trigger language plpgsql security definer set search_path = public as $$
+declare v_plate text;
+begin
+  if not (old.contract and not new.contract) then return new; end if;
+  select replace(coalesce(plate, ''), ' ', '') into v_plate from cars where id = new.car_id;
+  update board_posts set done_at = now(), done_by = '매도 확정'
+   where category = '매도정보' and done_at is null
+     and (car_id = new.car_id or (car_id is null and v_plate <> '' and replace(coalesce(form->>'plate', plate, ''), ' ', '') = v_plate));
+  return new;
+end $$;
+drop trigger if exists car_sales_board_done on car_sales;
+create trigger car_sales_board_done after update of contract on car_sales
+  for each row execute function _sale_board_done();
