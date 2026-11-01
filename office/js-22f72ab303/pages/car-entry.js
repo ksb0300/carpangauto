@@ -10,6 +10,7 @@ import { q } from "../db.js";
 import { 금액 } from "../forms.js";
 import { 취득세0원 } from "../calc.js";
 import { 비용구분 } from "./lists.js";
+import { CostImport } from "./cost-import-panel.js";
 
 const 비용칸 = [["도색광택", "도색광택"], ["수리비", "수리비"], ["광택/세차", "광택세차"], ["광고비", "광고비"], ["탁송유류", "탁송유류"], ["기타비용", "기타"]];
 const n = v => Math.round(Number(v) || 0);
@@ -20,7 +21,8 @@ const 여러개 = s => { const ts = String(s ?? "").split("+").map(x => x.trim()
 // 수리비는 합계 칸 오른쪽에 '+' 칸을 따로 (합계는 보기만, ▾ 로 내역)
 const 따로더하기 = new Set(["수리비"]);
 // 손으로 고칠 수 있는 줄: 직접 넣은 것 + 매입매출대장에서 옮겨 온 것('대장'). 시스템이 관리하는 자동 줄(취득세 등)은 그대로
-const 고칠수있음 = k => !k.auto_source || k.auto_source === "대장";
+//   업체 거래명세서 엑셀로 넣은 줄('엑셀:업체:작업일:항목')도 손으로 고칠 수 있다
+const 고칠수있음 = k => !k.auto_source || k.auto_source === "대장" || k.auto_source.startsWith("엑셀:");
 // 칸 너비·글씨 크기는 보는 사람이 조절 (사용자 2026-10-26) — 이 기기에만 기억 (localStorage)
 const 기본폭 = { date: 104, car: 220, year: 64, km: 90, price: 120, tax: 110, lender: 140, loan: 140, cost: 120 };
 const 기억 = { get: (k, d) => { try { const v = JSON.parse(localStorage.getItem("entry:" + k)); return v ?? d; } catch { return d; } },
@@ -32,6 +34,7 @@ export function CarEntryPage({ app }) {
   const [scope, setScope] = useState("재고");
   const [text, setText] = useState("");
   const [open, setOpen] = useState(null);       // ▾ 내역 { car, item }
+  const [엑셀, set엑셀] = useState(false);        // 업체 거래명세서 엑셀 올리기 (사용자 2026-11-01)
   const [고른, set고른] = useState({});           // 재고대출 없는 차: 금융사만 먼저 고른 것 { 차id: 금융사id } — 대출금을 치면 등록
   const [폭, set폭] = useState(() => 기억.get("widths", {}));
   const [글씨, set글씨] = useState(() => 기억.get("font", 16));
@@ -114,10 +117,12 @@ export function CarEntryPage({ app }) {
     ...비용칸.flatMap(([item, l]) => 따로더하기.has(item) ? [["c:" + item, l], ["p:" + item, "+ " + l]] : [["c:" + item, l]])];
   const 너비 = k => 폭[k] || 기본폭[k] || 기본폭.cost;
   return html`<div class="entry-page"><div class="bar"><h2>차량입력</h2><span class="muted small">칸에 금액 → Enter (아래 차로) · '30' = 30만원 · 비용 칸은 누르면 금액들 — 고치거나 지우고 Enter · 머리줄 오른쪽 끝을 끌면 너비 조절</span><span class="grow"></span>
+      <button class="btn sm" onClick=${() => set엑셀(x => !x)}>📥 엑셀 올리기</button>
       <span class="entry-font" title="글씨 크기"><button class="btn sm" onClick=${() => 글씨바꾸기(-1)}>가−</button><b>${글씨}</b><button class="btn sm" onClick=${() => 글씨바꾸기(1)}>가+</button></span>
       ${Object.keys(폭).length > 0 && html`<button class="btn sm ghost" onClick=${() => { set폭({}); 기억.set("widths", {}); }}>너비 처음대로</button>`}
       <input class="search" placeholder="차량번호·차명" value=${text} onInput=${e => setText(e.target.value)} style="max-width:200px" />
       <${Seg} value=${scope} onChange=${setScope} options=${["재고", "최근 매도"]} /></div>
+    ${엑셀 && html`<${CostImport} app=${app} onClose=${() => set엑셀(false)} onDone=${load} />`}
     ${!rows.length ? html`<${Empty}>${scope === "재고" ? "재고 차가 없습니다." : "최근 30일 매도 차가 없습니다."}<//>` : html`
     <div class="table-wrap entry-wrap"><table class="grid entry" style=${`--ef:${글씨}px;width:${칸들.reduce((t, [k]) => t + 너비(k), 0)}px`}>
       <colgroup>${칸들.map(([k]) => html`<col key=${k} style=${`width:${너비(k)}px`} />`)}</colgroup>
