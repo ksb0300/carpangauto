@@ -1,8 +1,9 @@
 {
+  "id": "/quote/",
   "name": "TierONE 차량 견적서",
   "short_name": "티어원견적서",
   "description": "TierONE 차량 견적 및 할부/리스 계산기",
-  "start_url": "./",
+  "start_url": "/quote/",
   "display": "standalone",
   "orientation": "any",
   "background_color": "#2a1d45",
@@ -15,5 +16,5 @@
       "purpose": "any maskable"
     }
   ],
-  "scope": "./"
+  "scope": "/quote/"
 }
