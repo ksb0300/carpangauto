@@ -3201,3 +3201,8 @@ begin
 end $$;
 revoke execute on function sale_unlink_deposit(uuid) from public, anon;
 grant execute on function sale_unlink_deposit(uuid) to authenticated;
+
+
+-- 20261103000001_recon_none.sql
+-- '상품화 없음' (사용자 2026-11-03): 손볼 게 없어 상품화비용이 0원인 차 — 차량입력·리스트의 '작성필요'를 끈다
+alter table cars add column if not exists recon_none boolean not null default false;

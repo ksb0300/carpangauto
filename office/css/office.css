@@ -757,6 +757,7 @@ svg.drawing .pnl { pointer-events: none; }
 .entry .sumcell { position: relative; } .entry .sumcell .cell { padding-right: 20px; }
 .entry .sumtext { display: block; padding: 9px 22px 9px 10px; text-align: right; cursor: pointer; font-variant-numeric: tabular-nums; }
 .entry .cell::placeholder { color: #9aa0aa; }
+.entry .mini.none { color: #b45309; font-weight: 600; } .entry .sumcell:has(.mini.none) .cell { padding-right: 36px; }        /* 작성필요 칸의 '없음' (상품화 없음으로 끄기) */
 .entry .mini { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); border: 0; background: none; color: var(--sub); cursor: pointer; font-size: 11px; padding: 2px; }
 .modal-back { position: fixed; inset: 0; z-index: 45; background: rgba(15, 17, 21, .45); display: flex; align-items: center; justify-content: center; padding: 16px; }
 .modal-back .modal { width: min(520px, 100%); max-height: 80vh; overflow: auto; margin: 0; }
