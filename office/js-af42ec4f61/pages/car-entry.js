@@ -117,7 +117,7 @@ export function CarEntryPage({ app }) {
     ...비용칸.flatMap(([item, l]) => 따로더하기.has(item) ? [["c:" + item, l], ["p:" + item, "+ " + l]] : [["c:" + item, l]])];
   const 너비 = k => 폭[k] || 기본폭[k] || 기본폭.cost;
   return html`<div class="entry-page"><div class="bar"><h2>차량입력</h2><span class="muted small">칸에 금액 → Enter (아래 차로) · '30' = 30만원 · 비용 칸은 누르면 금액들 — 고치거나 지우고 Enter · 머리줄 오른쪽 끝을 끌면 너비 조절</span><span class="grow"></span>
-      <button class="btn sm" onClick=${() => set엑셀(x => !x)}>📥 엑셀 올리기</button>
+      <button class="btn sm" onClick=${() => set엑셀(x => !x)}>📥 명세서 올리기</button>
       <span class="entry-font" title="글씨 크기"><button class="btn sm" onClick=${() => 글씨바꾸기(-1)}>가−</button><b>${글씨}</b><button class="btn sm" onClick=${() => 글씨바꾸기(1)}>가+</button></span>
       ${Object.keys(폭).length > 0 && html`<button class="btn sm ghost" onClick=${() => { set폭({}); 기억.set("widths", {}); }}>너비 처음대로</button>`}
       <input class="search" placeholder="차량번호·차명" value=${text} onInput=${e => setText(e.target.value)} style="max-width:200px" />
