@@ -91,7 +91,6 @@ function List({ app }) {
   const [d, setD] = useState(null);
   const [s, setS] = useState("");
   const [more, setMore] = useState(1);
-  const [st, setSt] = useState("대기");          // 송금요청: 대기 / 완료 / 전체
   const load = () => run(async () => {
     const [p, c, r, f, star, prefs] = await Promise.all([
       전부(() => app.db.from("board_posts").select("id, category, title, body, author_name, created_by, created_at, pinned, plate, car_id, done_at, form, publish_at, ack_at").order("created_at", { ascending: false })),
@@ -114,14 +113,14 @@ function List({ app }) {
     app.db.rpc("board_match_sales").then(({ data }) => { if (data?.length) load(); });
   }, []);
   const 게시판 = !!이름[v];
-  const 송금 = v === "송금요청" || v === "매도정보";       // 대기/완료 나눠 보는 게시판
+  const 송금 = v === "송금요청" || v === "매도정보";       // 대기/완료가 있는 게시판 — 나누지 않고 전체를 보인다
   const 알림키 = "board:" + v, 알림켜짐 = !d?.off.has(알림키);
   const 알림토글 = () => run(async () => {
     await q(app.db.from("push_prefs").upsert({ key: 알림키, enabled: !알림켜짐 }, { onConflict: "user_id,key" }));
     load();
   }, 알림켜짐 ? `${이름[v]} 새글 알림을 껐습니다` : `${이름[v]} 새글 알림을 켰습니다`);
   const shown = (d?.posts || []).filter(p => (v === "최신" || (v === "필독" ? p.pinned : v === "중요" ? d.stars.has(p.id) : v === "내글" ? p.created_by === me : p.category === v))
-    && 검색맞음(s, p.title, p.plate, p.author_name, p.body) && (!송금 || st === "전체" || (st === "대기" ? !p.done_at : !!p.done_at)))
+    && 검색맞음(s, p.title, p.plate, p.author_name, p.body))
     .sort((a, b) => (게시판 ? (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) : 0));
   const page = shown.slice(0, PAGE * more);
   const 대기 = (d?.posts || []).filter(p => p.category === v && !p.done_at).length;
@@ -132,7 +131,7 @@ function List({ app }) {
     <section>
       <div class="bd-head"><h2>${제목}</h2><span class="grow"></span>
         ${게시판 && d && html`<span class=${"toggle" + (알림켜짐 ? " on" : "")} onClick=${알림토글} title="이 게시판에 새 글이 오면 폰·PC 알림">새글 알림 <i></i></span>`}</div>
-      ${송금 && html`<div style="margin:0 0 8px"><${Seg} value=${st} onChange=${x => { setSt(x); setMore(1); }} options=${[["대기", v === "매도정보" ? `잔금 남음 ${대기}` : `남은 요청 ${대기}`], ["완료", "완료"], ["전체", "전체"]]} /></div>`}
+      ${송금 && 대기 > 0 && html`<p class="muted small" style="margin:0 0 8px">⏳ ${v === "매도정보" ? "잔금 남은 글" : "남은 요청"} ${대기}개</p>`}
       <input class="search" style="width:100%;margin-bottom:10px" placeholder="차량번호·제목·작성자·내용 검색" value=${s} onInput=${e => { setS(e.target.value); setMore(1); }} />
       ${!d ? html`<${Loading} />` : !shown.length ? html`<${Empty}>${s ? "찾는 글이 없습니다." : v === "중요" ? "☆ 를 누른 글이 여기에 모입니다." : "글이 없습니다."}<//>` : html`<div class="bd-rows">
         ${page.map(p => { const 새 = d.새(p); return html`<div key=${p.id} class=${"bd-row" + (새 ? " new" : "") + (p.pinned && 게시판 ? " pin" : "")} onClick=${() => go("/board/" + p.id)}>
