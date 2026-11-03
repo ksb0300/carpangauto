@@ -1,5 +1,5 @@
 // 통장 입출금: 계좌 등록, 거래내역 불러오기(팝빌 자동조회 또는 은행 엑셀), 입출금 ↔ 차량·딜러 매칭
-import { html, useState, useEffect, useMemo, Field, Select, Seg, Loading, Empty, run, won, toast, ask, Period, initPeriod, W, downloadCsv, CarSearch, 간략차명 as 간략 } from "../ui.js";
+import { html, useState, useEffect, useMemo, Field, Select, Seg, Loading, Empty, run, won, today, toast, ask, Period, initPeriod, W, downloadCsv, CarSearch, 간략차명 as 간략 } from "../ui.js";
 import { q } from "../db.js";
 import { popbill, PB_NOTE } from "../pb.js";
 import { loadAll } from "./report-data.js";
@@ -47,6 +47,8 @@ export function BankPage({ app }) {
   const [data, setData] = useState(null);
   const [period, setPeriod] = useState(initPeriod("월"));
   const [only, setOnly] = useState("미매칭");
+  const [찾기, set찾기] = useState("");           // 검색 (사용자 2026-11-01) — 이름·적요·메모·차번호·금액(콤마 없이 190000 도)
+  const [빠른, set빠른] = useState(null);         // 은행 앱처럼 1주일·1개월·3개월·6개월·1년 (오늘까지)
   const [adding, setAdding] = useState(false);
   const [busy, setBusy] = useState(false);
   const [pick, setPick] = useState(null);        // 수동 매칭 중인 거래 id
@@ -60,9 +62,14 @@ export function BankPage({ app }) {
     if (!acc || !a.some(x => x.id === acc)) setAcc((a.find(x => x.purpose === "차량") || a[0])?.id || null);
   });
   const loadTx = () => run(async () => {
-    let qq = app.db.from("bank_txs").select("*").gte("tx_date", period.from).lte("tx_date", period.to);
-    if (acc) qq = qq.eq("account_id", acc);
-    const t = await q(qq.order("tx_date", { ascending: false }).order("tx_time", { ascending: false }));
+    // 기간이 길면 1000건이 넘을 수 있어 나눠 읽는다
+    const t = [];
+    for (let i = 0; ; i += 1000) {
+      let qq = app.db.from("bank_txs").select("*").gte("tx_date", period.from).lte("tx_date", period.to);
+      if (acc) qq = qq.eq("account_id", acc);
+      const r = await q(qq.order("tx_date", { ascending: false }).order("tx_time", { ascending: false }).order("id").range(i, i + 999));
+      t.push(...r); if (r.length < 1000) break;
+    }
     setTxs(t);
     const ids = t.filter(x => x.source === "문자").map(x => x.id);
     if (ids.length) { const m = await q(app.db.from("bank_msgs").select("tx_id,text").in("tx_id", ids)); setRaw(Object.fromEntries(m.map(x => [x.tx_id, x.text]))); }
@@ -72,7 +79,24 @@ export function BankPage({ app }) {
 
   const car = useMemo(() => Object.fromEntries((data?.cars || []).map(c => [c.id, c])), [data]);
   const dealer = Object.fromEntries(app.dealers.map(d => [d.id, d]));
-  const shown = (txs || []).filter(t => only === "전체" || (only === "미매칭" ? !t.match_kind : only === "입금" ? t.deposit > 0 : t.withdraw > 0));
+  const 찾을말 = 찾기.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const 찾아짐 = t => {
+    if (!찾을말.length) return true;
+    const c = car[t.car_id], 글 = [t.remark, t.counterparty, t.memo, t.match_kind, raw[t.id], c?.plate, c?.plate?.replace(/\s/g, ""), c?.car_name, dealer[t.dealer_id]?.name, t.tx_date]
+      .filter(Boolean).join(" ").toLowerCase();
+    const 금액들 = [t.deposit, t.withdraw, t.balance].filter(v => Number(v) > 0).map(v => String(Number(v)));
+    // 낱말마다 다 맞아야 — 숫자(콤마·'원' 빼고)는 금액에서도 찾는다: '190,000' '190000' '19만'
+    return 찾을말.every(w => {
+      const 수 = w.replace(/[,원]/g, ""), 만 = /^\d+(\.\d+)?만$/.test(수) ? String(Math.round(parseFloat(수) * 10000)) : null;
+      return 글.includes(w) || (/^\d+$/.test(수) && 금액들.some(v => v.includes(수))) || (만 && 금액들.includes(만));
+    });
+  };
+  const shown = (txs || []).filter(t => (only === "전체" || (only === "미매칭" ? !t.match_kind : only === "입금" ? t.deposit > 0 : t.withdraw > 0)) && 찾아짐(t));
+  const 빠른기간 = k => {
+    const 월 = { "1주일": 0, "1개월": 1, "3개월": 3, "6개월": 6, "1년": 12 }[k], t = today(), d = new Date(t + "T00:00:00Z");
+    if (k === "1주일") d.setUTCDate(d.getUTCDate() - 6); else { d.setUTCMonth(d.getUTCMonth() - 월); d.setUTCDate(d.getUTCDate() + 1); }
+    set빠른(k); setPeriod(p => ({ ...p, mode: "직접", from: d.toISOString().slice(0, 10), to: t }));
+  };
   // 내 통장끼리 이체를 찾으려면 같은 기간 모든 통장 거래가 필요
   const [allTxs, setAllTxs] = useState([]);
   useEffect(() => { run(async () => setAllTxs(await q(app.db.from("bank_txs").select("id,account_id,tx_date,tx_time,deposit,withdraw").gte("tx_date", period.from).lte("tx_date", period.to)))); }, [period.from, period.to, txs]);
@@ -202,8 +226,11 @@ export function BankPage({ app }) {
         엑셀은 인터넷뱅킹 '거래내역 조회 → 엑셀 저장' 파일을 그대로 올리면 됩니다(국민·신한·우리·하나·농협 등 머리글 자동 인식). 자동으로 못 받은 거래를 채울 때 쓰세요.</p>
     </div>`}
     <div class="bar">
-      <${Period} value=${period} onChange=${setPeriod} />
+      <${Seg} value=${빠른} onChange=${빠른기간} options=${["1주일", "1개월", "3개월", "6개월", "1년"]} />
+      <${Period} value=${period} onChange=${p => { set빠른(null); setPeriod(p); }} />
       <${Seg} value=${only} onChange=${setOnly} options=${["전체", "미매칭", "입금", "출금"]} />
+      <input class="search" placeholder="검색 — 이름·적요·차번호·금액(190000)" value=${찾기} style="max-width:260px"
+        onInput=${e => { const v = e.target.value; if (v.trim() && !찾기.trim() && only === "미매칭") setOnly("전체"); set찾기(v); }} />
       <span class="grow"></span>
       <button class="btn primary" disabled=${busy || !data} onClick=${autoAll} title="같은 내용을 2번 이상 같은 종류로 연결한 거래만">배운 대로 한꺼번에${data && txs ? ` (${배운대로().length})` : ""}</button>
       <button class="btn" disabled=${!shown.length} onClick=${() => downloadCsv("통장입출금", [["일자", "시간", "입금", "출금", "잔액", "적요", "매칭", "차량", "딜러", "메모"],
@@ -214,7 +241,7 @@ export function BankPage({ app }) {
       <div class="stat"><span>출금</span><b class="blue">${sum("withdraw") ? "-" : ""}${won(sum("withdraw"))}</b><small>${shown.filter(t => t.withdraw > 0).length}건</small></div>
       <div class=${"stat" + ((txs || []).some(t => !t.match_kind) ? " warn" : "")}><span>미매칭</span><b>${(txs || []).filter(t => !t.match_kind).length}</b><small>${curAcc ? curAcc.bank_name : "전체 계좌"}</small></div>
     </div>
-    ${!txs ? html`<${Loading} />` : !shown.length ? html`<${Empty}>이 기간 거래가 없습니다.<//>` : html`
+    ${!txs ? html`<${Loading} />` : !shown.length ? html`<${Empty}>${찾을말.length ? `이 기간에 '${찾기.trim()}' 거래가 없습니다 — 기간을 늘려 보세요 (1년 등)` : "이 기간 거래가 없습니다."}<//>` : html`
     <div class="table-wrap"><table class="grid banktx">
       <colgroup><col style="width:150px" /><col style="width:56px" /><col style="width:130px" /><col style="width:140px" /><col /><col style="width:300px" /><col style="width:170px" /></colgroup>
       <thead><tr><th>일자</th><th>구분</th><th class="r">금액</th><th class="r">잔액</th><th>내용 (보낸 사람·받는 곳)</th><th>연결</th><th></th></tr></thead>
