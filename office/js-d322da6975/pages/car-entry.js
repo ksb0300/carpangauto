@@ -49,11 +49,11 @@ export function CarEntryPage({ app }) {
   };
   const load = () => run(async () => {
     const since = new Date(Date.now() - 30 * 86400e3).toISOString().slice(0, 10);
-    let cars = await q(app.db.from("cars").select("id, plate, car_name, model_year, mileage, purchase_amount, dealer_id, purchase_date, acq_tax, acq_tax_unknown, status, created_at")
+    let cars = await q(app.db.from("cars").select("id, plate, car_name, model_year, mileage, purchase_amount, dealer_id, purchase_date, acq_tax, acq_tax_unknown, recon_none, status, created_at")
       .is("deleted_at", null).eq("status", "재고").order("purchase_date", { ascending: false }).order("created_at", { ascending: false }).order("id"));
     if (scope === "최근 매도") {
       const sold = (await q(app.db.from("car_sales").select("*").gte("sale_date", since))).filter(s => !s.contract);
-      cars = sold.length ? await q(app.db.from("cars").select("id, plate, car_name, model_year, mileage, purchase_amount, dealer_id, purchase_date, acq_tax, acq_tax_unknown, status, created_at")
+      cars = sold.length ? await q(app.db.from("cars").select("id, plate, car_name, model_year, mileage, purchase_amount, dealer_id, purchase_date, acq_tax, acq_tax_unknown, recon_none, status, created_at")
         .is("deleted_at", null).in("id", sold.map(s => s.car_id)).order("purchase_date", { ascending: false }).order("created_at", { ascending: false }).order("id")) : [];
     }
     const ids = cars.map(c => c.id);
@@ -73,7 +73,9 @@ export function CarEntryPage({ app }) {
   const 합 = (car, item) => d.costs.filter(k => k.car_id === car && k.item === item).reduce((t, k) => t + n(k.amount), 0);
   const 대출 = car => d.loans.find(l => l.car_id === car) || null;
   // '작성필요'는 리스트와 같은 뜻으로만: 상품화비용(수리·도색·세차·탁송 등)이 하나도 없는 차의 도색광택 칸, 취득세 모르는 차
-  const 상품화없음 = car => !d.costs.some(k => k.car_id === car && 비용구분(k.item) === "상품화" && n(k.amount));
+  const 상품화0 = car => !d.costs.some(k => k.car_id === car && 비용구분(k.item) === "상품화" && n(k.amount));
+  const 상품화없음 = car => 상품화0(car) && !d.cars.find(c => c.id === car)?.recon_none;   // '상품화 없음'으로 끈 차는 작성필요 아님 (사용자 2026-11-03)
+  const 없음표시 = (c, v) => run(async () => { await q(app.db.from("cars").update({ recon_none: v }).eq("id", c.id)); load(); }, v ? `${c.plate} 상품화 없음` : `${c.plate} 상품화 없음 풀기`);
   const lenders = (app.lenders || []).filter(l => l.active !== false);
   const partner = c => !!app.dealers.find(x => x.id === c.dealer_id)?.partner;
 
@@ -138,8 +140,11 @@ export function CarEntryPage({ app }) {
           <option value="">${l ? "-" : "없음"}</option>${lenders.map(x => html`<option value=${x.id}>${x.name}</option>`)}</select></td>
         <td><${칸} row=${i} col=${1} value=${n(l?.amount)} onSave=${v => l ? 대출저장(c, { amount: v }) : 고른[c.id] ? 대출저장(c, { lender_id: 고른[c.id], amount: v }) : toast("금융사를 먼저 고르세요", "err")} /></td>
         ${비용칸.map(([item], j) => { const s = 합(c.id, item);
-          const 내역 = s > 0 && html`<button class="mini" title="내역" onClick=${() => setOpen({ car: c, item })}>▾</button>`;
-          const 수식칸 = html`<td class="sumcell"><${칸} row=${i} col=${2 + j * 2} value=${s} 식=${식(c.id, item)} 빈칸=${item === "도색광택" && 상품화없음(c.id)} onSave=${v => 비용맞추기(c, item, v)} />${내역}</td>`;
+          const 내역 = s > 0 ? html`<button class="mini" title="내역" onClick=${() => setOpen({ car: c, item })}>▾</button>`
+            : item === "도색광택" && 상품화0(c.id) ? (c.recon_none
+              ? html`<button class="mini" title="상품화 없음 표시 풀기" onClick=${() => 없음표시(c, false)}>↺</button>`
+              : html`<button class="mini none" title="손볼 게 없는 차 — 작성필요를 끕니다" onClick=${() => 없음표시(c, true)}>없음</button>`) : "";
+          const 수식칸 = html`<td class="sumcell"><${칸} row=${i} col=${2 + j * 2} value=${s} 식=${식(c.id, item)} 빈칸=${item === "도색광택" && 상품화없음(c.id)} placeholder=${item === "도색광택" && c.recon_none && 상품화0(c.id) ? "상품화 없음" : ""} onSave=${v => 비용맞추기(c, item, v)} />${내역}</td>`;
           return 따로더하기.has(item)
             ? html`${수식칸}<td><${칸} row=${i} col=${3 + j * 2} value=${0} 더하기 placeholder="+ 금액" onSave=${v => 비용더하기(c, item, v)} /></td>`
             : 수식칸; })}

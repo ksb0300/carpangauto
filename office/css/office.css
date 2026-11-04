@@ -776,3 +776,4 @@ svg.drawing .pnl { pointer-events: none; }
 .itempick-pop { max-height: 350px; overflow: auto; min-width: 210px; }
 .itempick-pop .pr { cursor: pointer; padding: 5px 6px; border-radius: 6px; } .itempick-pop .pr:hover { background: #f3f4f6; } .itempick-pop .pr.on { font-weight: 700; color: #2563eb; }
 .itempick-pop .x { color: #9aa0aa; font-size: 12px; padding: 0 4px; } .itempick-pop .x:hover { color: #dc2626; }
+.tabs .tab-bal { font-weight: 600; margin-left: 4px; color: var(--ink); font-variant-numeric: tabular-nums; }      /* 자금관리 탭 잔액 */
