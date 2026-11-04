@@ -55,7 +55,7 @@ export function CostImport({ app, onClose, onDone }) {
   const 바꿀차 = new Set(고른.filter(r => r.replace.length).map(r => r.car.id));
   const 확정차 = new Set(고른.filter(r => r.settled).map(r => r.car.id));
 
-  const 넣기 = () => ask(`${고른.reduce((t, r) => t + r.lines.length, 0)}줄 (${won(넣을합)}원, 부가세 포함)을 넣을까요?${바꿀차.size ? `\n대장에서 옮긴 도색광택 ${바꿀차.size}대는 엑셀 내용으로 바뀝니다.` : ""}${확정차.size ? `\n손익확정된 차 ${확정차.size}대는 차량 손익도 같이 고칩니다.` : ""}`) && (async () => {
+  const 넣기 = () => ask(`${고른.reduce((t, r) => t + r.lines.length, 0)}줄 (${won(넣을합)}원, 부가세 포함)을 넣을까요?${바꿀차.size ? `\n이미 있던 도색광택(대장·직접 넣은 것) ${바꿀차.size}대는 명세서 내용으로 바뀝니다.` : ""}${확정차.size ? `\n손익확정된 차 ${확정차.size}대는 차량 손익도 같이 고칩니다.` : ""}`) && (async () => {
     setBusy(true);
     const ok = await run(async () => {
       const 차별 = {};                       // car_id → { add, removed }
@@ -102,10 +102,10 @@ export function CostImport({ app, onClose, onDone }) {
         <td class="small">${r.sheet}</td><td>${월일(r.date)}</td><td><b>${r.plate}</b></td><td class="small">${r.model}</td>
         <td class="small">${r.car ? html`<a href=${"#/car/" + r.car.id} target="_blank">${r.car.car_name || r.car.plate}</a> <span class="muted">${r.car.purchase_date?.slice(2) || ""} 매입</span>` : html`<span class="red">없음</span>`}</td>
         ${항목들.map(k => html`<td class="r">${r.amounts[k] ? won(r.amounts[k]) : ""}</td>`)}
-        <td class="r"><b>${r.add ? won(r.add) : ""}</b>${r.replaced ? html`<br /><small class="muted">대장 ${won(r.replaced)} → 바꿈</small>` : ""}</td>
+        <td class="r"><b>${r.add ? won(r.add) : ""}</b>${r.replaced ? html`<br /><small class="muted">기존 ${won(r.replaced)} → 바꿈</small>` : ""}</td>
         <td class="small"><b class=${상태색(r)}>${r.status}</b>${r.settled ? html` <span class="muted">· 정산확정(손익 같이)</span>` : ""}${r.warn ? html`<br /><span class=${r.check ? "amber" : "red"}>${r.warn}</span>` : ""}${r.memo ? html`<br /><span class="muted">${r.memo}</span>` : ""}</td>
       </tr>`)}</tbody></table></div>
-      <div class="bar" style="margin-top:10px"><span>고른 ${고른.length}건 · <b>${won(넣을합)}원</b> (부가세 포함)${바꿀차.size ? ` · 대장 바꿈 ${바꿀차.size}대` : ""}${확정차.size ? ` · 손익확정 차 ${확정차.size}대 손익 같이 고침` : ""}</span>
+      <div class="bar" style="margin-top:10px"><span>고른 ${고른.length}건 · <b>${won(넣을합)}원</b> (부가세 포함)${바꿀차.size ? ` · 기존 줄 바꿈 ${바꿀차.size}대` : ""}${확정차.size ? ` · 손익확정 차 ${확정차.size}대 손익 같이 고침` : ""}</span>
         <span class="grow"></span><button class="btn primary" disabled=${busy || !고른.length} onClick=${넣기}>${busy ? "넣는 중…" : "넣기"}</button></div>`}
   </div>`;
 }

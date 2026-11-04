@@ -50,8 +50,8 @@ export function 계획(items, { cars, costs, settlements, sales = [], vendor = "
   };
   const rows = items.map(it => ({ ...it, car: 차찾기(it.plate, it.date) }));
   // 차마다: 대장 도색광택 합이 이 파일 합계와 같으면 바꾼다
-  const 차합 = {};
-  for (const r of rows) if (r.car) 차합[r.car.id] = (차합[r.car.id] || 0) + r.sum;
+  const 차합 = {}, 칸합 = {};          // 항목 합 / 명세서 '합계' 칸 합 (사무장이 합계 칸 금액을 그대로 넣어 둔 경우도 같은 것으로)
+  for (const r of rows) if (r.car) { 차합[r.car.id] = (차합[r.car.id] || 0) + r.sum; 칸합[r.car.id] = (칸합[r.car.id] || 0) + r.total; }
   return rows.map(r => {
     const lines = 항목들.filter(k => r.amounts[k] > 0).map(k => ({ kind: k, supply: r.amounts[k], amount: 부가세더함(r.amounts[k]), key: `엑셀:${vendor}:${r.date}:${k}` }));
     const base = { ...r, lines, add: lines.reduce((t, l) => t + l.amount, 0), replace: [], replaced: 0, check: false, status: "", warn: "" };
@@ -64,7 +64,7 @@ export function 계획(items, { cars, costs, settlements, sales = [], vendor = "
     const s = settlements.find(x => x.car_id === r.car.id);
     if (s?.finalized && s.mode !== "대표") return { ...base, status: "딜러 정산 확정", warn: "확정을 풀고 넣어 주세요" };
     // 대장에서 옮긴 줄·사무장이 직접 넣은 줄이 명세서 합계(부가세 별도든 포함이든)와 같으면 명세서 내용으로 바꾼다 (사용자 2026-11-03)
-    const T = 차합[r.car.id], 같음 = v => v > 0 && (v === T || v === 부가세더함(T));
+    const T = 차합[r.car.id], Tc = 칸합[r.car.id], 같음 = v => v > 0 && [T, 부가세더함(T), Tc, 부가세더함(Tc)].includes(v);
     const 대장 = mine.filter(k => k.auto_source === "대장"), 대장합 = 대장.reduce((t, k) => t + Number(k.amount), 0);
     const 직접 = mine.filter(k => !k.auto_source), 직접합 = 직접.reduce((t, k) => t + Number(k.amount), 0);
     const out = { ...base, lines: 새줄, add: 새줄.reduce((t, l) => t + l.amount, 0), status: "새로", check: true };

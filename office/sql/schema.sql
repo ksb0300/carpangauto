@@ -3206,3 +3206,98 @@ grant execute on function sale_unlink_deposit(uuid) to authenticated;
 -- 20261103000001_recon_none.sql
 -- '상품화 없음' (사용자 2026-11-03): 손볼 게 없어 상품화비용이 0원인 차 — 차량입력·리스트의 '작성필요'를 끈다
 alter table cars add column if not exists recon_none boolean not null default false;
+
+
+-- 20261103000002_paid_car_invoice_route.sql
+-- 차대금 → 재고 자동 등록 증빙 (사용자 2026-11-03 "헤딜 엔카여도 법인이면 계산서 받아야지"):
+--   헤이딜러·엔카라도 받는 쪽이 법인·사업자이고 계산서 '발행 가능'이면 세금계산서. 발행 안 됨·확인 필요면 예전처럼 의제매입(개인 매입)
+CREATE OR REPLACE FUNCTION public._board_paid_car()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare f jsonb := new.form; amt bigint; c record; uid uuid; did uuid; route text; ev text; st text; nm text; d date; cid uuid; tx record;
+begin
+  if new.category <> '송금요청' or coalesce(f->>'kind', '') <> '매입대금' then return new; end if;
+  if coalesce(f->>'amount', '') !~ '^[0-9]+$' or coalesce(new.plate, f->>'plate', '') = '' then return new; end if;
+  amt := (f->>'amount')::bigint;
+
+  -- 완료 취소
+  if old.done_at is not null and new.done_at is null then
+    select * into c from cars where id = new.car_id and auto_post_id is not null and deleted_at is null and status = '재고';
+    if c.id is not null then
+      if c.purchase_amount > amt then update cars set purchase_amount = purchase_amount - amt where id = c.id;
+      else update cars set deleted_at = now() where id = c.id; new.car_id := null; end if;
+    end if;
+    return new;
+  end if;
+  if not (old.done_at is null and new.done_at is not null) then return new; end if;
+
+  d := (new.done_at at time zone 'Asia/Seoul')::date;
+  select * into c from cars x where x.deleted_at is null and replace(x.plate, ' ', '') = replace(coalesce(new.plate, f->>'plate'), ' ', '')
+    and (x.status = '재고' or x.purchase_date >= (new.created_at at time zone 'Asia/Seoul')::date - 30)
+   order by (x.status = '재고') desc, x.purchase_date desc nulls last limit 1;
+  if c.id is not null then
+    if c.auto_post_id is not null and c.auto_post_id <> new.id and new.car_id is distinct from c.id and c.status = '재고' then
+      update cars set purchase_amount = purchase_amount + amt where id = c.id;   -- 나눠 보낸 차대금
+    end if;
+    cid := c.id;
+  else
+    uid := coalesce(new.created_by, (select p.user_id from profiles p where p.name = new.author_name and p.role in ('admin', 'staff') limit 1));
+    did := (select p.dealer_id from profiles p where p.user_id = uid);
+    route := f->>'route';
+    if coalesce(f->>'payee_type', '개인') = '개인' then ev := '의제매입'; st := '개인';
+    elsif f->>'invoice' = '발행 가능' then ev := '세금계산서'; st := case when f->>'payee_type' = '법인' then '법인' else '개인' end;
+    else ev := '의제매입'; st := case when route in ('헤이딜러', '엔카') then '개인' when f->>'payee_type' = '법인' then '법인' else '개인' end; end if;
+    nm := coalesce(substring(coalesce(f->>'customer', '') from '^\s*([가-힣]{2,5})'),
+                   case when route is distinct from '헤이딜러' and route is distinct from '엔카' then nullif(f->>'payee', '') end);
+    select * into tx from 취득세규칙(amt);
+    insert into cars (dealer_id, car_name, plate, plate_before, purchase_date, purchase_amount, purchase_fee, acq_tax, acq_tax_unknown,
+                      evidence, seller_type, seller_name, purchase_channel, memo, created_by, auto_post_id)
+    values (did, coalesce(nullif(f->>'car_name', ''), new.title), replace(coalesce(new.plate, f->>'plate'), ' ', ''), replace(coalesce(new.plate, f->>'plate'), ' ', ''),
+            d, amt, 0, tx.acq_tax, tx.acq_tax_unknown, ev, st, nm, case when route = '엔카' then '엔카' end,
+            concat_ws(' · ', '게시판 송금요청에서 자동 등록', case when route = '헤이딜러' then '헤이딜러 제로/셀프 고르기' end,
+                      case when f->>'invoice' = '확인 필요' then '계산서 발행 확인 필요' end),
+            uid, new.id)
+    returning id into cid;
+    insert into board_comments (post_id, body, author_name)
+    values (new.id, format('🚗 재고에 올렸습니다 — %s 차 · 매입가 %s원 · %s · %s',
+                           coalesce((select name from dealers where id = did), '담당 없음'), to_char(amt, 'FM999,999,999,999'), ev,
+                           case when tx.acq_tax_unknown then '취득세는 사무장 확인 필요' else '취득세 ' || to_char(tx.acq_tax, 'FM999,999,990') || '원' end),
+            '업무관리');
+  end if;
+  new.car_id := cid;
+  update bank_txs set car_id = cid where post_id = new.id and car_id is null;
+  return new;
+end $function$
+;
+
+
+-- 20261104000001_cost_items.sql
+-- 상품화비용 항목 목록을 사무실이 고친다 (사용자 2026-11-04): ✕로 빼고, 직접 입력한 새 항목은 목록에 더한다.
+--   목록은 settings.cost_items. 고치기는 환경설정 권한이 없는 사무장도 해야 해서 전용 함수로 (is_office)
+--   목록에서 빼도 이미 그 이름으로 넣은 비용 줄은 그대로다
+alter table settings add column if not exists cost_items text[];
+update settings set cost_items = array['상사매입비', '취득세', '매입탁송비', '성능점검비', '의무보험료', '주유대', '판금도장비',
+  '기능수리/상품화', '광택/세차', '광고비', '경매장수수료', '통행료', '이자비용', '기타비용'] where id = 1 and cost_items is null;
+
+create or replace function cost_item_add(p_name text) returns text[] language plpgsql security definer set search_path = public as $$
+declare v text := btrim(regexp_replace(coalesce(p_name, ''), '\s+', ' ', 'g')); r text[];
+begin
+  if not is_office() then raise exception '권한이 없습니다'; end if;
+  if v = '' or length(v) > 30 then raise exception '항목 이름은 1~30자로 써 주세요'; end if;
+  update settings set cost_items = case when v = any(coalesce(cost_items, '{}')) then cost_items else array_append(coalesce(cost_items, '{}'), v) end
+   where id = 1 returning cost_items into r;
+  return r;
+end $$;
+
+create or replace function cost_item_remove(p_name text) returns text[] language plpgsql security definer set search_path = public as $$
+declare r text[];
+begin
+  if not is_office() then raise exception '권한이 없습니다'; end if;
+  update settings set cost_items = array_remove(coalesce(cost_items, '{}'), p_name) where id = 1 returning cost_items into r;
+  return r;
+end $$;
+revoke execute on function cost_item_add(text), cost_item_remove(text) from public, anon;
+grant execute on function cost_item_add(text), cost_item_remove(text) to authenticated;
