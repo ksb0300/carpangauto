@@ -3301,3 +3301,78 @@ begin
 end $$;
 revoke execute on function cost_item_add(text), cost_item_remove(text) from public, anon;
 grant execute on function cost_item_add(text), cost_item_remove(text) to authenticated;
+
+
+-- 20261104000002_bank_adjust.sql
+-- 통장 잔액 맞춤 (2026-11-04): 카뱅 모임통장은 알림에 잔액이 없어 더하고 빼서 계산 → 알림이 빠지면 어긋난다.
+--   사용자가 앱 잔액을 알려 주면 차이만큼 '잔액 맞춤' 거래(source='보정')를 한 줄 넣어 이어지게 한다
+alter table bank_txs drop constraint if exists bank_txs_source_check;
+alter table bank_txs add constraint bank_txs_source_check check (source = any (array['팝빌', '엑셀', '데모', '문자', '보정']));
+
+
+-- 20261104000003_heydealer_channel.sql
+-- 헤딜·엔카 매입수수료는 평균 60만원 (사용자 규칙, 2026-11-04 다시 확인). 차대금 송금으로 자동 등록된 헤딜 차는 매입경로가 비어 60만원이 안 들어갔다 (11대).
+--   매입경로에 '헤이딜러'(제로·셀프 모름, 60만원)를 더하고, 자동 등록 때 헤딜이면 '헤이딜러'로 넣는다 — 제로·셀프는 나중에 골라도 수수료는 같다
+update settings set purchase_channels = purchase_channels || '[{"name": "헤이딜러", "fee": 600000}]'::jsonb
+ where id = 1 and not exists (select 1 from jsonb_array_elements(purchase_channels) c where c->>'name' = '헤이딜러');
+CREATE OR REPLACE FUNCTION public._board_paid_car()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare f jsonb := new.form; amt bigint; c record; uid uuid; did uuid; route text; ev text; st text; nm text; d date; cid uuid; tx record;
+begin
+  if new.category <> '송금요청' or coalesce(f->>'kind', '') <> '매입대금' then return new; end if;
+  if coalesce(f->>'amount', '') !~ '^[0-9]+$' or coalesce(new.plate, f->>'plate', '') = '' then return new; end if;
+  amt := (f->>'amount')::bigint;
+
+  -- 완료 취소
+  if old.done_at is not null and new.done_at is null then
+    select * into c from cars where id = new.car_id and auto_post_id is not null and deleted_at is null and status = '재고';
+    if c.id is not null then
+      if c.purchase_amount > amt then update cars set purchase_amount = purchase_amount - amt where id = c.id;
+      else update cars set deleted_at = now() where id = c.id; new.car_id := null; end if;
+    end if;
+    return new;
+  end if;
+  if not (old.done_at is null and new.done_at is not null) then return new; end if;
+
+  d := (new.done_at at time zone 'Asia/Seoul')::date;
+  select * into c from cars x where x.deleted_at is null and replace(x.plate, ' ', '') = replace(coalesce(new.plate, f->>'plate'), ' ', '')
+    and (x.status = '재고' or x.purchase_date >= (new.created_at at time zone 'Asia/Seoul')::date - 30)
+   order by (x.status = '재고') desc, x.purchase_date desc nulls last limit 1;
+  if c.id is not null then
+    if c.auto_post_id is not null and c.auto_post_id <> new.id and new.car_id is distinct from c.id and c.status = '재고' then
+      update cars set purchase_amount = purchase_amount + amt where id = c.id;   -- 나눠 보낸 차대금
+    end if;
+    cid := c.id;
+  else
+    uid := coalesce(new.created_by, (select p.user_id from profiles p where p.name = new.author_name and p.role in ('admin', 'staff') limit 1));
+    did := (select p.dealer_id from profiles p where p.user_id = uid);
+    route := f->>'route';
+    if coalesce(f->>'payee_type', '개인') = '개인' then ev := '의제매입'; st := '개인';
+    elsif f->>'invoice' = '발행 가능' then ev := '세금계산서'; st := case when f->>'payee_type' = '법인' then '법인' else '개인' end;
+    else ev := '의제매입'; st := case when route in ('헤이딜러', '엔카') then '개인' when f->>'payee_type' = '법인' then '법인' else '개인' end; end if;
+    nm := coalesce(substring(coalesce(f->>'customer', '') from '^\s*([가-힣]{2,5})'),
+                   case when route is distinct from '헤이딜러' and route is distinct from '엔카' then nullif(f->>'payee', '') end);
+    select * into tx from 취득세규칙(amt);
+    insert into cars (dealer_id, car_name, plate, plate_before, purchase_date, purchase_amount, purchase_fee, acq_tax, acq_tax_unknown,
+                      evidence, seller_type, seller_name, purchase_channel, memo, created_by, auto_post_id)
+    values (did, coalesce(nullif(f->>'car_name', ''), new.title), replace(coalesce(new.plate, f->>'plate'), ' ', ''), replace(coalesce(new.plate, f->>'plate'), ' ', ''),
+            d, amt, 0, tx.acq_tax, tx.acq_tax_unknown, ev, st, nm, case when route = '엔카' then '엔카' when route = '헤이딜러' then '헤이딜러' end,
+            concat_ws(' · ', '게시판 송금요청에서 자동 등록', case when route = '헤이딜러' then '헤이딜러 제로/셀프 고르기' end,
+                      case when f->>'invoice' = '확인 필요' then '계산서 발행 확인 필요' end),
+            uid, new.id)
+    returning id into cid;
+    insert into board_comments (post_id, body, author_name)
+    values (new.id, format('🚗 재고에 올렸습니다 — %s 차 · 매입가 %s원 · %s · %s',
+                           coalesce((select name from dealers where id = did), '담당 없음'), to_char(amt, 'FM999,999,999,999'), ev,
+                           case when tx.acq_tax_unknown then '취득세는 사무장 확인 필요' else '취득세 ' || to_char(tx.acq_tax, 'FM999,999,990') || '원' end),
+            '업무관리');
+  end if;
+  new.car_id := cid;
+  update bank_txs set car_id = cid where post_id = new.id and car_id is null;
+  return new;
+end $function$
+;

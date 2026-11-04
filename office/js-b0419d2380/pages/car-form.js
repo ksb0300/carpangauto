@@ -75,6 +75,7 @@ export function CarForm({ app, id }) {
     e.preventDefault();
     if (!f.car_name.trim() || !f.plate.trim()) return toast("차명과 차량번호는 꼭 입력하세요.", "err");
     if (!f.purchase_amount) return toast("매입가를 입력하세요.", "err");
+    if (!id && !f.purchase_channel) return toast("매입처를 고르세요. (헤딜·엔카는 매입수수료 60만원이 자동으로 들어갑니다)", "err");   // 사용자 2026-11-04
     setBusy(true);
     const row = Object.fromEntries(EDITABLE.map(k => [k, f[k] === "" ? null : f[k]]));
     row.plate = row.plate.replace(/\s/g, "");
@@ -98,7 +99,7 @@ export function CarForm({ app, id }) {
         <${Money} value=${f.purchase_amount} onInput=${setPrice} /><//>
       <${Field} label="매입담당" hint=${!f.dealer_id ? "" : partner ? "대표 — 상사매입비 없음, 손익이 본인 실적" : "딜러 — 상사매입비·딜러 정산 적용"}>
         <${Select} value=${f.dealer_id} onChange=${pickDealer} empty="선택" options=${app.dealers.filter(d => d.active || d.id === f.dealer_id).map(d => [d.id, d.name + (d.partner ? "" : " (딜러)")])} /><//>
-      <${Field} label="매입처" hint=${channel && Number(channel.fee) ? `매입수수료 ${won(channel.fee)}원 자동` : ""}>
+      <${Field} label="매입처" req=${!id} hint=${channel && Number(channel.fee) ? `매입수수료 ${won(channel.fee)}원 자동` : ""}>
         <${Select} value=${f.purchase_channel} onChange=${set("purchase_channel")} empty="선택" options=${(app.settings.purchase_channels || []).map(c => c.name)} /><//>
       <${Field} label="매입증빙" hint=${f.evidence === "세금계산서" ? "사업자(렌트사·법인 등)에게 사서 세금계산서를 받은 경우" : "개인에게 산 경우 (대부분)"}>
         <${Seg} value=${f.evidence} onChange=${set("evidence")} options=${["의제매입", "세금계산서"]} /><//>

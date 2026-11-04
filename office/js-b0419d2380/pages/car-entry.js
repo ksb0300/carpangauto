@@ -24,7 +24,7 @@ const 따로더하기 = new Set(["수리비"]);
 //   업체 거래명세서 엑셀로 넣은 줄('엑셀:업체:작업일:항목')도 손으로 고칠 수 있다
 const 고칠수있음 = k => !k.auto_source || k.auto_source === "대장" || k.auto_source.startsWith("엑셀:");
 // 칸 너비·글씨 크기는 보는 사람이 조절 (사용자 2026-10-26) — 이 기기에만 기억 (localStorage)
-const 기본폭 = { date: 104, car: 220, year: 64, km: 90, price: 120, tax: 110, lender: 140, loan: 140, cost: 120 };
+const 기본폭 = { date: 104, car: 220, year: 64, km: 90, price: 120, channel: 130, tax: 110, lender: 140, loan: 140, cost: 120 };
 const 기억 = { get: (k, d) => { try { const v = JSON.parse(localStorage.getItem("entry:" + k)); return v ?? d; } catch { return d; } },
   set: (k, v) => { try { localStorage.setItem("entry:" + k, JSON.stringify(v)); } catch {} } };
 const 만km = v => v == null || v === "" ? "" : Number(v) >= 10000 ? (Number(v) / 10000).toFixed(1).replace(/\.0$/, "") + "만" : Number(v).toLocaleString();
@@ -49,11 +49,11 @@ export function CarEntryPage({ app }) {
   };
   const load = () => run(async () => {
     const since = new Date(Date.now() - 30 * 86400e3).toISOString().slice(0, 10);
-    let cars = await q(app.db.from("cars").select("id, plate, car_name, model_year, mileage, purchase_amount, dealer_id, purchase_date, acq_tax, acq_tax_unknown, status, created_at")
+    let cars = await q(app.db.from("cars").select("id, plate, car_name, model_year, mileage, purchase_amount, dealer_id, purchase_date, acq_tax, acq_tax_unknown, recon_none, purchase_channel, auto_post_id, status, created_at")
       .is("deleted_at", null).eq("status", "재고").order("purchase_date", { ascending: false }).order("created_at", { ascending: false }).order("id"));
     if (scope === "최근 매도") {
       const sold = (await q(app.db.from("car_sales").select("*").gte("sale_date", since))).filter(s => !s.contract);
-      cars = sold.length ? await q(app.db.from("cars").select("id, plate, car_name, model_year, mileage, purchase_amount, dealer_id, purchase_date, acq_tax, acq_tax_unknown, status, created_at")
+      cars = sold.length ? await q(app.db.from("cars").select("id, plate, car_name, model_year, mileage, purchase_amount, dealer_id, purchase_date, acq_tax, acq_tax_unknown, recon_none, purchase_channel, auto_post_id, status, created_at")
         .is("deleted_at", null).in("id", sold.map(s => s.car_id)).order("purchase_date", { ascending: false }).order("created_at", { ascending: false }).order("id")) : [];
     }
     const ids = cars.map(c => c.id);
@@ -73,7 +73,9 @@ export function CarEntryPage({ app }) {
   const 합 = (car, item) => d.costs.filter(k => k.car_id === car && k.item === item).reduce((t, k) => t + n(k.amount), 0);
   const 대출 = car => d.loans.find(l => l.car_id === car) || null;
   // '작성필요'는 리스트와 같은 뜻으로만: 상품화비용(수리·도색·세차·탁송 등)이 하나도 없는 차의 도색광택 칸, 취득세 모르는 차
-  const 상품화없음 = car => !d.costs.some(k => k.car_id === car && 비용구분(k.item) === "상품화" && n(k.amount));
+  const 상품화0 = car => !d.costs.some(k => k.car_id === car && 비용구분(k.item) === "상품화" && n(k.amount));
+  const 상품화없음 = car => 상품화0(car) && !d.cars.find(c => c.id === car)?.recon_none;   // '상품화 없음'으로 끈 차는 작성필요 아님 (사용자 2026-11-03)
+  const 없음표시 = (c, v) => run(async () => { await q(app.db.from("cars").update({ recon_none: v }).eq("id", c.id)); load(); }, v ? `${c.plate} 상품화 없음` : `${c.plate} 상품화 없음 풀기`);
   const lenders = (app.lenders || []).filter(l => l.active !== false);
   const partner = c => !!app.dealers.find(x => x.id === c.dealer_id)?.partner;
 
@@ -82,6 +84,9 @@ export function CarEntryPage({ app }) {
     await q(app.db.from("car_costs").insert(vs.map(v => ({ car_id: c.id, item, amount: v, paid_by: "딜러", taxable: true, paid_date: today(), include_in_settlement: true }))));
     toast(`${c.plate} ${item} +${won(vs.reduce((a, b) => a + b, 0))}원${vs.length > 1 ? ` (${vs.length}건)` : ""}`); load();
   });
+  // 매입경로 (사용자 2026-11-04): 비었거나 자동 등록으로 '헤이딜러'(제로·셀프 모름)면 작성필요 — 고르면 매입수수료가 DB 에서 자동
+  const 작성필요경로 = c => !c.purchase_channel || c.purchase_channel === "헤이딜러";
+  const 경로저장 = (c, v) => v && run(async () => { await q(app.db.from("cars").update({ purchase_channel: v }).eq("id", c.id)); toast(`${c.plate} 매입경로 ${v}`); load(); });
   const 취득세 = (c, v) => run(async () => {
     v = v || 취득세0원;                       // 0원 처리하는 차는 6,002원 (사용자 2026-10-26)
     await q(app.db.from("cars").update({ acq_tax: v, acq_tax_unknown: false }).eq("id", c.id));
@@ -113,7 +118,7 @@ export function CarEntryPage({ app }) {
   const 지우기 = k => ask(`${k.paid_date} ${k.item} ${won(k.amount)}원을 지울까요?`) && run(async () => { await q(app.db.from("car_costs").delete().eq("id", k.id)); load(); });
 
   // 칸 목록 (머리줄·너비 조절·colgroup 이 같은 순서)
-  const 칸들 = [["date", "매입일"], ["car", "차량"], ["year", "연식"], ["km", "키로수"], ["price", "매입가"], ["tax", "취득세"], ["lender", "재고대출 금융사"], ["loan", "대출금"],
+  const 칸들 = [["date", "매입일"], ["car", "차량"], ["year", "연식"], ["km", "키로수"], ["price", "매입가"], ["channel", "매입경로"], ["tax", "취득세"], ["lender", "재고대출 금융사"], ["loan", "대출금"],
     ...비용칸.flatMap(([item, l]) => 따로더하기.has(item) ? [["c:" + item, l], ["p:" + item, "+ " + l]] : [["c:" + item, l]])];
   const 너비 = k => 폭[k] || 기본폭[k] || 기본폭.cost;
   return html`<div class="entry-page"><div class="bar"><h2>차량입력</h2><span class="muted small">칸에 금액 → Enter (아래 차로) · '30' = 30만원 · 비용 칸은 누르면 금액들 — 고치거나 지우고 Enter · 머리줄 오른쪽 끝을 끌면 너비 조절</span><span class="grow"></span>
@@ -133,13 +138,18 @@ export function CarEntryPage({ app }) {
         <td class="c info">${c.model_year ? String(c.model_year).slice(0, 4) : ""}</td>
         <td class="r info">${만km(c.mileage)}</td>
         <td class="r info">${n(c.purchase_amount) ? won(c.purchase_amount) : ""}</td>
+        <td title=${c.purchase_channel === "헤이딜러" ? "자동 등록 — 헤이딜러 제로·셀프를 골라 주세요 (수수료는 같음)" : ""}><select class=${"cell" + (작성필요경로(c) ? " need" : "")} value=${c.purchase_channel || ""} onChange=${e => 경로저장(c, e.target.value)}>
+          <option value="">작성필요</option>${(app.settings.purchase_channels || []).map(x => html`<option value=${x.name}>${x.name}${x.name === "헤이딜러" ? " (제로·셀프 모름)" : ""}</option>`)}</select></td>
         <td><${칸} row=${i} col=${0} value=${n(c.acq_tax)} 빈칸=${c.acq_tax_unknown} onSave=${v => 취득세(c, v)} /></td>
         <td><select class="cell" value=${l?.lender_id || 고른[c.id] || ""} onChange=${e => e.target.value ? 대출저장(c, { lender_id: e.target.value, amount: l?.amount || 0 }) : (toast("재고대출을 지우려면 차 화면 → 재고금융에서", "err"), load())}>
           <option value="">${l ? "-" : "없음"}</option>${lenders.map(x => html`<option value=${x.id}>${x.name}</option>`)}</select></td>
         <td><${칸} row=${i} col=${1} value=${n(l?.amount)} onSave=${v => l ? 대출저장(c, { amount: v }) : 고른[c.id] ? 대출저장(c, { lender_id: 고른[c.id], amount: v }) : toast("금융사를 먼저 고르세요", "err")} /></td>
         ${비용칸.map(([item], j) => { const s = 합(c.id, item);
-          const 내역 = s > 0 && html`<button class="mini" title="내역" onClick=${() => setOpen({ car: c, item })}>▾</button>`;
-          const 수식칸 = html`<td class="sumcell"><${칸} row=${i} col=${2 + j * 2} value=${s} 식=${식(c.id, item)} 빈칸=${item === "도색광택" && 상품화없음(c.id)} onSave=${v => 비용맞추기(c, item, v)} />${내역}</td>`;
+          const 내역 = s > 0 ? html`<button class="mini" title="내역" onClick=${() => setOpen({ car: c, item })}>▾</button>`
+            : item === "도색광택" && 상품화0(c.id) ? (c.recon_none
+              ? html`<button class="mini" title="상품화 없음 표시 풀기" onClick=${() => 없음표시(c, false)}>↺</button>`
+              : html`<button class="mini none" title="손볼 게 없는 차 — 작성필요를 끕니다" onClick=${() => 없음표시(c, true)}>없음</button>`) : "";
+          const 수식칸 = html`<td class="sumcell"><${칸} row=${i} col=${2 + j * 2} value=${s} 식=${식(c.id, item)} 빈칸=${item === "도색광택" && 상품화없음(c.id)} placeholder=${item === "도색광택" && c.recon_none && 상품화0(c.id) ? "상품화 없음" : ""} onSave=${v => 비용맞추기(c, item, v)} />${내역}</td>`;
           return 따로더하기.has(item)
             ? html`${수식칸}<td><${칸} row=${i} col=${3 + j * 2} value=${0} 더하기 placeholder="+ 금액" onSave=${v => 비용더하기(c, item, v)} /></td>`
             : 수식칸; })}

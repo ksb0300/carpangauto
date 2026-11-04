@@ -78,7 +78,8 @@ function InfoTab({ app, car, sale, office }) {
     ["매입담당", (d => d ? d.name + (d.partner ? " (대표)" : " (딜러)") : html`<span class="red">미지정</span>`)(app.dealers.find(x => x.id === car.dealer_id))],
     ["매입일", car.purchase_date],
     ["매입가", `${won(car.purchase_amount)} (공급가 ${won(car.purchase_supply)} / 부가세 ${won(car.purchase_vat)})`],
-    ["매입처", car.purchase_channel], ["매입증빙", car.evidence], ["취득세", won(car.acq_tax)],
+    ["매입처", !car.purchase_channel || car.purchase_channel === "헤이딜러"      // 비었거나 자동 등록 '헤이딜러'(제로·셀프 모름)면 작성필요 (사용자 2026-11-04)
+      ? html`${car.purchase_channel || ""} <span class="badge amber" title="차량입력의 매입경로 칸이나 수정에서 고르세요">작성필요</span>` : car.purchase_channel], ["매입증빙", car.evidence], ["취득세", won(car.acq_tax)],
     ...(Number(car.purchase_fee) ? [["상사매입비", won(car.purchase_fee)]] : []),
     ["브랜드 · 모델", [car.brand, car.model, car.grade].filter(Boolean).join(" · ")], ["통합키", car.fskey],
     ["차대번호", car.vin], ["연식", car.model_year], ["최초등록일", car.first_reg_date],
