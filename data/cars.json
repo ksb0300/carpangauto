@@ -1,6 +1,6 @@
 {
- "updated": "2026-11-05 17:47",
- "count": 56,
+ "updated": "2026-11-06 17:48",
+ "count": 53,
  "cars": [
   {
    "id": "42585926",
@@ -21,10 +21,10 @@
     "https://ci.encar.com/carpicture08/pic4258/42585926_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture08/pic4258/42585926_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture08/pic4258/42585926_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4258/42585926_009.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4258/42585926_005.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4258/42585926_036.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4258/42585926_043.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture08/pic4258/42585926_043.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4258/42585926_023.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4258/42585926_040.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4258/42585926_049.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42585926"
   },
@@ -125,38 +125,12 @@
     "https://ci.encar.com/carpicture04/pic4294/42949580_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture04/pic4294/42949580_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture04/pic4294/42949580_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture04/pic4294/42949580_052.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture04/pic4294/42949580_015.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture04/pic4294/42949580_041.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture04/pic4294/42949580_054.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture04/pic4294/42949580_032.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949580_050.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949580_008.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949580_040.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42949580"
-  },
-  {
-   "id": "42184774",
-   "plate": "169마7440",
-   "maker": "벤츠",
-   "model": "E-클래스",
-   "grade": "E300 4MATIC AMG Line",
-   "year": "24년 11월",
-   "yearRaw": "202411",
-   "mileage": 29985,
-   "fuel": "가솔린",
-   "transmission": "오토",
-   "color": "검정색",
-   "price": 6390,
-   "diagnosis": true,
-   "photos": [
-    "https://ci.encar.com/carpicture08/pic4218/42184774_027.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4218/42184774_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4218/42184774_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4218/42184774_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4218/42184774_035.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4218/42184774_023.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4218/42184774_022.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4218/42184774_024.jpg?impolicy=widthRate&wid=800"
-   ],
-   "link": "https://fem.encar.com/cars/detail/42184774"
   },
   {
    "id": "42726388",
@@ -549,30 +523,30 @@
    "link": "https://fem.encar.com/cars/detail/42996090"
   },
   {
-   "id": "42775853",
-   "plate": "286노7546",
-   "maker": "기아",
-   "model": "쏘렌토",
-   "grade": "가솔린 2.5T 4WD",
-   "year": "23년 10월",
-   "yearRaw": "202310",
-   "mileage": 19741,
-   "fuel": "가솔린",
+   "id": "43021844",
+   "plate": "32너3451",
+   "maker": "벤츠",
+   "model": "EQC",
+   "grade": "EQC400 4MATIC",
+   "year": "20년 12월",
+   "yearRaw": "202012",
+   "mileage": 80177,
+   "fuel": "전기",
    "transmission": "오토",
-   "color": "검정색",
+   "color": "흰색",
    "price": 3490,
    "diagnosis": true,
    "photos": [
-    "https://ci.encar.com/carpicture07/pic4277/42775853_027.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4277/42775853_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4277/42775853_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4277/42775853_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4277/42775853_023.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4277/42775853_031.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4277/42775853_036.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4277/42775853_033.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture02/pic4302/43021844_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4302/43021844_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4302/43021844_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4302/43021844_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4302/43021844_021.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4302/43021844_010.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4302/43021844_019.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4302/43021844_018.jpg?impolicy=widthRate&wid=800"
    ],
-   "link": "https://fem.encar.com/cars/detail/42775853"
+   "link": "https://fem.encar.com/cars/detail/43021844"
   },
   {
    "id": "43038732",
@@ -601,30 +575,30 @@
    "link": "https://fem.encar.com/cars/detail/43038732"
   },
   {
-   "id": "43021844",
-   "plate": "32너3451",
-   "maker": "벤츠",
-   "model": "EQC",
-   "grade": "EQC400 4MATIC",
-   "year": "20년 12월",
-   "yearRaw": "202012",
-   "mileage": 80177,
-   "fuel": "전기",
+   "id": "42775853",
+   "plate": "286노7546",
+   "maker": "기아",
+   "model": "쏘렌토",
+   "grade": "가솔린 2.5T 4WD",
+   "year": "23년 10월",
+   "yearRaw": "202310",
+   "mileage": 19741,
+   "fuel": "가솔린",
    "transmission": "오토",
-   "color": "흰색",
-   "price": 3450,
+   "color": "검정색",
+   "price": 3390,
    "diagnosis": true,
    "photos": [
-    "https://ci.encar.com/carpicture02/pic4302/43021844_027.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture02/pic4302/43021844_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture02/pic4302/43021844_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture02/pic4302/43021844_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture02/pic4302/43021844_018.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture02/pic4302/43021844_024.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture02/pic4302/43021844_034.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture02/pic4302/43021844_040.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture07/pic4277/42775853_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42775853_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42775853_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42775853_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42775853_005.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42775853_023.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42775853_019.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42775853_042.jpg?impolicy=widthRate&wid=800"
    ],
-   "link": "https://fem.encar.com/cars/detail/43021844"
+   "link": "https://fem.encar.com/cars/detail/42775853"
   },
   {
    "id": "42852225",
@@ -809,32 +783,6 @@
    "link": "https://fem.encar.com/cars/detail/42961863"
   },
   {
-   "id": "42790171",
-   "plate": "111어8930",
-   "maker": "BMW",
-   "model": "X4",
-   "grade": "xDrive20d M 스포츠 온라인 익스클루시브 에디션",
-   "year": "21년 09월",
-   "yearRaw": "202109",
-   "mileage": 177127,
-   "fuel": "디젤",
-   "transmission": "오토",
-   "color": "흰색",
-   "price": 2740,
-   "diagnosis": true,
-   "photos": [
-    "https://ci.encar.com/carpicture09/pic4279/42790171_027.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4279/42790171_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4279/42790171_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4279/42790171_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4279/42790171_019.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4279/42790171_032.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4279/42790171_006.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4279/42790171_041.jpg?impolicy=widthRate&wid=800"
-   ],
-   "link": "https://fem.encar.com/cars/detail/42790171"
-  },
-  {
    "id": "42830983",
    "plate": "68다7414",
    "maker": "기아",
@@ -861,30 +809,30 @@
    "link": "https://fem.encar.com/cars/detail/42830983"
   },
   {
-   "id": "42917308",
-   "plate": "365더9569",
-   "maker": "현대",
-   "model": "쏘나타",
-   "grade": "2.0 LPG(영업용)",
-   "year": "26년 04월",
-   "yearRaw": "202604",
-   "mileage": 12639,
-   "fuel": "LPG(일반인 구입)",
+   "id": "42790171",
+   "plate": "111어8930",
+   "maker": "BMW",
+   "model": "X4",
+   "grade": "xDrive20d M 스포츠 온라인 익스클루시브 에디션",
+   "year": "21년 09월",
+   "yearRaw": "202109",
+   "mileage": 177127,
+   "fuel": "디젤",
    "transmission": "오토",
    "color": "흰색",
-   "price": 2590,
+   "price": 2690,
    "diagnosis": true,
    "photos": [
-    "https://ci.encar.com/carpicture01/pic4291/42917308_027.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4291/42917308_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4291/42917308_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4291/42917308_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4291/42917308_016.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4291/42917308_024.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4291/42917308_036.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4291/42917308_008.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture09/pic4279/42790171_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4279/42790171_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4279/42790171_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4279/42790171_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4279/42790171_009.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4279/42790171_036.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4279/42790171_041.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4279/42790171_035.jpg?impolicy=widthRate&wid=800"
    ],
-   "link": "https://fem.encar.com/cars/detail/42917308"
+   "link": "https://fem.encar.com/cars/detail/42790171"
   },
   {
    "id": "43035240",
@@ -911,6 +859,32 @@
     "https://ci.encar.com/carpicture03/pic4303/43035240_007.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/43035240"
+  },
+  {
+   "id": "42917308",
+   "plate": "365더9569",
+   "maker": "현대",
+   "model": "쏘나타",
+   "grade": "2.0 LPG(영업용)",
+   "year": "26년 04월",
+   "yearRaw": "202604",
+   "mileage": 12639,
+   "fuel": "LPG(일반인 구입)",
+   "transmission": "오토",
+   "color": "흰색",
+   "price": 2550,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture01/pic4291/42917308_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4291/42917308_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4291/42917308_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4291/42917308_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4291/42917308_040.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4291/42917308_018.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4291/42917308_047.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4291/42917308_017.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42917308"
   },
   {
    "id": "42193712",
@@ -1093,58 +1067,6 @@
     "https://ci.encar.com/carpicture02/pic4302/43023125_020.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/43023125"
-  },
-  {
-   "id": "42949261",
-   "plate": "305로3413",
-   "maker": "현대",
-   "model": "쏘나타",
-   "grade": "1.6 터보",
-   "year": "20년 11월",
-   "yearRaw": "202011",
-   "mileage": 46735,
-   "fuel": "가솔린",
-   "transmission": "오토",
-   "color": "쥐색",
-   "price": 1690,
-   "diagnosis": true,
-   "photos": [
-    "https://ci.encar.com/carpicture04/pic4294/42949261_027.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture04/pic4294/42949261_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture04/pic4294/42949261_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture04/pic4294/42949261_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture04/pic4294/42949261_017.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture04/pic4294/42949261_033.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture04/pic4294/42949261_046.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture04/pic4294/42949261_021.jpg?impolicy=widthRate&wid=800"
-   ],
-   "link": "https://fem.encar.com/cars/detail/42949261"
-  },
-  {
-   "id": "42982246",
-   "plate": "230더7455",
-   "maker": "기아",
-   "model": "레이",
-   "grade": "그래비티",
-   "year": "23년 01월",
-   "yearRaw": "202301",
-   "mileage": 39713,
-   "fuel": "가솔린",
-   "transmission": "오토",
-   "color": "흰색",
-   "price": 1600,
-   "diagnosis": true,
-   "photos": [
-    "https://ci.encar.com/carpicture08/pic4298/42982246_027.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4298/42982246_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4298/42982246_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4298/42982246_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4298/42982246_017.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4298/42982246_040.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4298/42982246_024.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4298/42982246_010.jpg?impolicy=widthRate&wid=800"
-   ],
-   "link": "https://fem.encar.com/cars/detail/42982246"
   },
   {
    "id": "43035221",
