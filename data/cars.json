@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-07 17:50",
+ "updated": "2026-11-08 17:48",
  "count": 54,
  "cars": [
   {
@@ -341,32 +341,6 @@
    "link": "https://fem.encar.com/cars/detail/42954696"
   },
   {
-   "id": "42806257",
-   "plate": "150마9800",
-   "maker": "BMW",
-   "model": "5시리즈",
-   "grade": "530e M 스포츠",
-   "year": "23년 07월",
-   "yearRaw": "202307",
-   "mileage": 69912,
-   "fuel": "가솔린+전기",
-   "transmission": "오토",
-   "color": "검정색",
-   "price": 4040,
-   "diagnosis": true,
-   "photos": [
-    "https://ci.encar.com/carpicture10/pic4280/42806257_027.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture10/pic4280/42806257_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture10/pic4280/42806257_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture10/pic4280/42806257_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture10/pic4280/42806257_006.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture10/pic4280/42806257_019.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture10/pic4280/42806257_005.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture10/pic4280/42806257_031.jpg?impolicy=widthRate&wid=800"
-   ],
-   "link": "https://fem.encar.com/cars/detail/42806257"
-  },
-  {
    "id": "42873077",
    "plate": "102고5546",
    "maker": "기아",
@@ -391,6 +365,32 @@
     "https://ci.encar.com/carpicture07/pic4287/42873077_008.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42873077"
+  },
+  {
+   "id": "42806257",
+   "plate": "150마9800",
+   "maker": "BMW",
+   "model": "5시리즈",
+   "grade": "530e M 스포츠",
+   "year": "23년 07월",
+   "yearRaw": "202307",
+   "mileage": 69912,
+   "fuel": "가솔린+전기",
+   "transmission": "오토",
+   "color": "검정색",
+   "price": 3990,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture10/pic4280/42806257_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture10/pic4280/42806257_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture10/pic4280/42806257_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture10/pic4280/42806257_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture10/pic4280/42806257_024.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture10/pic4280/42806257_017.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture10/pic4280/42806257_020.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture10/pic4280/42806257_023.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42806257"
   },
   {
    "id": "42775839",
@@ -463,10 +463,10 @@
     "https://ci.encar.com/carpicture08/pic4308/43081873_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture08/pic4308/43081873_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture08/pic4308/43081873_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4308/43081873_015.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4308/43081873_044.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4308/43081873_024.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4308/43081873_005.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture08/pic4308/43081873_005.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4308/43081873_031.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4308/43081873_020.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4308/43081873_016.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/43081873"
   },
@@ -586,17 +586,17 @@
    "fuel": "가솔린",
    "transmission": "오토",
    "color": "검정색",
-   "price": 3390,
+   "price": 3370,
    "diagnosis": true,
    "photos": [
     "https://ci.encar.com/carpicture07/pic4277/42775853_027.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture07/pic4277/42775853_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture07/pic4277/42775853_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture07/pic4277/42775853_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4277/42775853_005.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4277/42775853_023.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4277/42775853_019.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4277/42775853_042.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture07/pic4277/42775853_022.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42775853_032.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42775853_041.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42775853_034.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42775853"
   },
@@ -697,10 +697,10 @@
     "https://ci.encar.com/carpicture02/pic4232/42321574_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture02/pic4232/42321574_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture02/pic4232/42321574_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture02/pic4232/42321574_024.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture02/pic4232/42321574_007.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture02/pic4232/42321574_041.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture02/pic4232/42321574_044.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture02/pic4232/42321574_042.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4232/42321574_031.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4232/42321574_035.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4232/42321574_010.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42321574"
   },
@@ -1184,17 +1184,17 @@
    "fuel": "디젤",
    "transmission": "오토",
    "color": "검정색",
-   "price": 1230,
+   "price": 1190,
    "diagnosis": true,
    "photos": [
     "https://ci.encar.com/carpicture06/pic4226/42263583_027.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture06/pic4226/42263583_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture06/pic4226/42263583_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture06/pic4226/42263583_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture06/pic4226/42263583_006.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture06/pic4226/42263583_018.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture06/pic4226/42263583_036.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture06/pic4226/42263583_017.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture06/pic4226/42263583_023.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4226/42263583_019.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4226/42263583_022.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4226/42263583_024.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42263583"
   },
@@ -1347,10 +1347,10 @@
     "https://ci.encar.com/carpicture04/pic4304/43045955_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture04/pic4304/43045955_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture04/pic4304/43045955_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture04/pic4304/43045955_006.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture04/pic4304/43045955_021.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture04/pic4304/43045955_045.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture04/pic4304/43045955_033.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture04/pic4304/43045955_009.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4304/43045955_041.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4304/43045955_022.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4304/43045955_007.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/43045955"
   },
