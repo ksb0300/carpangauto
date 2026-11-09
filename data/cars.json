@@ -1,6 +1,6 @@
 {
- "updated": "2026-11-08 17:48",
- "count": 54,
+ "updated": "2026-11-09 17:51",
+ "count": 55,
  "cars": [
   {
    "id": "42585926",
@@ -1113,10 +1113,10 @@
     "https://ci.encar.com/carpicture03/pic4303/43035221_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture03/pic4303/43035221_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture03/pic4303/43035221_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture03/pic4303/43035221_033.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture03/pic4303/43035221_008.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture03/pic4303/43035221_019.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture03/pic4303/43035221_007.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture03/pic4303/43035221_009.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4303/43035221_045.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4303/43035221_023.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4303/43035221_036.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/43035221"
   },
@@ -1275,6 +1275,32 @@
     "https://ci.encar.com/carpicture08/pic4308/43088436_010.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/43088436"
+  },
+  {
+   "id": "43118203",
+   "plate": "119가5927",
+   "maker": "르노코리아(삼성)",
+   "model": "XM3",
+   "grade": "1.6 GTe SE",
+   "year": "21년 01월",
+   "yearRaw": "202101",
+   "mileage": 84695,
+   "fuel": "가솔린",
+   "transmission": "오토",
+   "color": "흰색",
+   "price": 980,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture01/pic4311/43118203_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4311/43118203_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4311/43118203_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4311/43118203_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4311/43118203_021.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4311/43118203_019.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4311/43118203_043.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4311/43118203_032.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/43118203"
   },
   {
    "id": "42949480",
