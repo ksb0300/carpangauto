@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-09 17:51",
+ "updated": "2026-11-10 17:51",
  "count": 55,
  "cars": [
   {
@@ -125,10 +125,10 @@
     "https://ci.encar.com/carpicture04/pic4294/42949580_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture04/pic4294/42949580_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture04/pic4294/42949580_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture04/pic4294/42949580_032.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture04/pic4294/42949580_050.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture04/pic4294/42949580_008.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture04/pic4294/42949580_040.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture04/pic4294/42949580_044.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949580_022.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949580_031.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4294/42949580_008.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42949580"
   },
@@ -463,10 +463,10 @@
     "https://ci.encar.com/carpicture08/pic4308/43081873_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture08/pic4308/43081873_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture08/pic4308/43081873_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4308/43081873_005.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4308/43081873_031.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4308/43081873_020.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4308/43081873_016.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture08/pic4308/43081873_044.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4308/43081873_034.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4308/43081873_010.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4308/43081873_022.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/43081873"
   },
@@ -671,10 +671,10 @@
     "https://ci.encar.com/carpicture10/pic4270/42700355_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture10/pic4270/42700355_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture10/pic4270/42700355_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture10/pic4270/42700355_017.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture10/pic4270/42700355_032.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture10/pic4270/42700355_043.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture10/pic4270/42700355_015.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture10/pic4270/42700355_033.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture10/pic4270/42700355_009.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture10/pic4270/42700355_008.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture10/pic4270/42700355_006.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42700355"
   },
@@ -833,6 +833,32 @@
     "https://ci.encar.com/carpicture09/pic4279/42790171_035.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42790171"
+  },
+  {
+   "id": "43126190",
+   "plate": "25거3334",
+   "maker": "제네시스",
+   "model": "G90",
+   "grade": "3.3 T AWD",
+   "year": "19년 07월",
+   "yearRaw": "201907",
+   "mileage": 139191,
+   "fuel": "가솔린",
+   "transmission": "오토",
+   "color": "쥐색",
+   "price": 2690,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture02/pic4312/43126190_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4312/43126190_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4312/43126190_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4312/43126190_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4312/43126190_008.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4312/43126190_048.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4312/43126190_009.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4312/43126190_005.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/43126190"
   },
   {
    "id": "43035240",
@@ -1251,32 +1277,6 @@
    "link": "https://fem.encar.com/cars/detail/42797803"
   },
   {
-   "id": "43088436",
-   "plate": "33우4535",
-   "maker": "쉐보레(GM대우)",
-   "model": "말리부",
-   "grade": "1.3 터보 퍼펙트 블랙",
-   "year": "19년 04월",
-   "yearRaw": "201904",
-   "mileage": 165935,
-   "fuel": "가솔린",
-   "transmission": "오토",
-   "color": "검정색",
-   "price": 990,
-   "diagnosis": true,
-   "photos": [
-    "https://ci.encar.com/carpicture08/pic4308/43088436_027.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4308/43088436_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4308/43088436_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4308/43088436_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4308/43088436_040.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4308/43088436_009.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4308/43088436_008.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4308/43088436_010.jpg?impolicy=widthRate&wid=800"
-   ],
-   "link": "https://fem.encar.com/cars/detail/43088436"
-  },
-  {
    "id": "43118203",
    "plate": "119가5927",
    "maker": "르노코리아(삼성)",
@@ -1295,10 +1295,10 @@
     "https://ci.encar.com/carpicture01/pic4311/43118203_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture01/pic4311/43118203_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture01/pic4311/43118203_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4311/43118203_021.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4311/43118203_019.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4311/43118203_043.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4311/43118203_032.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture01/pic4311/43118203_015.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4311/43118203_022.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4311/43118203_034.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4311/43118203_020.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/43118203"
   },
