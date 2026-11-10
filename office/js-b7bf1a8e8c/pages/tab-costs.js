@@ -1,9 +1,41 @@
-import { html, useState, Money, Select, run, won, today, toast } from "../ui.js";
+import { html, useState, useEffect, useRef, Money, Select, run, won, today, toast } from "../ui.js";
 import { q } from "../db.js";
 import { 부가세분리 } from "../calc.js";
 
 export const COST_ITEMS = ["상사매입비", "취득세", "매입탁송비", "성능점검비", "의무보험료", "주유대", "판금도장비",
   "기능수리/상품화", "광택/세차", "광고비", "경매장수수료", "통행료", "이자비용", "기타비용"];
+// 항목 목록은 사무실이 고친다 (사용자 2026-11-04) — settings.cost_items, 없으면 위 기본값. ✕로 빼고, 직접 입력한 새 항목은 목록에 더한다
+export const 비용항목들 = app => app.settings?.cost_items?.length ? app.settings.cost_items : COST_ITEMS;
+
+/** 항목 고르기: 누르면 목록(✕로 빼기) + 맨 아래 '직접 입력'(Enter 면 이 줄에 쓰고 목록에도 더함) */
+export function ItemPick({ app, value, onChange }) {
+  const [open, setOpen] = useState(null), [, 다시] = useState(0), [새, set새] = useState("");   // open = 목록 띄울 화면 위치 (표가 스크롤돼도 안 잘리게 fixed)
+  const box = useRef(null);
+  useEffect(() => {
+    if (!open) return;
+    const 밖 = e => { if (box.current && !box.current.contains(e.target)) setOpen(null); };
+    addEventListener("pointerdown", 밖); return () => removeEventListener("pointerdown", 밖);
+  }, [open]);
+  const 목록 = 비용항목들(app);
+  const 고침 = r => { app.settings.cost_items = r; 다시(x => x + 1); };
+  const 빼기 = (e, it) => { e.stopPropagation();
+    if (!confirm(`'${it}'을(를) 목록에서 뺄까요? (이미 넣은 비용은 그대로)`)) return;
+    run(async () => 고침(await q(app.db.rpc("cost_item_remove", { p_name: it }))), `'${it}' 뺐습니다`); };
+  const 더하기 = () => { const v = 새.trim().replace(/\s+/g, " "); if (!v) return;
+    run(async () => { if (!목록.includes(v)) 고침(await q(app.db.rpc("cost_item_add", { p_name: v }))); onChange(v); set새(""); setOpen(null); }); };
+  return html`<span class="itempick" ref=${box}>
+    <button type="button" class="itempick-btn" onClick=${e => { const r = e.currentTarget.getBoundingClientRect();
+      setOpen(open ? null : { left: r.left, top: r.bottom + 4 < innerHeight - 360 ? r.bottom + 4 : Math.max(8, r.top - 364) }); }}>${value || "항목"} <span class="muted">▾</span></button>
+    ${open && html`<div class="pop itempick-pop" style=${`position:fixed;left:${open.left}px;top:${open.top}px`}>
+      ${목록.map(it => html`<div class=${"pr" + (it === value ? " on" : "")} onClick=${() => { onChange(it); setOpen(null); }}>
+        <span class="grow">${it}</span><button type="button" class="linkbtn x" title="목록에서 빼기" onClick=${e => 빼기(e, it)}>✕</button></div>`)}
+      ${value && !목록.includes(value) && html`<div class="pr muted small">지금 값 '${value}'은 목록에 없음</div>`}
+      <div class="row" style="gap:4px;margin-top:6px"><input placeholder="직접 입력 → Enter" value=${새} onInput=${e => set새(e.target.value)}
+        onKeyDown=${e => { if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); 더하기(); } }} style="width:140px" />
+        <button type="button" class="btn sm" onClick=${더하기}>추가</button></div>
+    </div>`}</span>`;
+}
+
 export const EVIDENCES = ["전자세금계산서", "종이세금계산서", "카드영수증", "현금영수증", "계산서(비과세)", "간이영수증", "기타영수증", "자료없음"];
 
 let tmp = 0;
@@ -63,7 +95,7 @@ export function CostsTab({ app, car, costs, reload, locked, office }) {
       <tbody>${calc.map((r, i) => {
         const auto = !!r.auto_source, ro = !edit;
         return html`<tr class=${auto ? "auto" : ""}>
-          <td>${ro || auto ? html`${r.item}${auto && html` <small class="muted">자동</small>`}` : html`<${Select} value=${r.item} onChange=${v => upd(i, "item", v)} options=${COST_ITEMS} />`}</td>
+          <td>${ro || auto ? html`${r.item}${auto && html` <small class="muted">자동</small>`}` : html`<${ItemPick} app=${app} value=${r.item} onChange=${v => upd(i, "item", v)} />`}</td>
           <td>${ro || auto ? r.paid_by : html`<${Select} value=${r.paid_by} onChange=${v => upd(i, "paid_by", v)} options=${["딜러", "상사"]} />`}</td>
           <td>${ro || auto ? (r.taxable ? "과세" : "비과세") : html`<${Select} value=${r.taxable ? "과세" : "비과세"} onChange=${v => upd(i, "taxable", v === "과세")} options=${["과세", "비과세"]} />`}</td>
           <td class="r">${ro || auto ? won(r.amount) : html`<${Money} value=${r.amount} onInput=${v => upd(i, "amount", v)} />`}</td>
