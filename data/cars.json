@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-12 17:48",
+ "updated": "2026-11-13 17:48",
  "count": 49,
  "cars": [
   {
@@ -40,17 +40,17 @@
    "fuel": "가솔린",
    "transmission": "오토",
    "color": "흰색",
-   "price": 6950,
+   "price": 6800,
    "diagnosis": true,
    "photos": [
     "https://ci.encar.com/carpicture07/pic4257/42577207_027.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture07/pic4257/42577207_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture07/pic4257/42577207_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture07/pic4257/42577207_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4257/42577207_047.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4257/42577207_043.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4257/42577207_008.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4257/42577207_019.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture07/pic4257/42577207_036.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4257/42577207_020.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4257/42577207_035.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4257/42577207_051.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42577207"
   },
@@ -560,17 +560,17 @@
    "fuel": "전기",
    "transmission": "오토",
    "color": "쥐색",
-   "price": 3190,
+   "price": 3140,
    "diagnosis": true,
    "photos": [
     "https://ci.encar.com/carpicture10/pic4270/42700355_027.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture10/pic4270/42700355_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture10/pic4270/42700355_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture10/pic4270/42700355_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture10/pic4270/42700355_033.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture10/pic4270/42700355_009.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture10/pic4270/42700355_008.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture10/pic4270/42700355_006.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture10/pic4270/42700355_007.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture10/pic4270/42700355_040.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture10/pic4270/42700355_010.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture10/pic4270/42700355_042.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42700355"
   },
@@ -601,32 +601,6 @@
    "link": "https://fem.encar.com/cars/detail/42321574"
   },
   {
-   "id": "42618931",
-   "plate": "58누3317",
-   "maker": "벤츠",
-   "model": "EQA",
-   "grade": "EQA250 AMG 패키지 플러스",
-   "year": "22년 10월",
-   "yearRaw": "202210",
-   "mileage": 126769,
-   "fuel": "전기",
-   "transmission": "오토",
-   "color": "흰색",
-   "price": 2950,
-   "diagnosis": true,
-   "photos": [
-    "https://ci.encar.com/carpicture01/pic4261/42618931_027.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4261/42618931_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4261/42618931_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4261/42618931_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4261/42618931_031.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4261/42618931_010.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4261/42618931_024.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4261/42618931_007.jpg?impolicy=widthRate&wid=800"
-   ],
-   "link": "https://fem.encar.com/cars/detail/42618931"
-  },
-  {
    "id": "43017624",
    "plate": "373어2083",
    "maker": "현대",
@@ -645,12 +619,38 @@
     "https://ci.encar.com/carpicture01/pic4301/43017624_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture01/pic4301/43017624_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture01/pic4301/43017624_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4301/43017624_033.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4301/43017624_043.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4301/43017624_005.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture01/pic4301/43017624_020.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4301/43017624_041.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture01/pic4301/43017624_034.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4301/43017624_024.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/43017624"
+  },
+  {
+   "id": "42618931",
+   "plate": "58누3317",
+   "maker": "벤츠",
+   "model": "EQA",
+   "grade": "EQA250 AMG 패키지 플러스",
+   "year": "22년 10월",
+   "yearRaw": "202210",
+   "mileage": 126769,
+   "fuel": "전기",
+   "transmission": "오토",
+   "color": "흰색",
+   "price": 2890,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture01/pic4261/42618931_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4261/42618931_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4261/42618931_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4261/42618931_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4261/42618931_042.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4261/42618931_032.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4261/42618931_006.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4261/42618931_008.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42618931"
   },
   {
    "id": "42961863",
@@ -664,17 +664,17 @@
    "fuel": "디젤",
    "transmission": "오토",
    "color": "흰색",
-   "price": 2820,
+   "price": 2840,
    "diagnosis": true,
    "photos": [
     "https://ci.encar.com/carpicture06/pic4296/42961863_027.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture06/pic4296/42961863_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture06/pic4296/42961863_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture06/pic4296/42961863_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture06/pic4296/42961863_010.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture06/pic4296/42961863_045.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture06/pic4296/42961863_024.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture06/pic4296/42961863_017.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture06/pic4296/42961863_018.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4296/42961863_008.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4296/42961863_020.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4296/42961863_010.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42961863"
   },
@@ -705,30 +705,30 @@
    "link": "https://fem.encar.com/cars/detail/42790171"
   },
   {
-   "id": "43126190",
-   "plate": "25거3334",
-   "maker": "제네시스",
-   "model": "G90",
-   "grade": "3.3 T AWD",
-   "year": "19년 07월",
-   "yearRaw": "201907",
-   "mileage": 139191,
-   "fuel": "가솔린",
+   "id": "42917308",
+   "plate": "365더9569",
+   "maker": "현대",
+   "model": "쏘나타",
+   "grade": "2.0 LPG(영업용)",
+   "year": "26년 04월",
+   "yearRaw": "202604",
+   "mileage": 12639,
+   "fuel": "LPG(일반인 구입)",
    "transmission": "오토",
-   "color": "쥐색",
-   "price": 2590,
+   "color": "흰색",
+   "price": 2650,
    "diagnosis": true,
    "photos": [
-    "https://ci.encar.com/carpicture02/pic4312/43126190_027.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture02/pic4312/43126190_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture02/pic4312/43126190_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture02/pic4312/43126190_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture02/pic4312/43126190_018.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture02/pic4312/43126190_046.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture02/pic4312/43126190_053.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture02/pic4312/43126190_051.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture01/pic4291/42917308_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4291/42917308_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4291/42917308_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4291/42917308_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4291/42917308_018.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4291/42917308_015.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4291/42917308_007.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4291/42917308_033.jpg?impolicy=widthRate&wid=800"
    ],
-   "link": "https://fem.encar.com/cars/detail/43126190"
+   "link": "https://fem.encar.com/cars/detail/42917308"
   },
   {
    "id": "43035240",
@@ -757,30 +757,30 @@
    "link": "https://fem.encar.com/cars/detail/43035240"
   },
   {
-   "id": "42917308",
-   "plate": "365더9569",
-   "maker": "현대",
-   "model": "쏘나타",
-   "grade": "2.0 LPG(영업용)",
-   "year": "26년 04월",
-   "yearRaw": "202604",
-   "mileage": 12639,
-   "fuel": "LPG(일반인 구입)",
+   "id": "43126190",
+   "plate": "25거3334",
+   "maker": "제네시스",
+   "model": "G90",
+   "grade": "3.3 T AWD",
+   "year": "19년 07월",
+   "yearRaw": "201907",
+   "mileage": 139191,
+   "fuel": "가솔린",
    "transmission": "오토",
-   "color": "흰색",
+   "color": "쥐색",
    "price": 2490,
    "diagnosis": true,
    "photos": [
-    "https://ci.encar.com/carpicture01/pic4291/42917308_027.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4291/42917308_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4291/42917308_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4291/42917308_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4291/42917308_040.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4291/42917308_024.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4291/42917308_017.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4291/42917308_034.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture02/pic4312/43126190_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4312/43126190_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4312/43126190_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4312/43126190_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4312/43126190_048.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4312/43126190_018.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4312/43126190_023.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4312/43126190_016.jpg?impolicy=widthRate&wid=800"
    ],
-   "link": "https://fem.encar.com/cars/detail/42917308"
+   "link": "https://fem.encar.com/cars/detail/43126190"
   },
   {
    "id": "42517582",
@@ -913,32 +913,6 @@
    "link": "https://fem.encar.com/cars/detail/42949368"
   },
   {
-   "id": "43023125",
-   "plate": "60서1573",
-   "maker": "벤츠",
-   "model": "E-클래스",
-   "grade": "E300 아방가르드 인텔리전트 드라이브",
-   "year": "17년 03월",
-   "yearRaw": "201703",
-   "mileage": 112917,
-   "fuel": "가솔린",
-   "transmission": "오토",
-   "color": "검정색",
-   "price": 1690,
-   "diagnosis": true,
-   "photos": [
-    "https://ci.encar.com/carpicture02/pic4302/43023125_027.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture02/pic4302/43023125_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture02/pic4302/43023125_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture02/pic4302/43023125_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture02/pic4302/43023125_007.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture02/pic4302/43023125_023.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture02/pic4302/43023125_016.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture02/pic4302/43023125_021.jpg?impolicy=widthRate&wid=800"
-   ],
-   "link": "https://fem.encar.com/cars/detail/43023125"
-  },
-  {
    "id": "42949261",
    "plate": "305로3413",
    "maker": "현대",
@@ -963,6 +937,32 @@
     "https://ci.encar.com/carpicture04/pic4294/42949261_022.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42949261"
+  },
+  {
+   "id": "43023125",
+   "plate": "60서1573",
+   "maker": "벤츠",
+   "model": "E-클래스",
+   "grade": "E300 아방가르드 인텔리전트 드라이브",
+   "year": "17년 03월",
+   "yearRaw": "201703",
+   "mileage": 112917,
+   "fuel": "가솔린",
+   "transmission": "오토",
+   "color": "검정색",
+   "price": 1690,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture02/pic4302/43023125_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4302/43023125_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4302/43023125_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4302/43023125_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4302/43023125_007.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4302/43023125_023.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4302/43023125_016.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4302/43023125_021.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/43023125"
   },
   {
    "id": "43142060",
