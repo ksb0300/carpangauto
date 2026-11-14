@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-13 17:48",
+ "updated": "2026-11-14 17:48",
  "count": 49,
  "cars": [
   {
@@ -705,32 +705,6 @@
    "link": "https://fem.encar.com/cars/detail/42790171"
   },
   {
-   "id": "42917308",
-   "plate": "365더9569",
-   "maker": "현대",
-   "model": "쏘나타",
-   "grade": "2.0 LPG(영업용)",
-   "year": "26년 04월",
-   "yearRaw": "202604",
-   "mileage": 12639,
-   "fuel": "LPG(일반인 구입)",
-   "transmission": "오토",
-   "color": "흰색",
-   "price": 2650,
-   "diagnosis": true,
-   "photos": [
-    "https://ci.encar.com/carpicture01/pic4291/42917308_027.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4291/42917308_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4291/42917308_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4291/42917308_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4291/42917308_018.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4291/42917308_015.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4291/42917308_007.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4291/42917308_033.jpg?impolicy=widthRate&wid=800"
-   ],
-   "link": "https://fem.encar.com/cars/detail/42917308"
-  },
-  {
    "id": "43035240",
    "plate": "383가4393",
    "maker": "기아",
@@ -781,6 +755,32 @@
     "https://ci.encar.com/carpicture02/pic4312/43126190_016.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/43126190"
+  },
+  {
+   "id": "42917308",
+   "plate": "365더9569",
+   "maker": "현대",
+   "model": "쏘나타",
+   "grade": "2.0 LPG(영업용)",
+   "year": "26년 04월",
+   "yearRaw": "202604",
+   "mileage": 12639,
+   "fuel": "LPG(일반인 구입)",
+   "transmission": "오토",
+   "color": "흰색",
+   "price": 2450,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture01/pic4291/42917308_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4291/42917308_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4291/42917308_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4291/42917308_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4291/42917308_045.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4291/42917308_024.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4291/42917308_035.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4291/42917308_041.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42917308"
   },
   {
    "id": "42517582",
