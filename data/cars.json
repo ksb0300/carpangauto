@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-14 17:48",
+ "updated": "2026-11-15 17:48",
  "count": 49,
  "cars": [
   {
@@ -125,10 +125,10 @@
     "https://ci.encar.com/carpicture02/pic4272/42726388_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture02/pic4272/42726388_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture02/pic4272/42726388_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture02/pic4272/42726388_043.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture02/pic4272/42726388_019.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture02/pic4272/42726388_032.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture02/pic4272/42726388_041.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture02/pic4272/42726388_016.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4272/42726388_033.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4272/42726388_047.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture02/pic4272/42726388_048.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42726388"
   },
@@ -196,17 +196,17 @@
    "fuel": "가솔린",
    "transmission": "오토",
    "color": "검정색",
-   "price": 5190,
+   "price": 5150,
    "diagnosis": true,
    "photos": [
     "https://ci.encar.com/carpicture07/pic4307/43073841_027.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture07/pic4307/43073841_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture07/pic4307/43073841_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture07/pic4307/43073841_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4307/43073841_008.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4307/43073841_045.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4307/43073841_006.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4307/43073841_010.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture07/pic4307/43073841_046.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4307/43073841_016.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4307/43073841_005.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4307/43073841_021.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/43073841"
   },
@@ -378,17 +378,17 @@
    "fuel": "전기",
    "transmission": "오토",
    "color": "검정색",
-   "price": 3650,
+   "price": 3600,
    "diagnosis": true,
    "photos": [
     "https://ci.encar.com/carpicture08/pic4308/43081873_027.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture08/pic4308/43081873_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture08/pic4308/43081873_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture08/pic4308/43081873_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4308/43081873_044.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4308/43081873_034.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4308/43081873_023.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4308/43081873_016.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture08/pic4308/43081873_010.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4308/43081873_022.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture08/pic4308/43081873_040.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/43081873"
   },
@@ -861,32 +861,6 @@
    "link": "https://fem.encar.com/cars/detail/42844172"
   },
   {
-   "id": "43082362",
-   "plate": "377두4616",
-   "maker": "쉐보레(GM대우)",
-   "model": "이쿼녹스",
-   "grade": "4WD LT",
-   "year": "20년 11월",
-   "yearRaw": "202011",
-   "mileage": 46100,
-   "fuel": "디젤",
-   "transmission": "오토",
-   "color": "흰색",
-   "price": 2090,
-   "diagnosis": true,
-   "photos": [
-    "https://ci.encar.com/carpicture08/pic4308/43082362_027.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4308/43082362_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4308/43082362_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4308/43082362_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4308/43082362_032.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4308/43082362_031.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4308/43082362_018.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4308/43082362_007.jpg?impolicy=widthRate&wid=800"
-   ],
-   "link": "https://fem.encar.com/cars/detail/43082362"
-  },
-  {
    "id": "42949368",
    "plate": "814머4532",
    "maker": "르노코리아(삼성)",
@@ -965,6 +939,32 @@
    "link": "https://fem.encar.com/cars/detail/43023125"
   },
   {
+   "id": "43082362",
+   "plate": "377두4616",
+   "maker": "쉐보레(GM대우)",
+   "model": "이쿼녹스",
+   "grade": "4WD LT",
+   "year": "20년 11월",
+   "yearRaw": "202011",
+   "mileage": 46100,
+   "fuel": "디젤",
+   "transmission": "오토",
+   "color": "흰색",
+   "price": 1500,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture08/pic4308/43082362_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4308/43082362_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4308/43082362_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4308/43082362_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4308/43082362_008.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4308/43082362_035.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4308/43082362_042.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4308/43082362_017.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/43082362"
+  },
+  {
    "id": "43142060",
    "plate": "62마3465",
    "maker": "BMW",
@@ -1028,17 +1028,17 @@
    "fuel": "가솔린",
    "transmission": "오토",
    "color": "흰색",
-   "price": 1370,
+   "price": 1350,
    "diagnosis": true,
    "photos": [
     "https://ci.encar.com/carpicture08/pic4308/43088617_027.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture08/pic4308/43088617_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture08/pic4308/43088617_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture08/pic4308/43088617_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4308/43088617_045.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture08/pic4308/43088617_033.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4308/43088617_018.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4308/43088617_043.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture08/pic4308/43088617_031.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4308/43088617_040.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4308/43088617_005.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/43088617"
   },
