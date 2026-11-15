@@ -47,7 +47,7 @@ export function CarDetail({ app, id, tab }) {
         <h2>${car.plate} <span>${car.car_name}</span></h2>
         <div class="tags">
           <${Badge} tone=${car.status === "매도" ? "blue" : "gray"}>${car.status}<//>
-          ${sale?.contract && html`<${Badge} tone="amber">계약중 · 잔금 예정 ${sale.balance_due || "?"}<//>`}
+          ${sale?.contract && html`<${Badge} tone="amber">잔금 대기 · 예정 ${sale.balance_due || "?"}<//>`}
           ${car.consign === "고객위탁" && html`<${Badge}>고객위탁<//>`}
           ${settlement && html`<${Badge} tone=${settlement.finalized ? "green" : "amber"}>${settlement.mode === "대표" ? (settlement.finalized ? "손익확정" : "임시") : settlement.finalized ? "정산완료" : "임시정산"}<//>`}
           <span class="muted">${car.code} · ${dealer ? dealer.name + (dealer.partner ? " (대표)" : "") : "담당 미지정"} · 매입 ${car.purchase_date}</span>
@@ -78,7 +78,8 @@ function InfoTab({ app, car, sale, office }) {
     ["매입담당", (d => d ? d.name + (d.partner ? " (대표)" : " (딜러)") : html`<span class="red">미지정</span>`)(app.dealers.find(x => x.id === car.dealer_id))],
     ["매입일", car.purchase_date],
     ["매입가", `${won(car.purchase_amount)} (공급가 ${won(car.purchase_supply)} / 부가세 ${won(car.purchase_vat)})`],
-    ["매입처", car.purchase_channel], ["매입증빙", car.evidence], ["취득세", won(car.acq_tax)],
+    ["매입처", !car.purchase_channel || car.purchase_channel === "헤이딜러"      // 비었거나 자동 등록 '헤이딜러'(제로·셀프 모름)면 작성필요 (사용자 2026-11-04)
+      ? html`${car.purchase_channel || ""} <span class="badge amber" title="차량입력의 매입경로 칸이나 수정에서 고르세요">작성필요</span>` : car.purchase_channel], ["매입증빙", car.evidence], ["취득세", won(car.acq_tax)],
     ...(Number(car.purchase_fee) ? [["상사매입비", won(car.purchase_fee)]] : []),
     ["브랜드 · 모델", [car.brand, car.model, car.grade].filter(Boolean).join(" · ")], ["통합키", car.fskey],
     ["차대번호", car.vin], ["연식", car.model_year], ["최초등록일", car.first_reg_date],

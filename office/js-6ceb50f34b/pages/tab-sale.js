@@ -38,6 +38,78 @@ export async function 고를입금(app, { car_id = null, post_id = null, from = 
 }
 export const 입금글 = t => `${t.tx_date.slice(5).replace("-", "/")} ${t.tx_time || ""} ${t.counterparty || t.remark || "?"} ${won(t.deposit)}원`;
 
+const 키 = s => String(s || "").toLowerCase().replace(/\(주\)|㈜|주식회사|[\s()·.,\-[\]]/g, "");
+/** 이 차에 이은 매도대금 입금 */
+const 이은입금 = (app, car_id) => q(app.db.from("bank_txs").select("id, tx_date, tx_time, deposit, counterparty, remark, matched_by")
+  .eq("car_id", car_id).eq("match_kind", "차량매도대금").gt("deposit", 0).order("tx_date").order("tx_time"));
+const 합 = r => r.reduce((s, t) => s + (Number(t.deposit) || 0), 0);
+
+/** 통장 입금 고르기 (사용자 2026-11-15 "매도 올릴 때 무조건 연결") — 검색 + 체크. 구매자 이름이 들어간 입금은 위로 */
+function 입금고르기({ list, picked, setPicked, buyer }) {
+  const [찾기, set찾기] = useState("");
+  const b = 키(buyer).slice(0, 3);
+  const 맞음 = t => b.length >= 2 && 키(t.counterparty || t.remark).includes(b);
+  const 보임 = list.filter(t => 찾기 ? 키(입금글(t)).includes(키(찾기)) || String(t.deposit).includes(찾기.replace(/\D/g, "") || "@")
+                                 : Number(t.deposit) >= 100000 || picked.has(t.id))      // 이자·환급 같은 잔돈은 찾을 때만
+    .sort((x, y) => (picked.has(y.id) - picked.has(x.id)) || (맞음(y) - 맞음(x)));
+  const 토글 = id => setPicked(p => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  return html`<div>
+    <input placeholder="이름·금액으로 찾기" value=${찾기} onInput=${e => set찾기(e.target.value)} style="margin-bottom:6px" />
+    <div style="max-height:220px;overflow:auto;border:1px solid var(--line, #ddd);border-radius:8px;padding:4px 8px">
+      ${보임.length ? 보임.map(t => html`<label class="check" style="display:flex;padding:3px 0">
+        <input type="checkbox" checked=${picked.has(t.id)} onChange=${() => 토글(t.id)} /> ${입금글(t)}${맞음(t) ? html` <b class="green">· 구매자 이름</b>` : ""}</label>`)
+        : html`<span class="muted small">최근 통장 입금이 없습니다</span>`}
+    </div></div>`;
+}
+
+/** 매도 탭 위: 받은 돈 (계약중이면 잔금 대기 — 연결·할인·통장 외) */
+function 받은돈({ app, car, sale, office, reload }) {
+  const [이은, set이은] = useState(null);
+  const [고르기, set고르기] = useState(null);       // 고를 입금 목록 (열렸을 때)
+  const [picked, setPicked] = useState(new Set());
+  const 읽기 = () => 이은입금(app, car.id).then(set이은, () => set이은([]));
+  useEffect(() => { 읽기(); }, [car.id, sale.sale_amount, sale.contract]);
+  if (!이은 || (!sale.contract && !이은.length && !sale.force_reason)) return null;     // 예전 매도(입금 연결 전)는 조용히
+  const 받음 = 합(이은), 모자람 = Math.max(0, Number(sale.sale_amount) - 받음);
+  const 열기 = () => run(async () => {
+    const from = new Date(Date.parse(sale.sale_date) - 14 * 864e5).toISOString().slice(0, 10);
+    set고르기((await 고를입금(app, { car_id: car.id, from })).filter(t => t.car_id !== car.id)); setPicked(new Set());
+  });
+  const 잇기 = () => picked.size && run(async () => {
+    for (const id of picked) await q(app.db.rpc("sale_link_deposit", { p_tx: id, p_car: car.id, p_post: null }));
+    await q(app.db.rpc("sale_settle", { p_car: car.id }));
+    set고르기(null); reload();
+  }, "입금을 연결했습니다");
+  const 풀기 = t => confirm(`${입금글(t)} — 이 차에서 뺄까요?`) && run(async () => { await q(app.db.rpc("sale_unlink_deposit", { p_tx: t.id })); 읽기(); }, "뺐습니다");
+  const 할인 = () => {
+    const r = prompt(`받은 돈 ${won(받음)}원으로 매도 확정합니다.\n매도금액이 ${won(sale.sale_amount)} → ${won(받음)}원으로 줄고(할인 ${won(모자람)}원), 마진도 그만큼 줄어듭니다.\n\n사유(선택):`, "");
+    if (r !== null) run(async () => { await q(app.db.rpc("sale_force", { p_car: car.id, p_mode: "할인", p_reason: r || null })); reload(); }, "매도로 확정했습니다");
+  };
+  const 통장외 = () => {
+    const r = prompt(`통장에 안 찍힌 돈 ${won(모자람)}원을 받은 것으로 하고 매도 확정합니다 (매도금액 그대로).\n어떻게 받았나요? (예: 현금, 카뱅, 상계)`, "");
+    if (r !== null) run(async () => {
+      if (!r.trim()) throw new Error("사유를 적어 주세요.");
+      await q(app.db.rpc("sale_force", { p_car: car.id, p_mode: "통장외", p_reason: r.trim() })); reload();
+    }, "매도로 확정했습니다");
+  };
+  return html`<div class=${"bank-ok" + (sale.contract ? " bank-wait" : "")} style="margin-bottom:12px;display:block">
+    <div class="bar" style="margin:0">${sale.contract ? html`<b>⏳ 잔금 대기</b>` : html`<b>💰 받은 돈</b>`}
+      <span class="small">통장 ${won(받음)}원 / 매도금액 ${won(sale.sale_amount)}원${sale.contract && 모자람 ? html` · <b class="red">${won(모자람)}원 모자람</b>` : ""}</span>
+      <span class="grow"></span>
+      ${office && sale.contract && html`<button class="btn sm" onClick=${열기}>+ 입금 연결</button>
+        ${받음 > 0 && html`<button class="btn sm" onClick=${할인}>받은 돈으로 확정 (할인)</button>`}
+        <button class="btn sm" onClick=${통장외}>통장 외로 받음</button>`}</div>
+    ${sale.contract && html`<p class="muted small" style="margin:4px 0">차는 재고 그대로, 실적에 안 잡힙니다 — 통장 입금이 매도금액만큼 연결되면 자동으로 매도(매도일 = 마지막 입금일)</p>`}
+    ${이은.map(t => html`<div class="small">· ${입금글(t)} <span class="muted">${t.matched_by || ""}</span>
+      ${office && sale.contract && html` <a href="javascript:void 0" class="muted" onClick=${() => 풀기(t)}>빼기</a>`}</div>`)}
+    ${sale.force_reason && html`<div class="small" style="margin-top:4px">⚠️ ${sale.force_reason}</div>`}
+    ${고르기 && html`<div style="margin-top:8px">
+      <${입금고르기} list=${고르기} picked=${picked} setPicked=${setPicked} buyer=${sale.buyer_name || 이은[0]?.counterparty} />
+      <div class="bar"><span class="small">고른 것 ${won(합(고르기.filter(t => picked.has(t.id))))}원</span><span class="grow"></span>
+        <button class="btn ghost sm" onClick=${() => set고르기(null)}>닫기</button><button class="btn primary sm" disabled=${!picked.size} onClick=${잇기}>연결</button></div></div>`}
+  </div>`;
+}
+
 /** 게시판 글 한 줄 (매도 탭 위) */
 const 글줄 = p => html`<p class="small" style="margin:0 0 10px">📋 게시판 매도정보 <a href=${"#/board/" + p.id}>${p.title}</a> ·
   ${p.done_at ? html`<b class="green">✔ 잔금 완료</b> <span class="muted">(${p.done_by || ""})</span>` : html`<b>⏳ 잔금 대기</b> <span class="muted">— 통장에 다 들어오면 매도로 자동 확정</span>`}</p>`;
@@ -72,16 +144,11 @@ export function SaleTab({ app, car, sale, buyers, settlement, reload, locked, of
     set할부(null); reload();
   }, "할부를 고쳤습니다");
   const 할부미리 = 할부 ? 할부수수료(할부.amount, 할부.rate) : null;
-  // 계약중 (사용자 2026-11-01): 계약금만 받은 차 — 재고 그대로, 잔금 받으면 [잔금 완료]로 매도 확정 (매도일 = 오늘)
-  const 잔금완료 = () => confirm("잔금을 다 받았나요? 매도로 확정하고 매도일을 오늘로 합니다.") && run(async () => {
-    await q(app.db.from("car_sales").update({ contract: false, sale_date: today() }).eq("car_id", car.id)); reload();
-  }, "매도로 확정했습니다");
-  const 일시 = iso => iso ? new Date(Date.parse(iso) + 9 * 3600e3).toISOString().slice(5, 16).replace("-", "/").replace("T", " ") : "-";
+  // 계약중 = 잔금 대기 (사용자 2026-11-15): 통장 입금이 매도금액만큼 이어져야 매도 — 손으로 확정하는 버튼 대신 연결·할인·통장 외 (받은돈)
   return html`<div class="card">
     ${글 && 글줄(글)}
-    ${sale.contract && html`<div class="bank-ok bank-wait" style="margin-bottom:12px">📝 <b>계약중</b>
-      <span class="muted small">계약금 ${won(sale.deposit_amount)} · 받은 때 ${일시(sale.deposit_at)} · 잔금 예정 ${sale.balance_due || "-"} — 차는 재고 그대로, 실적에는 안 잡힙니다</span><span class="grow"></span>
-      ${office && html`<button class="btn sm primary" onClick=${잔금완료}>잔금 완료 → 매도 확정</button>`}</div>`}
+    <${받은돈} app=${app} car=${car} sale=${sale} office=${office} reload=${reload} />
+    ${sale.contract && sale.balance_due && html`<p class="small muted" style="margin:-6px 0 10px">잔금 예정 ${sale.balance_due}</p>`}
     <div class="bar"><h3>매도정보</h3><span class="grow"></span>
       ${할부바로 && !할부 && html`<button class="btn" title="손익확정을 풀지 않고 할부만 고칩니다" onClick=${() => set할부({ company: sale.installment_company, amount: Number(sale.installment_amount) || 0, rate: Number(sale.installment_rate) || "" })}>할부 고치기</button>`}
       ${office && !locked && html`<button class="btn" onClick=${() => setEditing(true)}>수정</button><button class="btn danger" onClick=${cancel}>매도취소</button>`}
@@ -90,7 +157,7 @@ export function SaleTab({ app, car, sale, buyers, settlement, reload, locked, of
       <div><span>${sale.contract ? "계약일" : "매도일"}</span><b>${sale.sale_date}</b></div>
       <div><span>매도담당</span><b>${dealer?.name || "-"}${sale.other_dealer ? " (타상사딜러)" : ""}</b></div>
       <div><span>매도유형</span><b>${sale.sale_type}</b></div>
-      <div><span>매도금액</span><b>${won(sale.sale_amount)} <small class="muted">(공급가 ${won(sale.sale_supply)} / 부가세 ${won(sale.sale_vat)})</small></b></div>
+      <div><span>매도금액</span><b>${won(sale.sale_amount)} <small class="muted">(공급가 ${won(sale.sale_supply)} / 부가세 ${won(sale.sale_vat)})</small>${Number(sale.discount) > 0 ? html` <small class="red">할인 ${won(sale.discount)}</small>` : ""}</b></div>
       <div><span>상사매도비</span><b>${won(sale.sale_fee)}</b></div>
       <div><span>성능보험료</span><b>${won(sale.perf_insurance)}</b></div>
       ${Number(sale.am_income) > 0 && html`<div><span>AM수익</span><b>${won(sale.am_income)}</b></div>`}
@@ -117,34 +184,27 @@ function SaleForm({ app, car, sale, buyers, post, onDone }) {
     sale_date: today(), dealer_id: car.dealer_id, other_dealer: false, sale_type: "내수판매",
     sale_amount: car.list_price ? Number(car.list_price) : 0,   // 리스트에 넣은 판매가(매도비 제외 차값)
     plate_out: car.plate, sale_fee: app.settings.sale_fee, perf_insurance: 0, memo: "", broker_dealer_id: null,
-    installment_company: null, installment_amount: 0, installment_rate: 0, am_income: 0,
-    contract: false, deposit_amount: 0, deposit_at: null, balance_due: null });
+    installment_company: null, installment_amount: 0, installment_rate: 0, am_income: 0, balance_due: null });
   const [손님, set손님] = useState({ buyer: sale?.buyer_name || post?.form?.buyer || "", phone: sale?.buyer_phone || post?.form?.phone || "" });   // 매수고객 칸은 숨김 중 — 이름·연락처만
   const [올리기, set올리기] = useState(true);
   const [채움, set채움] = useState(false);
-  const [입금들, set입금들] = useState([]);          // 계약금으로 고를 통장 입금
-  const [계약금tx, set계약금tx] = useState(null), [처음tx, set처음tx] = useState(null);
-  useEffect(() => { if (f.contract && !입금들.length) run(async () => {
+  // 새 매도: 받은 돈(계약금·잔금·할부금)을 통장 입금에서 고른다 (사용자 2026-11-15 "무조건 연결") — 다 차면 바로 매도, 모자라면 잔금 대기
+  const [입금들, set입금들] = useState(null), [picked, setPicked] = useState(new Set());
+  useEffect(() => { if (!sale) run(async () => {
     const r = await 고를입금(app, { car_id: car.id, post_id: post?.id || null });
-    set입금들(r);
-    const 이은 = r.find(t => t.car_id === car.id && t.match_kind === "차량매도대금" && Number(t.deposit) === Number(f.deposit_amount)) || r.find(t => t.car_id === car.id && t.match_kind === "차량매도대금");
-    if (이은) { set계약금tx(이은.id); set처음tx(이은.id); }
-  }); }, [f.contract, post?.id]);
-  const 계약금고르기 = id => {
-    set계약금tx(id);
-    const t = 입금들.find(x => x.id === id);
-    if (t) setF(p => ({ ...p, deposit_amount: Number(t.deposit), deposit_at: `${t.tx_date}T${(t.tx_time || "00:00").slice(0, 5)}:00+09:00` }));
-  };
-  // 새 매도: 게시판 매도정보 글이 먼저 있으면 그 내용으로 채운다 — 계약금만 받은 글이면 계약중
+    set입금들(r); setPicked(new Set(r.filter(t => t.car_id === car.id && t.match_kind === "차량매도대금").map(t => t.id)));
+  }); }, [post?.id]);
+  const 고른돈 = 합((입금들 || []).filter(t => picked.has(t.id)));
+  // 새 매도: 게시판 매도정보 글이 먼저 있으면 그 내용으로 채운다
   useEffect(() => { if (sale || !post) return;
-    const g = post.form || {}, 계약 = !post.done_at && Number(g.deposit) > 0;
+    const g = post.form || {};
     const 받은때 = 계약금일시(g.deposit_when, post.created_at);
     const 잔 = (String(g.memo || "").match(/잔금[^\n]{0,10}?(\d{1,2}\s*[월./]\s*\d{1,2})/) || [])[1];
     const 잔금일 = 잔 && 계약금일시(잔, post.created_at);
     setF(p => ({ ...p, sale_type: 형태탭(g.type) || p.sale_type,
       sale_amount: Number(g.amount) ? Number(g.amount) - (g.fee_included ? Number(p.sale_fee) || 0 : 0) : p.sale_amount,
-      sale_date: post.done_at ? KST날(post.done_at) : 계약 ? KST날(받은때 || post.created_at) : p.sale_date,
-      contract: 계약, deposit_amount: 계약 ? Number(g.deposit) : 0, deposit_at: 계약 ? 받은때 : null, balance_due: 계약 && 잔금일 ? KST날(잔금일) : null,
+      sale_date: post.done_at ? KST날(post.done_at) : KST날(받은때 || post.created_at),
+      balance_due: 잔금일 ? KST날(잔금일) : p.balance_due,
       memo: p.memo || g.memo || "" }));
     set손님({ buyer: g.buyer || "", phone: g.phone || "" }); set채움(true);
   }, [post?.id]);
@@ -182,18 +242,22 @@ function SaleForm({ app, car, sale, buyers, post, onDone }) {
         installment_amount: Number(f.installment_amount) || 0, installment_rate: Number(f.installment_rate) || 0,
         am_income: f.sale_type === "AM" ? Number(f.am_income) || 0 : 0,
         buyer_name: 손님.buyer.trim() || null, buyer_phone: 손님.phone.trim() || null, board_post: !!올리기,
-        // 계약중 칸 — DB 에 칸이 있을 때(기존 매도에 contract 가 있거나 계약중을 체크했을 때)만 보낸다
-        ...(f.contract || (sale && "contract" in sale) ? { contract: !!f.contract, deposit_amount: Number(f.deposit_amount) || 0,
-          deposit_at: f.deposit_at ? new Date(f.deposit_at).toISOString() : null, balance_due: f.balance_due || null } : {}) };
+        ...(!sale || sale.contract ? { balance_due: f.balance_due || null } : {}) };
+      // 매도/잔금 대기는 DB 가 정한다 (통장 입금 합계 ≥ 매도금액이면 매도, 매도일 = 마지막 입금일) — 그래서 고른 입금을 먼저 잇고 저장
+      if (!sale) {
+        for (const t of 입금들 || []) {
+          const 이음 = t.car_id === car.id && t.match_kind === "차량매도대금";
+          if (picked.has(t.id) && !이음) await q(app.db.rpc("sale_link_deposit", { p_tx: t.id, p_car: car.id, p_post: post?.id || null }));
+          if (!picked.has(t.id) && 이음) await q(app.db.rpc("sale_unlink_deposit", { p_tx: t.id }));
+        }
+      }
       if (sale) await q(app.db.from("car_sales").update(row).eq("car_id", car.id));
       else await q(app.db.from("car_sales").insert(row));
-      if (f.contract && 계약금tx !== 처음tx) {      // 고른 계약금 입금을 이 차·매도정보 글에 잇는다 (다른 이름으로 들어와도)
-        if (처음tx) await q(app.db.rpc("sale_unlink_deposit", { p_tx: 처음tx }));
-        if (계약금tx) await q(app.db.rpc("sale_link_deposit", { p_tx: 계약금tx, p_car: car.id, p_post: null }));
-      }
-      if (post === null && 올리기 && (!sale || (f.contract && !sale.contract))) {      // 글은 DB 가 올렸다 — 이미 들어온 계약금 등을 붙인다
+      await q(app.db.rpc("sale_settle", { p_car: car.id }));        // 매도금액을 고쳐 받은 돈과 맞았으면 매도로
+      if (post === null && 올리기 && !sale) {      // 글은 DB 가 올렸다 — 이미 들어온 계약금 등을 붙인다
         await app.db.rpc("board_match_sales"); toast("게시판 매도정보에도 올렸습니다 — 1분 안에 알림이 갑니다");
       }
+      if (!sale && 고른돈 < Number(f.sale_amount)) toast(`받은 돈 ${won(고른돈)}원 — 잔금 대기로 저장했습니다. 잔금이 통장에 연결되면 자동으로 매도됩니다`);
       if (!SHOW_BUYERS) return true;     // 매수고객 숨김 중 — 기존 기록은 건드리지 않는다
       const keep = new Set(bs.filter(b => b.id).map(b => b.id));
       const gone = buyers.filter(b => !keep.has(b.id)).map(b => b.id);
@@ -218,15 +282,8 @@ function SaleForm({ app, car, sale, buyers, post, onDone }) {
     ${채움 && html`<p class="note">📋 게시판 매도정보 글 <a href=${"#/board/" + post.id}>${post.title}</a> 내용으로 채웠습니다 — 확인하고 저장하세요.</p>`}
     ${post && !채움 && 글줄(post)}
     <div class="fgrid">
-      <${Field} label="계약중" hint=${f.contract ? "계약금만 받음 — 차는 재고 그대로, 실적에 안 잡힘. 잔금 받으면 체크를 풀거나 [잔금 완료]" : "잔금까지 다 받았으면 체크하지 않습니다"}>
-        <label class="check"><input type="checkbox" checked=${!!f.contract} onChange=${e => setF(p => ({ ...p, contract: e.target.checked, ...(!e.target.checked && p.contract ? { sale_date: today() } : {}) }))} /> 계약금만 받았음</label><//>
-      <${Field} label=${f.contract ? "계약일" : "매도일"} req><input type="date" value=${f.sale_date} onInput=${e => set("sale_date")(e.target.value)} required /><//>
-      ${f.contract && html`<${Field} label="계약금 들어온 입금" hint="통장에서 고르면 계약금·받은 일시가 채워지고, 이름이 달라도 이 차 매도대금으로 잇습니다">
-        <${Select} value=${계약금tx} onChange=${계약금고르기} empty=${입금들.length ? "통장 입금에서 고르기" : "최근 2주 입금 없음"} options=${입금들.map(t => [t.id, 입금글(t)])} /><//>
-      <${Field} label="계약금"><${Money} value=${f.deposit_amount || 0} onInput=${set("deposit_amount")} /><//>
-      <${Field} label="계약금 받은 일시" hint="대충이라도"><input type="datetime-local" value=${f.deposit_at ? new Date(Date.parse(f.deposit_at) + 9 * 3600e3).toISOString().slice(0, 16) : ""}
-        onInput=${e => set("deposit_at")(e.target.value ? e.target.value + ":00+09:00" : null)} /><//>
-      <${Field} label="잔금 예정일" hint="대충이라도"><input type="date" value=${f.balance_due || ""} onInput=${e => set("balance_due")(e.target.value || null)} /><//>`}
+      <${Field} label=${sale && !sale.contract ? "매도일" : "계약일"} req hint=${sale && !sale.contract ? "" : "매도일은 잔금 들어온 날로 자동"}><input type="date" value=${f.sale_date} onInput=${e => set("sale_date")(e.target.value)} required /><//>
+      ${(!sale || sale.contract) && html`<${Field} label="잔금 예정일" hint="대충이라도"><input type="date" value=${f.balance_due || ""} onInput=${e => set("balance_due")(e.target.value || null)} /><//>`}
       <${Field} label="매도담당"><div class="row"><${Select} value=${f.dealer_id} onChange=${set("dealer_id")} options=${app.dealers.map(d => [d.id, d.name + (d.partner ? " (대표)" : "")])} />
         <label class="check"><input type="checkbox" checked=${f.other_dealer} onChange=${e => set("other_dealer")(e.target.checked)} /> 타상사딜러</label></div><//>
       <${Field} label="판매유형" hint=${f.sale_type === "수출" ? "수출 — 성능점검비가 22,000원으로 바뀝니다" : f.sale_type === "엔카믿고" ? `엔카믿고 — 수수료 ${won(엔카믿고수수료(f.sale_amount))}원이 상품화비용으로 자동 등록됩니다 (매도비에서 엔카가 떼고 입금)` : ""}>
@@ -238,8 +295,12 @@ function SaleForm({ app, car, sale, buyers, post, onDone }) {
       <${Field} label="성능보험료" hint="손님이 내는 돈 — 현금영수증용, 손익에는 안 들어감"><${Money} value=${f.perf_insurance} onInput=${set("perf_insurance")} /><//>
       <${Field} label="구매자 (입금자명)" hint="통장 입금과 짝짓기용 — 게시판 매도정보 글에 들어갑니다"><input value=${손님.buyer} onInput=${e => set손님(s => ({ ...s, buyer: e.target.value }))} /><//>
       <${Field} label="구매자 연락처"><input inputmode="tel" value=${손님.phone} onInput=${e => set손님(s => ({ ...s, phone: e.target.value }))} /><//>
+      ${!sale && html`<${Field} label="받은 돈 (통장 입금)" wide hint=${입금들 === null ? "통장 입금 읽는 중…" : html`계약금·잔금·할부금을 모두 고르세요 — 고른 것 <b>${won(고른돈)}원</b> / 매도금액 ${won(f.sale_amount)}원 ·
+          ${고른돈 >= Number(f.sale_amount) && Number(f.sale_amount) > 0 ? html`<b class="green">다 받음 → 저장하면 매도 (매도일 = 마지막 입금일)</b>`
+            : html`<b>모자람 → 잔금 대기로 저장</b>, 잔금이 통장에 연결되면 자동으로 매도`}`}>
+        ${입금들 && html`<${입금고르기} list=${입금들} picked=${picked} setPicked=${setPicked} buyer=${손님.buyer} />`}<//>`}
       <${Field} label="특이사항" wide><input value=${f.memo || ""} onInput=${e => set("memo")(e.target.value)} /><//>
-      ${post === null && (!sale || (f.contract && !sale.contract)) && html`<${Field} label="게시판" wide hint="사무장님께 알림이 갑니다 — 통장에 잔금이 다 들어오면 매도로 자동 확정">
+      ${post === null && !sale && html`<${Field} label="게시판" wide hint="사무장님께 알림이 갑니다 — 통장에 잔금이 다 들어오면 매도로 자동 확정">
         <label class="check"><input type="checkbox" checked=${올리기} onChange=${e => set올리기(e.target.checked)} /> 게시판 매도정보에도 올리기</label><//>`}
     </div>
     <div class="bar"><h3>할부 내용</h3><span class="muted small">할부(금융)로 판 경우만 — 재고금융 → 할부실적에 캐피탈사별로 쌓입니다</span></div>
