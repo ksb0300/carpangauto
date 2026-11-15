@@ -76,6 +76,18 @@ export function BankPage({ app }) {
   });
   useEffect(() => { loadAcc(); run(async () => setData(await loadAll(app.db))); }, []);
   useEffect(() => { loadTx(); }, [acc, period.from, period.to]);
+  // 통장마다 지금 잔액 = 가장 최근 거래의 잔액 (사용자 2026-11-04 "총액이 안 나와") — 맨 앞 '전체' 탭에 합계
+  //   카카오뱅크 모임통장은 앱 알림에 잔액이 없어 직전 잔액에 더하고 뺀 값(계산)
+  const [잔액, set잔액] = useState({});
+  useEffect(() => { if (accounts?.length) run(async () => {
+    const r = await Promise.all(accounts.map(a => q(app.db.from("bank_txs").select("balance, tx_date, tx_time").eq("account_id", a.id).not("balance", "is", null)
+      .order("tx_date", { ascending: false }).order("tx_time", { ascending: false, nullsFirst: false }).order("created_at", { ascending: false }).limit(1))));
+    set잔액(Object.fromEntries(accounts.map((a, i) => [a.id, r[i][0] || null])));
+  }); }, [accounts, txs]);
+  const 활성 = (accounts || []).filter(a => a.active !== false);
+  const 총잔액 = 활성.reduce((t, a) => t + Number(잔액[a.id]?.balance || 0), 0);
+  const 계산잔액 = a => /카카오/.test(a.bank_name || "");
+  const 억만 = v => { v = Math.round(Number(v) || 0); const 억 = Math.floor(v / 1e8), 만 = Math.floor((v % 1e8) / 1e4); return 억 ? `${억}억${만 ? " " + 만.toLocaleString() + "만" : ""}` : 만 ? 만.toLocaleString() + "만" : won(v); };
 
   const car = useMemo(() => Object.fromEntries((data?.cars || []).map(c => [c.id, c])), [data]);
   const dealer = Object.fromEntries(app.dealers.map(d => [d.id, d]));
@@ -202,8 +214,11 @@ export function BankPage({ app }) {
 
   return html`<div class="bar"><h2>자금관리</h2><span class="grow"></span>
       <button class="btn" onClick=${() => setManage(!manage)}>${manage ? "계좌 관리 닫기" : "계좌 관리"}</button></div>
-    ${accounts.length > 0 && html`<nav class="tabs">${accounts.filter(a => a.active !== false).map(a => html`<a href="#" class=${acc === a.id ? "on" : ""} onClick=${e => { e.preventDefault(); setAcc(a.id); }}>
-      ${a.bank_name}${a.purpose ? ` · ${a.purpose}` : a.alias ? ` · ${a.alias}` : ""}</a>`)}</nav>`}
+    ${accounts.length > 0 && html`<nav class="tabs">
+      <a href="#" class=${!acc ? "on" : ""} title=${`통장 ${활성.length}개 잔액 합계 ${won(총잔액)}원`} onClick=${e => { e.preventDefault(); setAcc(null); }}>전체 <b class="tab-bal">${억만(총잔액)}</b></a>
+      ${활성.map(a => html`<a href="#" class=${acc === a.id ? "on" : ""} title=${잔액[a.id] ? `잔액 ${won(잔액[a.id].balance)}원 (${잔액[a.id].tx_date} ${잔액[a.id].tx_time || ""} 거래 기준${계산잔액(a) ? " · 알림에 잔액이 없어 계산한 값" : ""})` : "잔액 기록 없음"}
+        onClick=${e => { e.preventDefault(); setAcc(a.id); }}>
+      ${a.bank_name}${a.purpose ? ` · ${a.purpose}` : a.alias ? ` · ${a.alias}` : ""}${잔액[a.id] ? html` <b class="tab-bal">${억만(잔액[a.id].balance)}</b>` : ""}</a>`)}</nav>`}
     ${manage && html`<div class="bar"><span class="grow"></span><span class="muted small">${PB_NOTE}</span>
       <button class="btn" onClick=${importPopbillAccounts}>팝빌 등록계좌 가져오기</button>
       <button class="btn" onClick=${() => setAdding(true)}>+ 계좌 추가</button></div>`}
@@ -237,6 +252,9 @@ export function BankPage({ app }) {
         ...shown.map(t => [t.tx_date, t.tx_time, t.deposit, t.withdraw, t.balance, t.remark, t.match_kind, car[t.car_id]?.plate, dealer[t.dealer_id]?.name, t.memo])])}>엑셀(CSV)</button>
     </div>
     <div class="stat-grid">
+      <div class="stat"><span>${curAcc ? "통장 잔액" : "총 잔액"}</span><b>${won(curAcc ? 잔액[curAcc.id]?.balance || 0 : 총잔액)}</b><small>${curAcc
+        ? (잔액[curAcc.id] ? `${잔액[curAcc.id].tx_date.slice(5).replace("-", "/")} ${(잔액[curAcc.id].tx_time || "").slice(0, 5)} 기준${계산잔액(curAcc) ? " · 계산" : ""}` : "기록 없음")
+        : `통장 ${활성.length}개 합계`}</small></div>
       <div class="stat"><span>입금</span><b class="red">${sum("deposit") ? "+" : ""}${won(sum("deposit"))}</b><small>${shown.filter(t => t.deposit > 0).length}건</small></div>
       <div class="stat"><span>출금</span><b class="blue">${sum("withdraw") ? "-" : ""}${won(sum("withdraw"))}</b><small>${shown.filter(t => t.withdraw > 0).length}건</small></div>
       <div class=${"stat" + ((txs || []).some(t => !t.match_kind) ? " warn" : "")}><span>미매칭</span><b>${(txs || []).filter(t => !t.match_kind).length}</b><small>${curAcc ? curAcc.bank_name : "전체 계좌"}</small></div>

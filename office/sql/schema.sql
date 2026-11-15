@@ -3376,3 +3376,239 @@ begin
   return new;
 end $function$
 ;
+
+
+-- 20261115000001_sale_paid_gate.sql
+-- 매도는 돈이 들어와야 (사용자 2026-11-15 "차대금은 매도 올릴 때 무조건 연결짓게 — 그래야 매도로 넘어가게끔").
+--   · 이 차에 이은 통장 입금(차량매도대금) 합계 ≥ 매도금액 이어야 '매도'. 모자라면 '계약중'(재고, 실적 제외)으로 남는다.
+--   · 잔금이 들어와 합계가 차면 자동으로 매도 — 매도일 = 마지막 입금일 ("매도일 기준은 무조건 잔금 들어온 날").
+--   · 모자라도 넘길 수 있다(force, 대표·사무장):
+--       할인   — 깎아 준 만큼 매도금액을 받은 돈으로 줄인다 → 마진도 그만큼 줄어든다 ("깎아주는 것이 있을 수 있거든")
+--       통장외 — 현금·카뱅 끊김·상계 등, 사유 필수 (매도금액 그대로)
+--   · 금액만 같은 입금을 아무 차에나 붙이던 자동 분류(105주5828 에 남의 할부금 2억이 붙음)는
+--     입금자명에 구매자 이름이나 차번호 4자리가 있을 때만 붙도록 좁힌다.
+
+alter table car_sales add column if not exists force_reason text;      -- 돈이 모자란데 넘긴 사유 (할인 …원 / 통장 외 수령 — …)
+alter table car_sales add column if not exists forced_by uuid;
+alter table car_sales add column if not exists forced_at timestamptz;
+alter table car_sales add column if not exists discount bigint not null default 0;   -- 할인으로 매도금액에서 뺀 돈
+
+-- 이 차에 이은 매도대금 합계와 마지막 입금일
+create or replace function sale_paid(p_car uuid, out paid bigint, out last_day date, out first_at timestamptz)
+language sql stable security definer set search_path = public as $$
+  select coalesce(sum(deposit), 0)::bigint, max(tx_date),
+         min((tx_date + coalesce(nullif(tx_time, '')::time, '00:00'::time)) at time zone 'Asia/Seoul')
+    from bank_txs where car_id = p_car and match_kind = '차량매도대금' and deposit > 0
+$$;
+revoke execute on function sale_paid(uuid) from public, anon;
+grant execute on function sale_paid(uuid) to authenticated;
+
+-- 문지기: 계약중 → 매도 는 돈이 다 들어왔거나 force 일 때만
+create or replace function _sale_paid_gate() returns trigger language plpgsql security definer set search_path = public as $$
+declare v record;
+begin
+  if new.contract then return new; end if;
+  if tg_op = 'UPDATE' and not old.contract then return new; end if;          -- 이미 매도 확정된 기록 고치기는 그대로
+  if new.force_reason is not null and new.forced_at is not null
+     and (tg_op = 'INSERT' or new.forced_at is distinct from old.forced_at) then return new; end if;
+  select * into v from sale_paid(new.car_id);
+  if v.paid >= new.sale_amount and new.sale_amount > 0 then
+    new.sale_date := coalesce(v.last_day, new.sale_date);                     -- 매도일 = 잔금 들어온 날
+    return new;
+  end if;
+  if tg_op = 'INSERT' then                                                     -- 돈이 덜 들어왔으면 계약중으로 받는다
+    new.contract := true;
+    if coalesce(new.deposit_amount, 0) = 0 then new.deposit_amount := v.paid; end if;
+    if new.deposit_at is null then new.deposit_at := v.first_at; end if;
+    return new;
+  end if;
+  raise exception '통장에 연결된 돈(%)이 매도금액(%)보다 모자랍니다 — 입금을 연결하거나 [받은 돈으로 확정]을 쓰세요',
+    _원(v.paid), _원(new.sale_amount);
+end $$;
+drop trigger if exists car_sales_paid_gate on car_sales;
+create trigger car_sales_paid_gate before insert or update on car_sales
+  for each row execute function _sale_paid_gate();
+
+-- 돈이 차면 매도로 (입금을 이을 때마다 — 자동 분류·게시판 짝짓기·손으로 고르기 모두)
+create or replace function sale_settle(p_car uuid) returns boolean language plpgsql security definer set search_path = public as $$
+declare s record; v record;
+begin
+  select * into s from car_sales where car_id = p_car;
+  if s.car_id is null or not s.contract then return false; end if;
+  select * into v from sale_paid(p_car);
+  if v.paid < s.sale_amount or s.sale_amount <= 0 then return false; end if;
+  update car_sales set contract = false, sale_date = coalesce(v.last_day, sale_date) where car_id = p_car;
+  return true;
+end $$;
+revoke execute on function sale_settle(uuid) from public, anon;
+grant execute on function sale_settle(uuid) to authenticated;
+
+create or replace function _bank_sale_settle() returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if new.car_id is not null and new.match_kind = '차량매도대금' and coalesce(new.deposit, 0) > 0 then
+    perform sale_settle(new.car_id);
+  end if;
+  return null;
+end $$;
+drop trigger if exists bank_sale_settle on bank_txs;
+create trigger bank_sale_settle after insert or update of car_id, match_kind, deposit on bank_txs
+  for each row execute function _bank_sale_settle();
+
+-- 모자란데 넘기기 (대표·사무장)
+create or replace function sale_force(p_car uuid, p_mode text, p_reason text default null, p_date date default null) returns void
+language plpgsql security definer set search_path = public as $$
+declare s record; v record; d bigint;
+begin
+  if not is_office() then raise exception '권한이 없습니다'; end if;
+  select * into s from car_sales where car_id = p_car for update;
+  if s.car_id is null then raise exception '매도 기록이 없습니다'; end if;
+  if not s.contract then raise exception '이미 매도로 확정된 차입니다'; end if;
+  select * into v from sale_paid(p_car);
+  if p_mode = '할인' then
+    if v.paid <= 0 then raise exception '통장에 연결된 입금이 없습니다 — 받은 입금을 먼저 연결하세요'; end if;
+    d := greatest(s.sale_amount - v.paid, 0);
+    update car_sales set sale_amount = least(sale_amount, v.paid), discount = discount + d, contract = false,
+           sale_date = coalesce(v.last_day, (now() at time zone 'Asia/Seoul')::date),
+           force_reason = concat_ws(' — ', '할인 ' || _원(d), nullif(trim(coalesce(p_reason, '')), '')),
+           forced_by = auth.uid(), forced_at = now()
+     where car_id = p_car;
+  elsif p_mode = '통장외' then
+    if coalesce(trim(p_reason), '') = '' then raise exception '통장 외로 받은 사유를 적어 주세요'; end if;
+    update car_sales set contract = false,
+           sale_date = coalesce(p_date, v.last_day, (now() at time zone 'Asia/Seoul')::date),
+           force_reason = '통장 외 수령 — ' || trim(p_reason), forced_by = auth.uid(), forced_at = now()
+     where car_id = p_car;
+  else
+    raise exception '알 수 없는 방식입니다: %', p_mode;
+  end if;
+end $$;
+revoke execute on function sale_force(uuid, text, text, date) from public, anon;
+grant execute on function sale_force(uuid, text, text, date) to authenticated;
+
+-- 게시판 매도정보 글 완료 → 계약중 매도 확정: 돈이 모자란 채 끝낸 글(손으로 완료, '계약금 받은 것으로 침')은 force 로 기록
+create or replace function _board_sale_done() returns trigger language plpgsql security definer set search_path = public as $$
+declare v_car uuid; v record; s record;
+begin
+  if new.done_at is null or old.done_at is not null then return new; end if;
+  v_car := coalesce(new.car_id, (select c.id from cars c where c.deleted_at is null and coalesce(c.plate, '') <> ''
+                                  and replace(c.plate, ' ', '') = replace(coalesce(new.form->>'plate', new.plate, ''), ' ', '')
+                                  order by c.purchase_date desc nulls last limit 1));
+  if v_car is null then return new; end if;
+  select * into s from car_sales where car_id = v_car and contract;
+  if s.car_id is null then return new; end if;
+  select * into v from sale_paid(v_car);
+  if v.paid >= s.sale_amount then
+    update car_sales set contract = false where car_id = v_car;              -- 매도일은 문지기가 마지막 입금일로
+  else
+    update car_sales set contract = false, sale_date = (new.done_at at time zone 'Asia/Seoul')::date,
+           force_reason = '게시판 글 완료 (' || coalesce(new.done_by, '?') || ') — 연결된 입금 ' || _원(v.paid),
+           forced_by = auth.uid(), forced_at = now()
+     where car_id = v_car;
+  end if;
+  return new;
+end $$;
+
+-- 자동 분류 3)·4) 좁히기: 금액이 같고 + 입금자명에 구매자 이름(앞 2글자 이상) 또는 차번호 끝 4자리가 있을 때만
+create or replace function _매도입금근거(cp text, buyer text, plate text) returns boolean language sql immutable as $$
+  select (length(_이름키(buyer)) >= 2 and strpos(_이름키(cp), left(_이름키(buyer), 3)) > 0)
+      or (right(regexp_replace(coalesce(plate, ''), '\D', '', 'g'), 4) ~ '^\d{4}$'
+          and strpos(coalesce(cp, ''), right(regexp_replace(coalesce(plate, ''), '\D', '', 'g'), 4)) > 0)
+$$;
+
+CREATE OR REPLACE FUNCTION public.bank_auto_classify(p_tx uuid)
+ RETURNS text
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare t record; cp text; amt bigint; d date; lend text; lid uuid; pf text; pt text; n int; v_loan uuid; v_car uuid; v_inst bigint; newid uuid;
+begin
+  if not (is_office() or current_user in ('service_role', 'postgres', 'supabase_admin')) then raise exception '권한이 없습니다'; end if;   -- 대표·사무장, 서버(bank-in)
+  select * into t from bank_txs where id = p_tx;
+  if t.id is null or t.match_kind is not null then return null; end if;
+  cp := coalesce(t.counterparty, t.remark, ''); d := t.tx_date;
+  select x.full, x.tail into pf, pt from _문자차번호(cp) x;
+  lend := _금융사(cp);
+  select id into lid from lenders where name = lend;
+
+  if coalesce(t.deposit, 0) > 0 then
+    amt := t.deposit;
+    -- 1) 재고금융 실행 — 같은 금액 대출
+    if lend is not null then
+      select count(*) into n from car_loans cl join cars x on x.id = cl.car_id
+       where cl.amount = amt and cl.start_date between d - 7 and d + 7 and x.deleted_at is null
+         and (pt is null or strpos(replace(x.plate, ' ', ''), pt) > 0 or strpos(replace(coalesce(x.plate_before, ''), ' ', ''), pt) > 0)
+         and not exists (select 1 from bank_txs b where b.loan_id = cl.id and b.deposit > 0);
+      if n = 1 then
+        select cl.id, cl.car_id into v_loan, v_car from car_loans cl join cars x on x.id = cl.car_id
+         where cl.amount = amt and cl.start_date between d - 7 and d + 7 and x.deleted_at is null
+           and (pt is null or strpos(replace(x.plate, ' ', ''), pt) > 0 or strpos(replace(coalesce(x.plate_before, ''), ' ', ''), pt) > 0)
+           and not exists (select 1 from bank_txs b where b.loan_id = cl.id and b.deposit > 0);
+        update bank_txs set match_kind = '재고금융', loan_id = v_loan, car_id = v_car, matched_by = '자동' where id = t.id;
+        return '재고금융 실행';
+      end if;
+      -- 2) 대출 기록이 없으면 자동 등록 — 문자에서 차를 딱 하나 찾을 때만 (재고, 그 금융사 진행중 대출 없음)
+      if lid is not null and (pf is not null or length(pt) = 4) then
+        select count(*) into n from cars x where x.deleted_at is null and x.status = '재고'
+           and (case when pf is not null then replace(x.plate, ' ', '') = pf else right(replace(x.plate, ' ', ''), 4) = pt end)
+           and not exists (select 1 from car_loans cl where cl.car_id = x.id and cl.status = '진행중' and cl.lender_id = lid);
+        if n = 1 then
+          select x.id into v_car from cars x where x.deleted_at is null and x.status = '재고'
+             and (case when pf is not null then replace(x.plate, ' ', '') = pf else right(replace(x.plate, ' ', ''), 4) = pt end)
+             and not exists (select 1 from car_loans cl where cl.car_id = x.id and cl.status = '진행중' and cl.lender_id = lid);
+          insert into car_loans (car_id, lender_id, kind, amount, start_date, months, base_months, lender_rate, rate_tiers, ext_rate, due_day, due_cutoff, due_min_days, dealer_rate, memo)
+          select v_car, x.id, '신규', amt, d, coalesce(x.base_months, 3), coalesce(x.base_months, 3), x.base_rate, x.rate_tiers, x.ext_rate, x.due_day, x.due_cutoff, x.due_min_days, 0,
+                 '통장 입금에서 자동 등록 (' || cp || ')'
+            from lenders x where x.id = lid
+          returning id into newid;
+          update bank_txs set match_kind = '재고금융', loan_id = newid, car_id = v_car, matched_by = '자동' where id = t.id;
+          return '재고금융 실행 (대출 자동 등록)';
+        end if;
+      end if;
+    end if;
+    -- 3) 할부로 들어온 차대금 / 4) 매도대금 — 금액 + 입금자명 근거(구매자 이름·차번호 4자리) 둘 다 (2026-11-15)
+    select count(*) into n from car_sales s join cars x on x.id = s.car_id
+     where x.deleted_at is null and s.sale_date between d - 20 and d + 7
+       and amt in (nullif(s.installment_amount, 0), s.sale_amount, s.sale_amount + s.sale_fee,
+                   nullif(s.sale_amount - s.installment_amount, s.sale_amount), nullif(s.sale_amount + s.sale_fee - s.installment_amount, s.sale_amount + s.sale_fee))
+       and _매도입금근거(cp, s.buyer_name, x.plate);
+    if n = 1 then
+      select s.car_id, s.installment_amount into v_car, v_inst from car_sales s join cars x on x.id = s.car_id
+       where x.deleted_at is null and s.sale_date between d - 20 and d + 7
+         and amt in (nullif(s.installment_amount, 0), s.sale_amount, s.sale_amount + s.sale_fee,
+                     nullif(s.sale_amount - s.installment_amount, s.sale_amount), nullif(s.sale_amount + s.sale_fee - s.installment_amount, s.sale_amount + s.sale_fee))
+         and _매도입금근거(cp, s.buyer_name, x.plate);
+      update bank_txs set match_kind = '차량매도대금', car_id = v_car, matched_by = '자동' where id = t.id;
+      return case when amt = v_inst then '할부 차대금' else '매도대금' end;
+    end if;
+    return null;
+  end if;
+
+  if coalesce(t.withdraw, 0) > 0 then
+    amt := t.withdraw;
+    -- 5) 재고금융 상환·이자
+    if cp ~* '^\s*(KB\s*캐피탈|KB\s*\d|JB\s*\d|신한\s*대출|키움|BNK[_\s]*\d)' or cp ~ '즉출|연장' then
+      select cl.id, cl.car_id into v_loan, v_car from car_loans cl join cars x on x.id = cl.car_id
+       where pt is not null and length(pt) = 4 and right(replace(x.plate, ' ', ''), 4) = pt and x.deleted_at is null
+         and (lid is null or cl.lender_id = lid)
+       order by (cl.status = '진행중') desc, cl.start_date desc limit 1;
+      update bank_txs set match_kind = '재고금융', loan_id = v_loan, car_id = v_car, matched_by = '자동' where id = t.id;
+      return '재고금융 상환';
+    end if;
+    -- 6) 대표 통장 간 이동
+    if cp ~ '^\s*(김상혁\s*\(\s*티어원|카팡모터스|티어원)' then
+      update bank_txs set match_kind = '자금이동', matched_by = '자동' where id = t.id;
+      return '자금이동';
+    end if;
+    -- 7) 송금요청 없이 보낸 매입대금
+    select count(*) into n from cars x where x.deleted_at is null and x.purchase_amount = amt and x.purchase_date between d - 10 and d + 3
+       and not exists (select 1 from bank_txs b where b.car_id = x.id and b.match_kind = '차량매입대금');
+    if n = 1 then
+      select x.id into v_car from cars x where x.deleted_at is null and x.purchase_amount = amt and x.purchase_date between d - 10 and d + 3
+         and not exists (select 1 from bank_txs b where b.car_id = x.id and b.match_kind = '차량매입대금');
+      update bank_txs set match_kind = '차량매입대금', car_id = v_car, matched_by = '자동' where id = t.id;
+      return '매입대금';
+    end if;
+  end if;
+  return null;
+end $function$;
