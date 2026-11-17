@@ -9,7 +9,7 @@
 <link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="stylesheet" href="/assets/style.css?v=8bb9c7a9">
-<link rel="stylesheet" href="/sign/sign.css?v=4">
+<link rel="stylesheet" href="/sign/sign.css?v=5">
 </head>
 <body>
 
@@ -33,13 +33,21 @@
       </div>
 
       <div class="card">
-        <div class="field"><label>성명 (매수인) <span class="req">*</span></label>
+        <div class="field"><label>매수인 구분 <span class="req">*</span></label>
+          <div class="seg" id="buyerType"><button type="button" data-v="개인" class="on">개인</button><button type="button" data-v="법인">법인</button></div></div>
+        <div class="field"><label id="nameLab">성명 (매수인) <span class="req">*</span></label>
           <input type="text" id="name" placeholder="홍길동" autocomplete="name"></div>
-        <div class="field"><label>생년월일 <span class="req">*</span></label>
+        <div class="field" data-for="개인"><label>생년월일 <span class="req">*</span></label>
           <input type="tel" id="birth" maxlength="6" inputmode="numeric" placeholder="910729 (6자리)" autocomplete="off"></div>
-        <div class="field"><label>주소 <span class="req">*</span></label>
+        <div class="field" data-for="법인" hidden><label>사업자등록번호 <span class="req">*</span></label>
+          <input type="tel" id="bizNo" maxlength="12" inputmode="numeric" placeholder="123-45-67890" autocomplete="off"></div>
+        <div class="field" data-for="법인" hidden><label>대표자 <span class="req">*</span></label>
+          <input type="text" id="ceo" placeholder="홍길동" autocomplete="off"></div>
+        <div class="field" data-for="법인" hidden><label>서명하는 담당자 성명 <span class="req">*</span></label>
+          <input type="text" id="signer" placeholder="김철수" autocomplete="name"></div>
+        <div class="field"><label id="addrLab">주소 <span class="req">*</span></label>
           <input type="text" id="address" placeholder="서울특별시 강남구 ..." autocomplete="street-address"></div>
-        <div class="field"><label>전화번호 <span class="req">*</span></label>
+        <div class="field"><label id="telLab">전화번호 <span class="req">*</span></label>
           <div class="split">
             <input type="tel" id="tel1" maxlength="3" value="010" inputmode="numeric" autocomplete="off">
             <span class="dash">-</span>
@@ -192,6 +200,23 @@ function 조항html(t, deadline) {
 })();
 $("km").addEventListener("input", function () { var v = this.value.replace(/[^0-9]/g, "").slice(0, 7); this.value = v ? Number(v).toLocaleString() : ""; });
 $("birth").addEventListener("input", function () { this.value = this.value.replace(/[^0-9]/g, "").slice(0, 6); });
+/* 매수인 구분: 개인 / 법인 — 법인이면 법인명·사업자등록번호·대표자·본점 주소·서명하는 담당자 */
+var 구분 = "개인";
+function 구분바꾸기(v) {
+  구분 = v;
+  Array.prototype.forEach.call($("buyerType").children, function (b) { b.classList.toggle("on", b.dataset.v === v); });
+  Array.prototype.forEach.call(document.querySelectorAll("[data-for]"), function (f) { f.hidden = f.dataset.for !== v; });
+  var 법인 = v === "법인", req = " <span class='req'>*</span>";
+  $("nameLab").innerHTML = (법인 ? "법인명 (매수인)" : "성명 (매수인)") + req;
+  $("name").placeholder = 법인 ? "주식회사 OO" : "홍길동";
+  $("addrLab").innerHTML = (법인 ? "본점 주소" : "주소") + req;
+  $("telLab").innerHTML = (법인 ? "담당자 전화번호" : "전화번호") + req;
+}
+$("buyerType").onclick = function (e) { var b = e.target.closest("button"); if (b) 구분바꾸기(b.dataset.v); };
+$("bizNo").addEventListener("input", function () {
+  var v = this.value.replace(/[^0-9]/g, "").slice(0, 10);
+  this.value = v.length > 5 ? v.slice(0, 3) + "-" + v.slice(3, 5) + "-" + v.slice(5) : v.length > 3 ? v.slice(0, 3) + "-" + v.slice(3) : v;
+});
 SignPad.autoNext($, [["tel1", 3, "tel2"], ["tel2", 4, "tel3", "tel1"], ["tel3", 4, null, "tel2"]]);
 
 fetch(API + (TOKEN ? "?t=" + encodeURIComponent(TOKEN) : "")).then(function (r) { return r.json(); }).then(function (res) {
@@ -215,6 +240,13 @@ fetch(API + (TOKEN ? "?t=" + encodeURIComponent(TOKEN) : "")).then(function (r) 
 
 function showErr(msg) { var b = $("err"); b.textContent = msg; b.hidden = false; window.scrollTo({ top: 0, behavior: "smooth" }); }
 function tr(k, v) { return "<tr><th>" + esc(k) + "</th><td>" + esc(v) + "</td></tr>"; }
+/* 사본의 매수인 칸 — 서명은 개인이면 성명 옆, 법인이면 담당자 옆 */
+function 매수인표(d, 서명) {
+  if (d.buyerType !== "법인")
+    return "<tr><th>성명</th><td class='owner'>" + esc(d.name) + 서명 + "</td></tr>" + tr("생년월일", d.birth) + tr("주소", d.address) + tr("전화번호", d.phone);
+  return tr("법인명", d.name) + tr("사업자등록번호", d.bizNo) + tr("대표자", d.ceo) + tr("본점 주소", d.address) +
+    "<tr><th>담당자</th><td class='owner'>" + esc(d.signer) + 서명 + "</td></tr>" + tr("담당자 전화번호", d.phone);
+}
 /* 업무관리 '서류' 화면과 같은 양식 */
 function 약정서(d, sig, at, deadline) {
   var t = new Date(at), 날짜 = t.getFullYear() + "년  " + (t.getMonth() + 1) + "월  " + t.getDate() + "일";
@@ -224,9 +256,7 @@ function 약정서(d, sig, at, deadline) {
     (P ? "<div class='sec'>※ 인도 때 안내 사항</div>" + 고지html(P) : "") +
     "<p>매도인 " + esc(T.seller) + "(이하 '매도인')과 매수인은 위 차량의 매매에 관하여 다음과 같이 3일 환불을 약정합니다.</p>" +
     조항html(T, deadline) + "<p class='date'>" + 날짜 + "</p>" +
-    "<div class='sec'>※ 매수인</div><table><tr><th>성명</th><td class='owner'>" + esc(d.name) +
-    "<span class='sigwrap'><span class='sigmark'>(서명)</span><img class='sig' src='" + sig + "'></span></td></tr>" +
-    tr("생년월일", d.birth) + tr("주소", d.address) + tr("전화번호", d.phone) + "</table>" +
+    "<div class='sec'>※ 매수인</div><table>" + 매수인표(d, "<span class='sigwrap'><span class='sigmark'>(서명)</span><img class='sig' src='" + sig + "'></span>") + "</table>" +
     "<div class='buyer'>매도인 : " + esc(T.seller) + " · " + esc(T.seller_addr) + " · " + esc(T.seller_tel) +
     "<br>전자서명 접수 : " + 접수 + " · " + (P ? "안내 사항·" : "") + "약관 확인 체크 완료 · 약관 " + esc(T.ver) + "</div>";
 }
@@ -236,13 +266,18 @@ $("send").onclick = function () {
   var d = {
     kind: "3일환불", ver: T.ver, t: TOKEN,
     carNo: $("carNo").value.trim(), carName: $("carName").value.trim(), mileage: $("km").value.replace(/[^0-9]/g, ""),
-    name: $("name").value.trim(), birth: $("birth").value.trim(), address: $("address").value.trim(),
+    buyerType: 구분, name: $("name").value.trim(), address: $("address").value.trim(),
+    birth: 구분 === "개인" ? $("birth").value.trim() : "", bizNo: 구분 === "법인" ? $("bizNo").value.trim() : "",
+    ceo: 구분 === "법인" ? $("ceo").value.trim() : "", signer: 구분 === "법인" ? $("signer").value.trim() : "",
     phone: [$("tel1").value.trim(), $("tel2").value.trim(), $("tel3").value.trim()].join("-"),
     ua: navigator.userAgent, agreed: $("agree1").checked && $("agree2").checked && (!P || ($("agree3").checked && $("agree4").checked))
   };
   if (!d.carNo || !d.carName || !d.name || !d.address) return showErr("별표(*) 표시된 항목을 모두 입력해 주세요.");
   if (!d.mileage) return showErr("인도 전 계기판 주행거리를 입력해 주세요.");
-  if (d.birth.length !== 6) return showErr("생년월일을 6자리로 입력해 주세요. (예: 910729)");
+  if (구분 === "법인") {
+    if (!d.ceo || !d.signer) return showErr("별표(*) 표시된 항목을 모두 입력해 주세요.");
+    if (d.bizNo.replace(/[^0-9]/g, "").length !== 10) return showErr("사업자등록번호 10자리를 입력해 주세요.");
+  } else if (d.birth.length !== 6) return showErr("생년월일을 6자리로 입력해 주세요. (예: 910729)");
   if ($("tel1").value.length < 2 || $("tel2").value.length < 3 || $("tel3").value.length !== 4) return showErr("전화번호를 정확히 입력해 주세요.");
   if (!d.agreed) return showErr("확인란에 모두 체크해 주세요.");
   if (!pad.hasInk()) return showErr("서명을 입력해 주세요.");

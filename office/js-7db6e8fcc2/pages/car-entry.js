@@ -98,7 +98,9 @@ export function CarEntryPage({ app }) {
     if (!n(patch.amount)) { set고른(x => ({ ...x, [c.id]: patch.lender_id })); return toast("대출금을 넣으면 등록됩니다"); }
     const lender = lenders.find(x => x.id === patch.lender_id);
     if (!lender || !n(patch.amount)) return;                   // 금융사·금액이 둘 다 있어야 새로 만든다
-    if (!partner(c)) throw new Error("딜러 차는 딜러이율이 있어 차 화면 → 재고금융에서 넣어 주세요");
+    // 매입담당이 비면 대표 차인지 딜러 차인지 몰라 이율을 못 정한다 (사무장이 만든 차는 비어 있음 — 2026-11-10 스팅어·포터)
+    if (!c.dealer_id) throw new Error(`${c.plate} 매입담당(누구 차)이 비어 있어요 — 차 화면 [수정]에서 매입담당을 먼저 골라 주세요`);
+    if (!partner(c)) throw new Error("딜러 차는 딜러에게 받을 이율(딜러이율)을 정해야 해서 여기서는 못 넣어요 — 차 화면 → 재고금융에서 넣어 주세요");
     await q(app.db.from("car_loans").insert({ car_id: c.id, lender_id: lender.id, kind: "신규", amount: n(patch.amount), start_date: c.purchase_date || today(),
       months: Number(lender.base_months) || 3, base_months: Number(lender.base_months) || 3, lender_rate: lender.base_rate != null ? Number(lender.base_rate) : null,
       rate_tiers: lender.rate_tiers || null, ext_rate: lender.ext_rate ?? null, due_day: lender.due_day ?? null, due_cutoff: lender.due_cutoff ?? null,

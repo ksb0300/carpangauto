@@ -80,7 +80,7 @@ function SignList({ app }) {
       : html`<div class="table-wrap"><table class="grid click">
         <thead><tr><th>접수일시</th><th>종류</th><th>차량번호</th><th>차명</th><th>성명</th><th>주민번호·생년월일</th><th>전화번호</th><th>사업자번호</th><th>우리 차</th><th>상태</th></tr></thead>
         <tbody>${list.map(r => html`<tr key=${r.id} onClick=${() => go("/signs/" + r.id)}>
-          <td>${kst(서명시각(r))}</td><td>${종류(r)}</td><td><b>${r.car_no}</b></td><td class="ellipsis">${r.car_name}</td><td>${r.name || "-"}</td><td>${r.ssn_masked || r.birth || "-"}</td>
+          <td>${kst(서명시각(r))}</td><td>${종류(r)}</td><td><b>${r.car_no}</b></td><td class="ellipsis">${r.car_name}</td><td>${r.name || "-"}${r.buyer_type === "법인" ? html` <span class="muted small">(법인 · ${r.signer})</span>` : ""}</td><td>${r.ssn_masked || r.birth || "-"}</td>
           <td>${r.phone || "-"}</td><td>${r.biz_no || "-"}</td>
           <td onClick=${e => e.stopPropagation()}>${r.car_id ? html`<a href=${"#/car/" + r.car_id}>${r.cars?.plate} (${r.cars?.status})</a>` : html`<span class="muted">-</span>`}</td>
           <td class="nowrap" onClick=${e => 대기(r) && r.token && !환불(r) && e.stopPropagation()}>${대기(r) && r.token && !환불(r) ? html`<${Badge}>서명 대기<//> <button class="btn sm ghost" onClick=${() => 링크보내기(비사업용주소(r.token), "비사업용 사실확인서")}>링크 다시</button>` : 대기(r) ? "" : r.checked_at ? html`<${Badge} tone="green">확인<//>` : html`<${Badge} tone="amber">새 서류<//>`} ${기한배지(r)}</td></tr>`)}</tbody></table></div>`}
@@ -201,8 +201,12 @@ function RefundPaper({ r, sig, 날짜, TR }) {
     <ol class="terms">${t.clauses.map(([h, b], i) => html`<li><b>제${i + 1}조 (${h})</b><br />${b.replace(/\{기한\}/g, 기한.replace(/까지$/, "")).split(String.fromCharCode(10)).map((x, j) => html`${j ? html`<br />` : ""}${x}`)}</li>`)}</ol>
     <p class="date">${날짜}</p>
     <div class="sec">※ 매수인</div>
-    <table><tr><th>성명</th><td class="owner">${r.name}<span class="sigwrap"><span class="sigmark">(서명)</span>${sig && html`<img class="sig" src=${sig} />`}</span></td></tr>
-      ${TR("생년월일", r.birth)}${TR("주소", r.address)}${TR("전화번호", r.phone)}</table>
+    ${r.buyer_type === "법인"
+      ? html`<table>${TR("법인명", r.name)}${TR("사업자등록번호", r.biz_no)}${TR("대표자", r.ceo)}${TR("본점 주소", r.address)}
+          <tr><th>담당자</th><td class="owner">${r.signer}<span class="sigwrap"><span class="sigmark">(서명)</span>${sig && html`<img class="sig" src=${sig} />`}</span></td></tr>
+          ${TR("담당자 전화번호", r.phone)}</table>`
+      : html`<table><tr><th>성명</th><td class="owner">${r.name}<span class="sigwrap"><span class="sigmark">(서명)</span>${sig && html`<img class="sig" src=${sig} />`}</span></td></tr>
+          ${TR("생년월일", r.birth)}${TR("주소", r.address)}${TR("전화번호", r.phone)}</table>`}
     <div class="buyer">매도인 : ${t.seller}${t.seller_addr ? ` · ${t.seller_addr}` : ""}${t.seller_tel ? ` · ${t.seller_tel}` : ""}<br />
       전자서명 접수 : ${kst(서명시각(r))} · ${r.prepared ? "안내 사항·" : ""}약관 확인 체크 ${r.agreed ? "완료" : "없음"}${t.ver ? ` · 약관 ${t.ver}` : ""}</div>
   <//>`;

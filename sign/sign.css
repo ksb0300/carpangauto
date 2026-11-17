@@ -84,3 +84,7 @@
     .a4page{zoom:1 !important;box-shadow:none;margin:0;break-after:page;width:210mm;height:297mm;padding:15mm 15mm 0}
     .a4page:last-child{break-after:auto}
   }
+  /* 개인 / 법인 같은 두세 개 중 고르기 */
+  .sf .seg{display:flex;gap:8px} .sf .seg button{flex:1;padding:13px;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;
+    border:1px solid rgba(255,255,255,.18);border-radius:10px;background:var(--bk3);color:var(--tx2)}
+  .sf .seg button.on{background:var(--pp-dim);border-color:var(--pp);color:var(--tx)}
