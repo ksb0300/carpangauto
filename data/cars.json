@@ -1,33 +1,7 @@
 {
- "updated": "2026-11-16 18:06",
- "count": 54,
+ "updated": "2026-11-17 18:18",
+ "count": 61,
  "cars": [
-  {
-   "id": "42852650",
-   "plate": "51나0616",
-   "maker": "현대",
-   "model": "아이오닉9",
-   "grade": "성능형 AWD",
-   "year": "25년 08월",
-   "yearRaw": "202508",
-   "mileage": 8140,
-   "fuel": "전기",
-   "transmission": "오토",
-   "color": "흰색",
-   "price": 7420,
-   "diagnosis": true,
-   "photos": [
-    "https://ci.encar.com/carpicture05/pic4285/42852650_027.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4285/42852650_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4285/42852650_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4285/42852650_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4285/42852650_015.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4285/42852650_035.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4285/42852650_047.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4285/42852650_048.jpg?impolicy=widthRate&wid=800"
-   ],
-   "link": "https://fem.encar.com/cars/detail/42852650"
-  },
   {
    "id": "42577207",
    "plate": "131더2247",
@@ -237,32 +211,6 @@
    "link": "https://fem.encar.com/cars/detail/42954696"
   },
   {
-   "id": "43160425",
-   "plate": "93라4972",
-   "maker": "현대",
-   "model": "ST1",
-   "grade": "카고 냉동",
-   "year": "24년 07월",
-   "yearRaw": "202407",
-   "mileage": 71717,
-   "fuel": "전기",
-   "transmission": "오토",
-   "color": "흰색",
-   "price": 3990,
-   "diagnosis": false,
-   "photos": [
-    "https://ci.encar.com/carpicture06/pic4316/43160425_001.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture06/pic4316/43160425_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture06/pic4316/43160425_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture06/pic4316/43160425_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture06/pic4316/43160425_015.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture06/pic4316/43160425_008.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture06/pic4316/43160425_016.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture06/pic4316/43160425_005.jpg?impolicy=widthRate&wid=800"
-   ],
-   "link": "https://fem.encar.com/cars/detail/43160425"
-  },
-  {
    "id": "42873077",
    "plate": "102고5546",
    "maker": "기아",
@@ -313,6 +261,32 @@
     "https://ci.encar.com/carpicture07/pic4277/42775839_021.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42775839"
+  },
+  {
+   "id": "43160425",
+   "plate": "93라4972",
+   "maker": "현대",
+   "model": "ST1",
+   "grade": "카고 냉동",
+   "year": "24년 07월",
+   "yearRaw": "202407",
+   "mileage": 71717,
+   "fuel": "전기",
+   "transmission": "오토",
+   "color": "흰색",
+   "price": 3990,
+   "diagnosis": false,
+   "photos": [
+    "https://ci.encar.com/carpicture06/pic4316/43160425_001.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4316/43160425_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4316/43160425_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4316/43160425_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4316/43160425_015.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4316/43160425_008.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4316/43160425_016.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4316/43160425_005.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/43160425"
   },
   {
    "id": "42806257",
@@ -887,6 +861,32 @@
    "link": "https://fem.encar.com/cars/detail/42757118"
   },
   {
+   "id": "43133794",
+   "plate": "855우8185",
+   "maker": "현대",
+   "model": "",
+   "grade": "슈퍼캡 LPG",
+   "year": "25년 12월",
+   "yearRaw": "202512",
+   "mileage": 889,
+   "fuel": "LPG(일반인 구입)",
+   "transmission": "오토",
+   "color": "흰색",
+   "price": 2350,
+   "diagnosis": false,
+   "photos": [
+    "https://ci.encar.com/carpicture03/pic4313/43133794_001.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4313/43133794_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4313/43133794_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4313/43133794_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4313/43133794_007.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4313/43133794_020.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4313/43133794_009.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4313/43133794_008.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/43133794"
+  },
+  {
    "id": "42844172",
    "plate": "380두1398",
    "maker": "르노코리아(삼성)",
@@ -911,6 +911,58 @@
     "https://ci.encar.com/carpicture04/pic4284/42844172_022.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42844172"
+  },
+  {
+   "id": "43169879",
+   "plate": "94나3610",
+   "maker": "현대",
+   "model": "",
+   "grade": "슈퍼캡 CRDI",
+   "year": "20년 10월",
+   "yearRaw": "202010",
+   "mileage": 111191,
+   "fuel": "디젤",
+   "transmission": "오토",
+   "color": "흰색",
+   "price": 1900,
+   "diagnosis": false,
+   "photos": [
+    "https://ci.encar.com/carpicture06/pic4316/43169879_001.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4316/43169879_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4316/43169879_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4316/43169879_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4316/43169879_005.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4316/43169879_008.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4316/43169879_016.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4316/43169879_023.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/43169879"
+  },
+  {
+   "id": "43144553",
+   "plate": "821루4130",
+   "maker": "현대",
+   "model": "",
+   "grade": "더블캡 CRDI",
+   "year": "23년 04월",
+   "yearRaw": "202304",
+   "mileage": 27253,
+   "fuel": "디젤",
+   "transmission": "오토",
+   "color": "흰색",
+   "price": 1900,
+   "diagnosis": false,
+   "photos": [
+    "https://ci.encar.com/carpicture04/pic4314/43144553_001.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4314/43144553_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4314/43144553_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4314/43144553_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4314/43144553_017.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4314/43144553_021.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4314/43144553_015.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4314/43144553_018.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/43144553"
   },
   {
    "id": "42949368",
@@ -939,6 +991,32 @@
    "link": "https://fem.encar.com/cars/detail/42949368"
   },
   {
+   "id": "43152410",
+   "plate": "90소8328",
+   "maker": "현대",
+   "model": "",
+   "grade": "더블캡 CRDI",
+   "year": "21년 04월",
+   "yearRaw": "202104",
+   "mileage": 54332,
+   "fuel": "디젤",
+   "transmission": "오토",
+   "color": "흰색",
+   "price": 1790,
+   "diagnosis": false,
+   "photos": [
+    "https://ci.encar.com/carpicture05/pic4315/43152410_001.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4315/43152410_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4315/43152410_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4315/43152410_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4315/43152410_023.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4315/43152410_024.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4315/43152410_018.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4315/43152410_020.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/43152410"
+  },
+  {
    "id": "43149072",
    "plate": "369저6070",
    "maker": "기아",
@@ -963,6 +1041,32 @@
     "https://ci.encar.com/carpicture04/pic4314/43149072_035.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/43149072"
+  },
+  {
+   "id": "43157483",
+   "plate": "58서6625",
+   "maker": "벤츠",
+   "model": "GLA-클래스",
+   "grade": "GLA220 프리미엄",
+   "year": "17년 12월",
+   "yearRaw": "201712",
+   "mileage": 27389,
+   "fuel": "가솔린",
+   "transmission": "오토",
+   "color": "흰색",
+   "price": 1699,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture05/pic4315/43157483_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4315/43157483_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4315/43157483_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4315/43157483_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4315/43157483_040.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4315/43157483_036.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4315/43157483_046.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4315/43157483_021.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/43157483"
   },
   {
    "id": "42949261",
@@ -1017,30 +1121,56 @@
    "link": "https://fem.encar.com/cars/detail/43023125"
   },
   {
-   "id": "43157483",
-   "plate": "58서6625",
-   "maker": "벤츠",
-   "model": "GLA-클래스",
-   "grade": "GLA220 프리미엄",
-   "year": "17년 12월",
-   "yearRaw": "201712",
-   "mileage": 27389,
-   "fuel": "가솔린",
+   "id": "43157434",
+   "plate": "87머2248",
+   "maker": "현대",
+   "model": "",
+   "grade": "슈퍼캡 CRDI",
+   "year": "19년 08월",
+   "yearRaw": "201908",
+   "mileage": 59243,
+   "fuel": "디젤",
    "transmission": "오토",
    "color": "흰색",
-   "price": 1679,
-   "diagnosis": true,
+   "price": 1590,
+   "diagnosis": false,
    "photos": [
-    "https://ci.encar.com/carpicture05/pic4315/43157483_027.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4315/43157483_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4315/43157483_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4315/43157483_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4315/43157483_007.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4315/43157483_010.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4315/43157483_033.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4315/43157483_043.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture05/pic4315/43157434_001.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4315/43157434_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4315/43157434_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4315/43157434_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4315/43157434_017.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4315/43157434_018.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4315/43157434_006.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4315/43157434_015.jpg?impolicy=widthRate&wid=800"
    ],
-   "link": "https://fem.encar.com/cars/detail/43157483"
+   "link": "https://fem.encar.com/cars/detail/43157434"
+  },
+  {
+   "id": "43160359",
+   "plate": "821노3708",
+   "maker": "현대",
+   "model": "",
+   "grade": "슈퍼캡 CRDI",
+   "year": "21년 12월",
+   "yearRaw": "202112",
+   "mileage": 109539,
+   "fuel": "디젤",
+   "transmission": "오토",
+   "color": "흰색",
+   "price": 1550,
+   "diagnosis": false,
+   "photos": [
+    "https://ci.encar.com/carpicture06/pic4316/43160359_001.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4316/43160359_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4316/43160359_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4316/43160359_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4316/43160359_006.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4316/43160359_010.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4316/43160359_022.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4316/43160359_016.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/43160359"
   },
   {
    "id": "43142060",
@@ -1061,10 +1191,10 @@
     "https://ci.encar.com/carpicture04/pic4314/43142060_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture04/pic4314/43142060_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture04/pic4314/43142060_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture04/pic4314/43142060_006.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture04/pic4314/43142060_040.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture04/pic4314/43142060_034.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture04/pic4314/43142060_024.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture04/pic4314/43142060_024.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4314/43142060_007.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4314/43142060_040.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/43142060"
   },
@@ -1197,6 +1327,32 @@
     "https://ci.encar.com/carpicture09/pic4279/42797803_010.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42797803"
+  },
+  {
+   "id": "43168679",
+   "plate": "199루7517",
+   "maker": "쉐보레(GM대우)",
+   "model": "이쿼녹스",
+   "grade": "2WD LT",
+   "year": "19년 06월",
+   "yearRaw": "201906",
+   "mileage": 92672,
+   "fuel": "디젤",
+   "transmission": "오토",
+   "color": "흰색",
+   "price": 1100,
+   "diagnosis": false,
+   "photos": [
+    "https://ci.encar.com/carpicture06/pic4316/43168679_001.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4316/43168679_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4316/43168679_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4316/43168679_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4316/43168679_017.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4316/43168679_007.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4316/43168679_001.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4316/43168679_001.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/43168679"
   },
   {
    "id": "43149058",
@@ -1353,6 +1509,32 @@
     "https://ci.encar.com/carpicture03/pic4293/42935053_022.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42935053"
+  },
+  {
+   "id": "43167064",
+   "plate": "378오2113",
+   "maker": "현대",
+   "model": "싼타페",
+   "grade": "디젤 2.0 2WD",
+   "year": "16년 08월",
+   "yearRaw": "201608",
+   "mileage": 286226,
+   "fuel": "디젤",
+   "transmission": "오토",
+   "color": "청색",
+   "price": 590,
+   "diagnosis": false,
+   "photos": [
+    "https://ci.encar.com/carpicture06/pic4316/43167064_001.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4316/43167064_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4316/43167064_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4316/43167064_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4316/43167064_019.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4316/43167064_018.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4316/43167064_007.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture06/pic4316/43167064_015.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/43167064"
   },
   {
    "id": "43045955",
