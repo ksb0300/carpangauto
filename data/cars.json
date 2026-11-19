@@ -1,6 +1,6 @@
 {
- "updated": "2026-11-18 17:48",
- "count": 61,
+ "updated": "2026-11-19 17:53",
+ "count": 62,
  "cars": [
   {
    "id": "42577207",
@@ -627,6 +627,58 @@
    "link": "https://fem.encar.com/cars/detail/42321574"
   },
   {
+   "id": "43180686",
+   "plate": "827저2332",
+   "maker": "KG모빌리티(쌍용)",
+   "model": "렉스턴",
+   "grade": "디젤 2.2 2WD",
+   "year": "24년 01월",
+   "yearRaw": "202401",
+   "mileage": 38355,
+   "fuel": "디젤",
+   "transmission": "오토",
+   "color": "진주색",
+   "price": 2990,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture08/pic4318/43180686_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4318/43180686_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4318/43180686_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4318/43180686_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4318/43180686_035.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4318/43180686_007.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4318/43180686_040.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4318/43180686_005.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/43180686"
+  },
+  {
+   "id": "43187987",
+   "plate": "34구9003",
+   "maker": "미니",
+   "model": "쿠퍼",
+   "grade": "SE 일렉트릭",
+   "year": "23년 07월",
+   "yearRaw": "202307",
+   "mileage": 62097,
+   "fuel": "전기",
+   "transmission": "오토",
+   "color": "흰색",
+   "price": 2900,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture08/pic4318/43187987_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4318/43187987_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4318/43187987_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4318/43187987_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4318/43187987_042.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4318/43187987_043.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4318/43187987_044.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4318/43187987_010.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/43187987"
+  },
+  {
    "id": "42618931",
    "plate": "58누3317",
    "maker": "벤츠",
@@ -853,10 +905,10 @@
     "https://ci.encar.com/carpicture05/pic4275/42757118_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture05/pic4275/42757118_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture05/pic4275/42757118_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4275/42757118_009.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4275/42757118_023.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4275/42757118_042.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4275/42757118_035.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture05/pic4275/42757118_006.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4275/42757118_007.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4275/42757118_033.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4275/42757118_017.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42757118"
   },
@@ -937,32 +989,6 @@
     "https://ci.encar.com/carpicture06/pic4316/43169879_023.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/43169879"
-  },
-  {
-   "id": "43144553",
-   "plate": "821루4130",
-   "maker": "현대",
-   "model": "",
-   "grade": "더블캡 CRDI",
-   "year": "23년 04월",
-   "yearRaw": "202304",
-   "mileage": 27253,
-   "fuel": "디젤",
-   "transmission": "오토",
-   "color": "흰색",
-   "price": 1900,
-   "diagnosis": false,
-   "photos": [
-    "https://ci.encar.com/carpicture04/pic4314/43144553_001.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture04/pic4314/43144553_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture04/pic4314/43144553_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture04/pic4314/43144553_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture04/pic4314/43144553_017.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture04/pic4314/43144553_021.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture04/pic4314/43144553_015.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture04/pic4314/43144553_018.jpg?impolicy=widthRate&wid=800"
-   ],
-   "link": "https://fem.encar.com/cars/detail/43144553"
   },
   {
    "id": "42949368",
@@ -1191,10 +1217,10 @@
     "https://ci.encar.com/carpicture04/pic4314/43142060_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture04/pic4314/43142060_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture04/pic4314/43142060_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture04/pic4314/43142060_034.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture04/pic4314/43142060_024.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture04/pic4314/43142060_007.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture04/pic4314/43142060_040.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture04/pic4314/43142060_033.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4314/43142060_042.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4314/43142060_036.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4314/43142060_020.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/43142060"
   },
