@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>딜러 앱으로 열기</title>
+<!-- 업무관리 폰 알림(바로사냥 등) → 헤이딜러 딜러 앱의 그 차 화면으로 넘기는 다리 (2026-11-20).
+     웹 푸시는 https 주소만 열 수 있어서, 이 화면이 heydealerfordealer://cars/<c> 로 넘긴다.
+     /hd/?c=<헤딜 차 id>&t=<차 이름>&p=<차량번호>  — c 는 영문·숫자 6~12자만. 로그인 없음, 저장·전송 없음. -->
+<style>
+  :root { --bg: #f6f7f9; --card: #fff; --ink: #1b1f24; --muted: #6b7280; --btn: #2563eb; --btn-ink: #fff; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #111418; --card: #1b1f24; --ink: #e8eaed; --muted: #9aa0a6; --btn: #3b82f6; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--bg); color: var(--ink);
+         font-family: -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif; padding: 16px; }
+  .card { width: 100%; max-width: 420px; background: var(--card); border-radius: 16px; padding: 28px 20px; text-align: center; box-shadow: 0 2px 12px rgba(0,0,0,.08); }
+  h1 { font-size: 20px; margin: 0 0 6px; }
+  .sub { color: var(--muted); font-size: 15px; margin: 0 0 22px; min-height: 1em; }
+  a.btn { display: block; padding: 18px 12px; border-radius: 12px; background: var(--btn); color: var(--btn-ink); font-size: 19px; font-weight: 700; text-decoration: none; }
+  .note { color: var(--muted); font-size: 14px; margin: 16px 0 0; line-height: 1.5; }
+</style>
+</head>
+<body>
+<main class="card">
+  <h1 id="title">헤이딜러 딜러 앱</h1>
+  <p class="sub" id="sub"></p>
+  <a class="btn" id="go" href="#">헤이딜러 딜러 앱에서 열기</a>
+  <p class="note" id="note">앱이 안 열리면 딜러 앱 바로 탭에서 찾으세요.</p>
+</main>
+<script>
+(function () {
+  var q = new URLSearchParams(location.search);
+  var c = q.get("c") || "";
+  var t = (q.get("t") || "").slice(0, 60), p = (q.get("p") || "").slice(0, 20);
+  if (t) document.getElementById("title").textContent = t;
+  if (p) document.getElementById("sub").textContent = p;
+  var go = document.getElementById("go");
+  if (!/^[A-Za-z0-9]{6,12}$/.test(c)) {
+    go.style.display = "none";
+    document.getElementById("note").textContent = "차 주소가 올바르지 않습니다. 딜러 앱 바로 탭에서 찾으세요.";
+    return;
+  }
+  var app = "heydealerfordealer://cars/" + c;
+  go.href = app;
+  location.href = app;
+})();
+</script>
+</body>
+</html>
