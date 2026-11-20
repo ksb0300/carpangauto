@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-19 17:53",
+ "updated": "2026-11-20 17:48",
  "count": 62,
  "cars": [
   {
@@ -653,32 +653,6 @@
    "link": "https://fem.encar.com/cars/detail/43180686"
   },
   {
-   "id": "43187987",
-   "plate": "34구9003",
-   "maker": "미니",
-   "model": "쿠퍼",
-   "grade": "SE 일렉트릭",
-   "year": "23년 07월",
-   "yearRaw": "202307",
-   "mileage": 62097,
-   "fuel": "전기",
-   "transmission": "오토",
-   "color": "흰색",
-   "price": 2900,
-   "diagnosis": true,
-   "photos": [
-    "https://ci.encar.com/carpicture08/pic4318/43187987_027.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4318/43187987_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4318/43187987_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4318/43187987_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4318/43187987_042.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4318/43187987_043.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4318/43187987_044.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4318/43187987_010.jpg?impolicy=widthRate&wid=800"
-   ],
-   "link": "https://fem.encar.com/cars/detail/43187987"
-  },
-  {
    "id": "42618931",
    "plate": "58누3317",
    "maker": "벤츠",
@@ -729,6 +703,32 @@
     "https://ci.encar.com/carpicture06/pic4296/42961863_010.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42961863"
+  },
+  {
+   "id": "43187987",
+   "plate": "34구9003",
+   "maker": "미니",
+   "model": "쿠퍼",
+   "grade": "SE 일렉트릭",
+   "year": "23년 07월",
+   "yearRaw": "202307",
+   "mileage": 62097,
+   "fuel": "전기",
+   "transmission": "오토",
+   "color": "흰색",
+   "price": 2700,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture08/pic4318/43187987_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4318/43187987_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4318/43187987_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4318/43187987_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4318/43187987_043.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4318/43187987_034.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4318/43187987_032.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture08/pic4318/43187987_041.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/43187987"
   },
   {
    "id": "42790171",
