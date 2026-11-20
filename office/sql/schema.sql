@@ -4225,3 +4225,9 @@ alter table sign_docs drop constraint if exists sign_docs_buyer_type_check;
 alter table sign_docs add constraint sign_docs_buyer_type_check check (buyer_type in ('개인', '법인'));
 alter table sign_docs add column if not exists ceo text;
 alter table sign_docs add column if not exists signer text;
+
+
+-- 20261120000001_cost_item_dosaek_pangeum.sql
+-- 비용 항목 이름: '도색광택' → '도색판금' (사용자 2026-11-20 "차량입력에 도색광택 말고 도색판금으로 바꿔").
+-- 차량입력 칸·명세서 올리기·리스트 상품화비용이 이 이름을 쓴다. 금액·부가세는 그대로라 정산 손익은 안 바뀐다.
+update car_costs set item = '도색판금' where item = '도색광택';
