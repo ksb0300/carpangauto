@@ -1,6 +1,6 @@
 {
- "updated": "2026-11-20 17:48",
- "count": 62,
+ "updated": "2026-11-21 17:48",
+ "count": 61,
  "cars": [
   {
    "id": "42577207",
@@ -131,32 +131,6 @@
     "https://ci.encar.com/carpicture06/pic4256/42568440_022.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42568440"
-  },
-  {
-   "id": "43073841",
-   "plate": "132나7818",
-   "maker": "쉐보레(GM대우)",
-   "model": "타호",
-   "grade": "6.2 다크나이트 4WD",
-   "year": "22년 12월",
-   "yearRaw": "202212",
-   "mileage": 68978,
-   "fuel": "가솔린",
-   "transmission": "오토",
-   "color": "검정색",
-   "price": 5150,
-   "diagnosis": true,
-   "photos": [
-    "https://ci.encar.com/carpicture07/pic4307/43073841_027.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4307/43073841_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4307/43073841_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4307/43073841_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4307/43073841_046.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4307/43073841_016.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4307/43073841_005.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4307/43073841_021.jpg?impolicy=widthRate&wid=800"
-   ],
-   "link": "https://fem.encar.com/cars/detail/43073841"
   },
   {
    "id": "42584618",
@@ -809,6 +783,32 @@
    "link": "https://fem.encar.com/cars/detail/43035240"
   },
   {
+   "id": "42917308",
+   "plate": "365더9569",
+   "maker": "현대",
+   "model": "쏘나타",
+   "grade": "2.0 LPG(영업용)",
+   "year": "26년 04월",
+   "yearRaw": "202604",
+   "mileage": 12639,
+   "fuel": "LPG(일반인 구입)",
+   "transmission": "오토",
+   "color": "흰색",
+   "price": 2490,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture01/pic4291/42917308_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4291/42917308_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4291/42917308_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4291/42917308_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4291/42917308_010.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4291/42917308_047.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4291/42917308_036.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture01/pic4291/42917308_045.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42917308"
+  },
+  {
    "id": "43126190",
    "plate": "25거3334",
    "maker": "제네시스",
@@ -833,32 +833,6 @@
     "https://ci.encar.com/carpicture02/pic4312/43126190_016.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/43126190"
-  },
-  {
-   "id": "42917308",
-   "plate": "365더9569",
-   "maker": "현대",
-   "model": "쏘나타",
-   "grade": "2.0 LPG(영업용)",
-   "year": "26년 04월",
-   "yearRaw": "202604",
-   "mileage": 12639,
-   "fuel": "LPG(일반인 구입)",
-   "transmission": "오토",
-   "color": "흰색",
-   "price": 2450,
-   "diagnosis": true,
-   "photos": [
-    "https://ci.encar.com/carpicture01/pic4291/42917308_027.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4291/42917308_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4291/42917308_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4291/42917308_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4291/42917308_045.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4291/42917308_024.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4291/42917308_035.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture01/pic4291/42917308_041.jpg?impolicy=widthRate&wid=800"
-   ],
-   "link": "https://fem.encar.com/cars/detail/42917308"
   },
   {
    "id": "42517582",
