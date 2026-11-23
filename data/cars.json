@@ -1,6 +1,6 @@
 {
- "updated": "2026-11-22 17:49",
- "count": 61,
+ "updated": "2026-11-23 17:55",
+ "count": 63,
  "cars": [
   {
    "id": "42577207",
@@ -255,10 +255,10 @@
     "https://ci.encar.com/carpicture07/pic4277/42775839_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture07/pic4277/42775839_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture07/pic4277/42775839_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4277/42775839_041.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4277/42775839_010.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture07/pic4277/42775839_018.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4277/42775839_021.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture07/pic4277/42775839_008.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42775839_043.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42775839_047.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42775839"
   },
@@ -515,10 +515,10 @@
     "https://ci.encar.com/carpicture07/pic4277/42775853_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture07/pic4277/42775853_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture07/pic4277/42775853_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4277/42775853_019.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4277/42775853_040.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4277/42775853_031.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture07/pic4277/42775853_033.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture07/pic4277/42775853_042.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42775853_009.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42775853_010.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture07/pic4277/42775853_016.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42775853"
   },
@@ -924,17 +924,17 @@
    "fuel": "LPG(일반인 구입)",
    "transmission": "오토",
    "color": "흰색",
-   "price": 2350,
+   "price": 2300,
    "diagnosis": false,
    "photos": [
     "https://ci.encar.com/carpicture03/pic4313/43133794_001.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture03/pic4313/43133794_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture03/pic4313/43133794_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture03/pic4313/43133794_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture03/pic4313/43133794_007.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture03/pic4313/43133794_020.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture03/pic4313/43133794_009.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture03/pic4313/43133794_008.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture03/pic4313/43133794_022.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4313/43133794_016.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4313/43133794_021.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture03/pic4313/43133794_015.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/43133794"
   },
@@ -1041,6 +1041,32 @@
     "https://ci.encar.com/carpicture05/pic4315/43152410_020.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/43152410"
+  },
+  {
+   "id": "43204516",
+   "plate": "21버1833",
+   "maker": "랜드로버",
+   "model": "디스커버리",
+   "grade": "2.0 SD4 SE",
+   "year": "18년 09월",
+   "yearRaw": "201809",
+   "mileage": 134410,
+   "fuel": "디젤",
+   "transmission": "오토",
+   "color": "흰색",
+   "price": 1780,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture10/pic4320/43204516_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture10/pic4320/43204516_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture10/pic4320/43204516_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture10/pic4320/43204516_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture10/pic4320/43204516_041.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture10/pic4320/43204516_020.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture10/pic4320/43204516_032.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture10/pic4320/43204516_021.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/43204516"
   },
   {
    "id": "43149072",
@@ -1379,6 +1405,32 @@
     "https://ci.encar.com/carpicture06/pic4316/43168679_001.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/43168679"
+  },
+  {
+   "id": "43205257",
+   "plate": "11보4021",
+   "maker": "도요타",
+   "model": "프리우스",
+   "grade": "1.8",
+   "year": "15년 06월",
+   "yearRaw": "201506",
+   "mileage": 163241,
+   "fuel": "가솔린+전기",
+   "transmission": "오토",
+   "color": "흰색",
+   "price": 1050,
+   "diagnosis": false,
+   "photos": [
+    "https://ci.encar.com/carpicture10/pic4320/43205257_001.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture10/pic4320/43205257_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture10/pic4320/43205257_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture10/pic4320/43205257_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture10/pic4320/43205257_020.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture10/pic4320/43205257_001.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture10/pic4320/43205257_022.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture10/pic4320/43205257_016.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/43205257"
   },
   {
    "id": "43149058",
