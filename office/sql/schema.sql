@@ -4231,3 +4231,76 @@ alter table sign_docs add column if not exists signer text;
 -- 비용 항목 이름: '도색광택' → '도색판금' (사용자 2026-11-20 "차량입력에 도색광택 말고 도색판금으로 바꿔").
 -- 차량입력 칸·명세서 올리기·리스트 상품화비용이 이 이름을 쓴다. 금액·부가세는 그대로라 정산 손익은 안 바뀐다.
 update car_costs set item = '도색판금' where item = '도색광택';
+
+
+-- 20261123000001_sale_extras.sql
+-- 매도 '기타' AP·2PM·FM (사용자 2026-11-23 "매도할때 기타에 ap 2pm fm 선택, 선택하면 매도게시판에도 그대로").
+--  · car_sales.extras: 여러 개 고름. 게시판 매도정보 글 form.extras + 본문 '기타: AP, 2PM' 줄 (매도형태 바로 아래)
+--  · 매도 탭 저장으로 올라가는 글(sale_board_post)에 넣고, 나중에 매도 탭에서 고쳐도 이어진 글에 따라간다
+alter table car_sales add column if not exists extras text[] not null default '{}';
+alter table car_sales drop constraint if exists car_sales_extras_check;
+alter table car_sales add constraint car_sales_extras_check check (extras <@ array['AP', '2PM', 'FM']);
+
+create or replace function public.sale_board_post(p_car uuid)
+ RETURNS uuid
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare s record; c record; v_since timestamptz; v_type text; v_name text; v_when text; v_memo text; v_form jsonb; v_title text; v_body text; v_id uuid;
+begin
+  select * into s from car_sales where car_id = p_car;
+  select * into c from cars where id = p_car;
+  if s is null or c is null then return null; end if;
+  v_since := coalesce(c.purchase_date::timestamptz - interval '30 days', '2000-01-01');
+  if exists (select 1 from board_posts b where b.category = '매도정보' and b.created_at >= v_since
+              and (b.car_id = p_car or (b.car_id is null and coalesce(c.plate, '') <> '' and replace(coalesce(b.form->>'plate', b.plate, ''), ' ', '') = replace(c.plate, ' ', '')))) then
+    return null;
+  end if;
+  v_type := case s.sale_type when '내수판매' then '내수' when '알선판매' then '내수' else s.sale_type end;
+  -- 짧은 차명: 모델명 있으면 그것, 없으면 차명 앞 두 낱말 (괄호·'더 뉴' 뺌)
+  v_name := nullif(trim(coalesce(nullif(c.model, ''),
+              array_to_string((regexp_split_to_array(trim(regexp_replace(regexp_replace(coalesce(c.car_name, ''), '\([^)]*\)', ' ', 'g'), '^\s*(더\s*뉴|디\s*올\s*뉴|올\s*뉴|뉴)\s+', '')), '\s+'))[1:2], ' '))), '');
+  v_when := case when s.contract and s.deposit_at is not null then to_char(s.deposit_at at time zone 'Asia/Seoul', 'MM/DD HH24:MI') end;
+  v_memo := nullif(concat_ws(E'\n', case when s.contract and s.balance_due is not null then '잔금 ' || extract(month from s.balance_due)::int || '월 ' || extract(day from s.balance_due)::int || '일 예정' end,
+                              nullif(s.memo, '')), '');
+  v_form := jsonb_build_object('type', v_type, 'plate', c.plate, 'car_name', v_name, 'buyer', nullif(trim(s.buyer_name), ''), 'phone', nullif(trim(s.buyer_phone), ''),
+              'amount', s.sale_amount, 'extras', to_jsonb(coalesce(s.extras, '{}')), 'fee_included', false, 'deposit', case when s.contract then s.deposit_amount end, 'deposit_when', v_when, 'memo', v_memo);
+  v_title := concat_ws(' ', c.plate, v_name, '매도');
+  v_body := concat_ws(E'\n', '매도형태: ' || coalesce(v_type, '-'),
+              case when cardinality(coalesce(s.extras, '{}')) > 0 then '기타: ' || array_to_string(s.extras, ', ') end,
+              '차량: ' || coalesce(nullif(concat_ws(' ', c.plate, v_name), ''), '-'),
+              '구매자: ' || coalesce(nullif(concat_ws(' ', nullif(trim(s.buyer_name), ''), nullif(trim(s.buyer_phone), '')), ''), '-'),
+              '매도 금액: 매도비 별도 ' || _원(s.sale_amount),
+              '계약금: ' || case when s.contract and s.deposit_amount = 0 then '없음'
+                                 when s.contract then concat_ws(' ', v_when, _원(s.deposit_amount)) else '-' end,
+              case when v_memo is not null then E'\n' || v_memo end);
+  insert into board_posts (category, title, body, plate, car_id, created_by, author_name, form, notified_at)
+  values ('매도정보', v_title, v_body, c.plate, p_car, auth.uid(),
+          coalesce((select name from profiles where user_id = auth.uid()), '업무관리'), v_form, null)
+  returning id into v_id;
+  return v_id;
+end $function$;
+
+-- 매도 탭에서 '기타'를 고치면 이 차의 게시판 매도정보 글(form·본문)도 고친다
+create or replace function _sale_board_extras() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare v_plate text; v_since timestamptz; v_line text;
+begin
+  if new.extras is not distinct from old.extras then return new; end if;
+  select replace(coalesce(plate, ''), ' ', ''), coalesce(purchase_date::timestamptz - interval '30 days', '2000-01-01')
+    into v_plate, v_since from cars where id = new.car_id;
+  v_line := case when cardinality(new.extras) > 0 then '기타: ' || array_to_string(new.extras, ', ') end;
+  update board_posts b
+     set form = coalesce(b.form, '{}'::jsonb) || jsonb_build_object('extras', to_jsonb(new.extras)),
+         body = case when v_line is null then regexp_replace(coalesce(b.body, ''), E'\n?기타: [^\n]*', '')
+                     when coalesce(b.body, '') ~ E'(^|\n)기타: ' then regexp_replace(b.body, E'(^|\n)기타: [^\n]*', '\1' || v_line)
+                     when coalesce(b.body, '') ~ '^매도형태: ' then regexp_replace(b.body, E'^(매도형태: [^\n]*)', '\1' || E'\n' || v_line)
+                     else v_line || E'\n' || coalesce(b.body, '') end
+   where b.category = '매도정보' and b.created_at >= v_since
+     and (b.car_id = new.car_id or (b.car_id is null and v_plate <> '' and replace(coalesce(b.form->>'plate', b.plate, ''), ' ', '') = v_plate));
+  return new;
+end $$;
+drop trigger if exists car_sales_board_extras on car_sales;
+create trigger car_sales_board_extras after update of extras on car_sales
+  for each row execute function _sale_board_extras();
