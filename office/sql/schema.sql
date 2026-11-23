@@ -4304,3 +4304,9 @@ end $$;
 drop trigger if exists car_sales_board_extras on car_sales;
 create trigger car_sales_board_extras after update of extras on car_sales
   for each row execute function _sale_board_extras();
+
+
+-- 20261123000002_sale_extras_am.sql
+-- 매도 '기타': AP 가 아니라 AM (사용자 2026-11-23 "ap말고 am"). AP 로 저장된 매도는 없었다.
+alter table car_sales drop constraint if exists car_sales_extras_check;
+alter table car_sales add constraint car_sales_extras_check check (extras <@ array['AM', '2PM', 'FM']);
