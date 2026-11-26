@@ -1,6 +1,6 @@
 {
- "updated": "2026-11-25 17:48",
- "count": 61,
+ "updated": "2026-11-26 17:49",
+ "count": 59,
  "cars": [
   {
    "id": "42998550",
@@ -21,10 +21,10 @@
     "https://ci.encar.com/carpicture09/pic4299/42998550_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture09/pic4299/42998550_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture09/pic4299/42998550_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4299/42998550_035.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4299/42998550_019.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4299/42998550_044.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture09/pic4299/42998550_017.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture09/pic4299/42998550_036.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4299/42998550_041.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4299/42998550_045.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture09/pic4299/42998550_022.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42998550"
   },
@@ -255,10 +255,10 @@
     "https://ci.encar.com/carpicture10/pic4280/42806257_002.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture10/pic4280/42806257_003.jpg?impolicy=widthRate&wid=800",
     "https://ci.encar.com/carpicture10/pic4280/42806257_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture10/pic4280/42806257_021.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture10/pic4280/42806257_045.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture10/pic4280/42806257_008.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture10/pic4280/42806257_047.jpg?impolicy=widthRate&wid=800"
+    "https://ci.encar.com/carpicture10/pic4280/42806257_023.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture10/pic4280/42806257_044.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture10/pic4280/42806257_009.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture10/pic4280/42806257_049.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42806257"
   },
@@ -313,32 +313,6 @@
     "https://ci.encar.com/carpicture05/pic4315/43151810_008.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/43151810"
-  },
-  {
-   "id": "43081873",
-   "plate": "95두2442",
-   "maker": "기아",
-   "model": "PV5",
-   "grade": "카고",
-   "year": "25년 10월",
-   "yearRaw": "202510",
-   "mileage": 27132,
-   "fuel": "전기",
-   "transmission": "오토",
-   "color": "검정색",
-   "price": 3600,
-   "diagnosis": true,
-   "photos": [
-    "https://ci.encar.com/carpicture08/pic4308/43081873_027.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4308/43081873_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4308/43081873_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4308/43081873_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4308/43081873_023.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4308/43081873_016.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4308/43081873_010.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture08/pic4308/43081873_040.jpg?impolicy=widthRate&wid=800"
-   ],
-   "link": "https://fem.encar.com/cars/detail/43081873"
   },
   {
    "id": "42775853",
@@ -495,32 +469,6 @@
     "https://ci.encar.com/carpicture05/pic4285/42852225_005.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/42852225"
-  },
-  {
-   "id": "43156778",
-   "plate": "196다2621",
-   "maker": "기아",
-   "model": "스팅어",
-   "grade": "3.3 GT AWD 아크로 에디션",
-   "year": "21년 11월",
-   "yearRaw": "202111",
-   "mileage": 81698,
-   "fuel": "가솔린",
-   "transmission": "오토",
-   "color": "담녹색",
-   "price": 3190,
-   "diagnosis": true,
-   "photos": [
-    "https://ci.encar.com/carpicture05/pic4315/43156778_027.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4315/43156778_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4315/43156778_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4315/43156778_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4315/43156778_040.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4315/43156778_048.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4315/43156778_019.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4315/43156778_053.jpg?impolicy=widthRate&wid=800"
-   ],
-   "link": "https://fem.encar.com/cars/detail/43156778"
   },
   {
    "id": "42321574",
@@ -731,6 +679,32 @@
    "link": "https://fem.encar.com/cars/detail/43126190"
   },
   {
+   "id": "42757118",
+   "plate": "05어3945",
+   "maker": "현대",
+   "model": "캐스퍼",
+   "grade": "프리미엄",
+   "year": "25년 10월",
+   "yearRaw": "202510",
+   "mileage": 14284,
+   "fuel": "전기",
+   "transmission": "오토",
+   "color": "검정색",
+   "price": 2450,
+   "diagnosis": true,
+   "photos": [
+    "https://ci.encar.com/carpicture05/pic4275/42757118_027.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4275/42757118_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4275/42757118_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4275/42757118_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4275/42757118_018.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4275/42757118_034.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4275/42757118_045.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture05/pic4275/42757118_036.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/42757118"
+  },
+  {
    "id": "43035240",
    "plate": "383가4393",
    "maker": "기아",
@@ -755,32 +729,6 @@
     "https://ci.encar.com/carpicture03/pic4303/43035240_036.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/43035240"
-  },
-  {
-   "id": "42757118",
-   "plate": "05어3945",
-   "maker": "현대",
-   "model": "캐스퍼",
-   "grade": "프리미엄",
-   "year": "25년 10월",
-   "yearRaw": "202510",
-   "mileage": 14284,
-   "fuel": "전기",
-   "transmission": "오토",
-   "color": "검정색",
-   "price": 2390,
-   "diagnosis": true,
-   "photos": [
-    "https://ci.encar.com/carpicture05/pic4275/42757118_027.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4275/42757118_002.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4275/42757118_003.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4275/42757118_004.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4275/42757118_006.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4275/42757118_007.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4275/42757118_033.jpg?impolicy=widthRate&wid=800",
-    "https://ci.encar.com/carpicture05/pic4275/42757118_017.jpg?impolicy=widthRate&wid=800"
-   ],
-   "link": "https://fem.encar.com/cars/detail/42757118"
   },
   {
    "id": "42917308",
