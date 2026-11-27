@@ -8,6 +8,7 @@
 <title>딜러 앱으로 열기</title>
 <!-- 업무관리 폰 알림(바로사냥 등) → 헤이딜러 딜러 앱의 그 차 화면으로 넘기는 다리 (2026-11-20).
      웹 푸시는 https 주소만 열 수 있어서, 이 화면이 heydealerfordealer://cars/<c> 로 넘긴다.
+     PC에서 열면(앱 없음) 딜러 웹 https://dealer.heydealer.com/cars/<c>/ 로 넘긴다 (2026-11-27).
      /hd/?c=<헤딜 차 id>&t=<차 이름>&p=<차량번호>  — c 는 영문·숫자 6~12자만. 로그인 없음, 저장·전송 없음. -->
 <style>
   :root { --bg: #f6f7f9; --card: #fff; --ink: #1b1f24; --muted: #6b7280; --btn: #2563eb; --btn-ink: #fff; }
@@ -40,6 +41,20 @@
   if (!/^[A-Za-z0-9]{6,12}$/.test(c)) {
     go.style.display = "none";
     document.getElementById("note").textContent = "차 주소가 올바르지 않습니다. 딜러 앱 바로 탭에서 찾으세요.";
+    return;
+  }
+  // PC(업무관리 PC 알림)에는 딜러 앱이 없다 - 딜러 웹 차 화면으로 바로 넘긴다(2026-11-27 사장님
+  // "모바일에는 앱 들어가기가 떠야 하지만 PC 알림에는 링크를 줘야"). 폰·태블릿만 앱으로.
+  var ua = navigator.userAgent || "";
+  var mobile = /Android|iPhone|iPad|iPod|Mobile/i.test(ua) ||
+               (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);   // iPadOS는 맥처럼 보인다
+  if (!mobile) {
+    var web = "https://dealer.heydealer.com/cars/" + c + "/";
+    document.title = "헤이딜러 딜러 웹으로 열기";
+    go.textContent = "헤이딜러 딜러 웹에서 열기";
+    go.href = web;
+    document.getElementById("note").textContent = "PC에서는 딜러 웹으로 엽니다. 로그인돼 있지 않으면 먼저 로그인하세요.";
+    location.replace(web);
     return;
   }
   var app = "heydealerfordealer://cars/" + c;
