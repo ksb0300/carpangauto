@@ -1,6 +1,6 @@
 {
- "updated": "2026-11-26 17:49",
- "count": 59,
+ "updated": "2026-11-27 17:51",
+ "count": 60,
  "cars": [
   {
    "id": "42998550",
@@ -1379,6 +1379,32 @@
     "https://ci.encar.com/carpicture01/pic4311/43118203_006.jpg?impolicy=widthRate&wid=800"
    ],
    "link": "https://fem.encar.com/cars/detail/43118203"
+  },
+  {
+   "id": "43245967",
+   "plate": "70거7052",
+   "maker": "현대",
+   "model": "스타렉스",
+   "grade": "12인승 왜건",
+   "year": "13년 12월",
+   "yearRaw": "201312",
+   "mileage": 86476,
+   "fuel": "디젤",
+   "transmission": "오토",
+   "color": "노란색",
+   "price": 780,
+   "diagnosis": false,
+   "photos": [
+    "https://ci.encar.com/carpicture04/pic4324/43245967_001.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4324/43245967_002.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4324/43245967_003.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4324/43245967_004.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4324/43245967_022.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4324/43245967_023.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4324/43245967_015.jpg?impolicy=widthRate&wid=800",
+    "https://ci.encar.com/carpicture04/pic4324/43245967_035.jpg?impolicy=widthRate&wid=800"
+   ],
+   "link": "https://fem.encar.com/cars/detail/43245967"
   },
   {
    "id": "43133610",
